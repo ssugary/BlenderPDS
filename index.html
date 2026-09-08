@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    #ui { 
+      position: absolute; top: 10px; left: 10px; z-index: 10; 
+      background: rgba(30, 30, 30, 0.85); padding: 10px; border-radius: 6px; color: #fff; 
+    }
+    button { margin: 2px; cursor: pointer; background: #444; color: #fff; border: 1px solid #666; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <div id="ui">
+    <button id="addCube">+ Cubo</button>
+    <button id="translate">Mover (G)</button>
+    <button id="rotate">Rotacionar (R)</button>
+    <button id="scale">Escalar (S)</button>
+  </div>
+
+  <script src="Engine.js" type="module"> </script>
+  
+</body>
+</html>
