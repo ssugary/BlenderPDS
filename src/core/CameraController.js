@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLOBAL_BUS } from './EventBus.js';
 
 export class CameraController 
@@ -12,28 +11,48 @@ export class CameraController
         this.navMode = 'orbit';
 
         this.orbitControls = new OrbitControls(this.camera, this.domElement);
-        this.walkControls = new PointerLockControls(this.camera, document.body);
 
-        this.moveState = { forward: false, backward: false, left: false, right: false };
+        this.moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
         this.speed = 8.0;
+
+        this.isMouseDown = false;
+        this.lookSpeed = 0.002;
+        this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
 
         this.bindEvents();
     }
 
-    setMode(mode) {
-        this.navMode = mode;
-        if (mode === 'walk') 
+    changeMode() 
+    {
+        if (this.navMode === 'walk') 
         {
-            this.orbitControls.enabled = false;
-            this.walkControls.lock();
+            this.syncOrbitTarget();
+            this.navMode = 'orbit';
         } 
         else 
         {
-            this.orbitControls.enabled = true;
-            if (this.walkControls.isLocked) 
-                this.walkControls.unlock();
-            
+            this.navMode = 'walk';
+            this.orbitControls.enabled = false;
+            this.rotation.setFromQuaternion(this.camera.quaternion);
         }
+        
+    }
+
+    syncOrbitTarget() 
+    {
+        this.orbitControls.enabled = true;
+        this.camera.updateMatrixWorld(true);
+
+        const worldPos = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        this.camera.getWorldPosition(worldPos);
+        this.camera.getWorldDirection(direction);
+        
+        const distance = 5; 
+
+        this.orbitControls.target.copy(worldPos).addScaledVector(direction, distance);
+        this.orbitControls.update();
     }
 
     bindEvents() 
@@ -68,32 +87,60 @@ export class CameraController
             }
         });
 
-        this.walkControls.addEventListener('unlock', () => 
+        this.domElement.addEventListener('mousedown', () => 
         {
-            this.navMode = 'orbit';
-            this.orbitControls.enabled = true;
+            if (this.navMode === 'walk') 
+                this.isMouseDown = true;
+        });
+
+        window.addEventListener('mouseup', () => 
+        {
+            this.isMouseDown = false;
+        });
+
+        window.addEventListener('mousemove', (event) => 
+        {
+            if (this.navMode !== 'walk' || !this.isMouseDown) 
+                return;
+
+            this.rotation.y -= event.movementX * this.lookSpeed;
+            this.rotation.x -= event.movementY * this.lookSpeed;
+
+            this.rotation.x = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, this.rotation.x));
+
+            this.camera.quaternion.setFromEuler(this.rotation);
         });
     }
-
 
     update(delta) 
     {
         if (this.navMode === 'orbit') 
             this.orbitControls.update();
-        else if (this.navMode === 'walk' && this.walkControls.isLocked) 
+        else if (this.navMode === 'walk') 
         {
-            if (this.moveState.forward) 
-                this.walkControls.moveForward(this.speed * delta);
+            const actualSpeed = this.speed * delta;
+            
+            const direction = new THREE.Vector3();
+
+            this.camera.getWorldDirection(direction); 
+            
+            direction.y = 0;
+            direction.normalize();
+
+            const right = new THREE.Vector3(-direction.z, 0, direction.x)
+
+            if (this.moveState.forward)  
+                this.camera.position.addScaledVector(direction, actualSpeed);
             if (this.moveState.backward) 
-                this.walkControls.moveForward(-this.speed * delta);
-            if (this.moveState.left) 
-                this.walkControls.moveRight(-this.speed * delta);
-            if (this.moveState.right) 
-                this.walkControls.moveRight(this.speed * delta);
-            if (this.moveState.up) 
-                this.walkControls.getObject().position.y += this.speed * delta;
-            if (this.moveState.down) 
-                 this.walkControls.getObject().position.y -= this.speed * delta;
+                this.camera.position.addScaledVector(direction, -actualSpeed);
+            if (this.moveState.left)     
+                this.camera.position.addScaledVector(right, -actualSpeed);
+            if (this.moveState.right)    
+                this.camera.position.addScaledVector(right, actualSpeed);
+            if (this.moveState.up)       
+                this.camera.position.y += actualSpeed;
+            if (this.moveState.down)     
+                this.camera.position.y -= actualSpeed;
         }
     }
 }
