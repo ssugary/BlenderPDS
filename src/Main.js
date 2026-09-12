@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { SceneManager } from './core/SceneManager.js';
 import { RenderEngine } from './core/RenderEngine.js';
 import { InputManager } from './core/InputManager.js';
@@ -17,7 +18,7 @@ const inputManager = new InputManager({
     'KeyS': 'tool:scale',
     'F1'  : 'camera:change_mode', 
     'KeyW': 'move:forward',
-    'KeyS': 'move:backward',
+    'ArrowDown': 'move:backward', // S key conflict with scale command, changed it to arrow down
     'KeyA': 'move:left',
     'KeyD': 'move:right',
     'Space': 'move:up',
