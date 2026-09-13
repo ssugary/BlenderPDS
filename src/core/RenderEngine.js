@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 export class RenderEngine
 {
-    constructor(sceneManager, containerElement)
+    constructor(sceneManager, containerElement, camera)
     {
 
         this.sceneManager = sceneManager;
@@ -13,7 +13,6 @@ export class RenderEngine
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         this.container.appendChild(this.renderer.domElement);
-        this.bindEvents();
     };
 
     render(camera) 
@@ -21,13 +20,16 @@ export class RenderEngine
         this.renderer.render(this.sceneManager.getNativeScene(), camera);
     }
 
-    bindEvents() 
+    bindEvents(camera) 
     {
-        window.addEventListener('resize', () => this.handleResize());
+        window.addEventListener('resize', () => this.handleResize(camera));
     }
 
-    handleResize() {
+    handleResize(camera) 
+    {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
     }
 
 };

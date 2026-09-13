@@ -14,7 +14,7 @@ export class SelectionManager
 
     selectObject(object) 
     {
-        if (this.selectedObject === object) 
+        if(this.selectedObject === object) 
             return;
 
         this.selectedObject = object;
@@ -26,6 +26,12 @@ export class SelectionManager
     {
         this.selectedObject = null;
         this.selectionBox.visible = false;
+    }
+
+    update()
+    {
+        if(this.selectedObject)
+            this.selectionBox.update();
     }
 
     getSelected() 

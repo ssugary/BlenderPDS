@@ -26,6 +26,7 @@ export class EventBus
             return;
         this.listeners[event].forEach(callback => callback(data));
     }
+
 }
 
 export const GLOBAL_BUS = new EventBus();

@@ -10,9 +10,6 @@ engine.start();
 const uiManager = new UIManager(engine.renderEngine.renderer.domElement);
 
 const inputManager = new InputManager({
-    'KeyG': 'tool:translate',
-    'KeyR': 'tool:rotate',
-    'KeyS': 'tool:scale',
     'KeyW': 'move:forward',
     'KeyS': 'move:backward',
     'KeyA': 'move:left',
@@ -35,8 +32,3 @@ GLOBAL_BUS.on('action:add_object', ({ type }) =>
     }
 });
 
-
-GLOBAL_BUS.on('camera:change_mode', () => 
-{
-    engine.cameraManager.changeMode();
-});
