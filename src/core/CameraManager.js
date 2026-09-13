@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLOBAL_BUS } from './EventBus.js';
 
-export class CameraController 
+export class CameraManager 
 {
     constructor(camera, domElement) 
     {
@@ -43,7 +43,7 @@ export class CameraController
         this.orbitControls.enabled = true;
         this.camera.updateMatrixWorld(true);
 
-        const worldPos = new THREE.Vector3();
+        const worldPos  = new THREE.Vector3();
         const direction = new THREE.Vector3();
 
         this.camera.getWorldPosition(worldPos);
@@ -64,7 +64,7 @@ export class CameraController
 
             const isPressed = state === 'down';
 
-            switch (action) 
+            switch (action)
             {
                 case 'move:forward': 
                     this.moveState.forward = isPressed;

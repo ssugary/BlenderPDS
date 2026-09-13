@@ -1,21 +1,18 @@
-import { SceneManager } from './core/SceneManager.js';
-import { RenderEngine } from './core/RenderEngine.js';
+import * as THREE from 'three';
+import { Engine } from './core/Engine.js';
 import { InputManager } from './core/InputManager.js';
-import { GLOBAL_BUS } from './core/EventBus.js';
 import { UIManager } from './ui/UIManager.js';
+import { GLOBAL_BUS } from './core/EventBus.js';
 
-const sceneManager = new SceneManager();
-const renderEngine = new RenderEngine(sceneManager);
+const engine = new Engine(document.body);
+engine.start();
 
-renderEngine.start();
-
-const uiManager = new UIManager(renderEngine.renderer.domElement);
+const uiManager = new UIManager(engine.renderEngine.renderer.domElement);
 
 const inputManager = new InputManager({
     'KeyG': 'tool:translate',
     'KeyR': 'tool:rotate',
     'KeyS': 'tool:scale',
-    'F1'  : 'camera:change_mode', 
     'KeyW': 'move:forward',
     'KeyS': 'move:backward',
     'KeyA': 'move:left',
@@ -26,7 +23,7 @@ const inputManager = new InputManager({
 
 inputManager.init();
 
-GLOBAL_BUS.on('action:add_object', ({ type }) =>
+GLOBAL_BUS.on('action:add_object', ({ type }) => 
 {
     if (type === 'cube') 
     {
@@ -34,11 +31,12 @@ GLOBAL_BUS.on('action:add_object', ({ type }) =>
         const mat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
         const cube = new THREE.Mesh(geo, mat);
         cube.position.y = 0.5;
-        sceneManager.addObject(cube);
+        engine.sceneManager.addObject(cube);
     }
 });
 
+
 GLOBAL_BUS.on('camera:change_mode', () => 
 {
-    renderEngine.cameraController.changeMode();
+    engine.cameraManager.changeMode();
 });
