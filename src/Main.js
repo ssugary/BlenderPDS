@@ -3,6 +3,8 @@ import { Engine } from './core/Engine.js';
 import { InputManager } from './core/InputManager.js';
 import { UIManager } from './ui/UIManager.js';
 import { GLOBAL_BUS } from './core/EventBus.js';
+import { FileLoader } from './core/utils/FileLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 
 const engine = new Engine(document.body);
 engine.start();
@@ -20,6 +22,8 @@ const inputManager = new InputManager({
 
 inputManager.init();
 
+const fileLoader = new FileLoader();
+
 GLOBAL_BUS.on('action:add_object', ({ type }) => 
 {
     if (type === 'cube') 
@@ -29,6 +33,26 @@ GLOBAL_BUS.on('action:add_object', ({ type }) =>
         const cube = new THREE.Mesh(geo, mat);
         cube.position.y = 0.5;
         engine.sceneManager.addObject(cube);
+    }
+    if(type === 'model'){
+        fileLoader.getfile().then((contents) => 
+        {
+            const objLoader = new OBJLoader();
+            const object = objLoader.parse(contents);
+            object.traverse((child) => 
+            {
+                if (child.isMesh) 
+                {
+                    child.material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
+                }
+            });
+            object.position.y = 0.5;
+            object.position.x = 0.5;
+            engine.sceneManager.addObject(object);
+        }).catch((err) => 
+        {
+            console.error('Error loading model: ', err);
+        });
     }
 });
 

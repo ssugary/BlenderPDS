@@ -9,6 +9,7 @@ export class Toolbar
         this.btnRotate = document.getElementById('rotate');
         this.btnScale = document.getElementById('scale');
         this.btnWalkNav = document.getElementById('walkNav');
+        this.btnAddModel = document.getElementById('addModel');
 
         this.bindEvents();
         this.listenSystemState();
@@ -21,6 +22,9 @@ export class Toolbar
             GLOBAL_BUS.emit('action:add_object', { type: 'cube' });
         });
 
+        this.btnAddModel?.addEventListener('click', () =>{
+            GLOBAL_BUS.emit('action:add_object', { type: 'model' });
+        });
         this.btnTranslate?.addEventListener('click', () => 
         {
             GLOBAL_BUS.emit('tool:change', 'translate');
