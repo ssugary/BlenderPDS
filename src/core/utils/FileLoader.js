@@ -2,7 +2,7 @@ export class FileLoader
 {
     // Prompts a browser window and opens a file
     // returns the text
-    async getfile(){
+    static async getfile(){
         try 
         {
         const fileHandle = await window.showOpenFilePicker();
