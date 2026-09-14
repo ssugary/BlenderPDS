@@ -26,4 +26,9 @@ export class TransformCommand extends Command
         this.object.matrix.copy(this.oldMatrix);
         this.object.matrix.decompose(this.object.position, this.object.quaternion, this.object.scale);
     }
+
+    redo()
+    {
+        this.execute();
+    }
 }

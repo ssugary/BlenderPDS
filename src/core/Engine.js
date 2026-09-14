@@ -8,6 +8,8 @@ import { RaycasterManager } from './RaycasterManager.js';
 import { CommandManager } from '../commands/CommandManager.js'; 
 import { ToolManager } from '../commands/ToolManager.js';
 import { TransformTool } from '../commands/Tool.js'; 
+import { FaceTool } from '../commands/FaceTool.js';
+import { VertexTool } from '../commands/VertexTool.js'; 
 import { GLOBAL_BUS } from './EventBus.js';
 
 
@@ -71,9 +73,12 @@ export class Engine
         const controls = this.transformControls;
         const cm = this.commandManager;
 
+
         this.toolManager.registerTool('translate', new TransformTool(controls, cm, 'translate'));
         this.toolManager.registerTool('rotate',    new TransformTool(controls, cm, 'rotate'));
         this.toolManager.registerTool('scale',     new TransformTool(controls, cm, 'scale'));
+        this.toolManager.registerTool('distortion',new VertexTool(controls, cm, this.sceneManager));
+        this.toolManager.registerTool('face',      new FaceTool(controls, cm, this.sceneManager));
     }
 
     start() 
@@ -103,7 +108,22 @@ export class Engine
             if (this.transformControls.axis !== null) 
                 return;
 
-            const intersectedObject = this.raycasterManager.pick(coords);
+            const intersect = this.raycasterManager.pick(coords);
+            const activeTool = this.toolManager.activeTool;
+
+            if (activeTool instanceof VertexTool && intersect && intersect.object === activeTool.pointsMesh) 
+            {
+                activeTool.selectVertex(intersect);
+                return; 
+            }
+
+            if (activeTool instanceof FaceTool && intersect && intersect.object === activeTool.activeMesh) 
+            {
+                activeTool.selectFace(intersect);
+                return;
+            }
+
+            const intersectedObject = intersect ? intersect.object : null;
             
             if (intersectedObject) 
                 this.selectionManager.selectObject(intersectedObject);
@@ -111,8 +131,7 @@ export class Engine
                 this.selectionManager.deselectAll();
             
             if (this.toolManager.activeTool) 
-                this.toolManager.activeTool.activate(this.selectionManager.getSelected());
-            
+                this.toolManager.activeTool.activate(this.selectionManager.getSelected());          
         });
 
         GLOBAL_BUS.on('tool:change', (toolName) => 
@@ -125,6 +144,12 @@ export class Engine
         {
             if (state !== 'down') 
                 return; 
+
+            if (action === 'action:extrude') 
+                if (this.toolManager.activeTool instanceof FaceTool) 
+                    this.toolManager.activeTool.extrudeSelectedFace();
+                
+            
 
             if (action.startsWith('tool:')) 
             {

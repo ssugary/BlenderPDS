@@ -9,6 +9,8 @@ export class Toolbar
         this.btnRotate = document.getElementById('rotate');
         this.btnScale = document.getElementById('scale');
         this.btnWalkNav = document.getElementById('walkNav');
+        this.btnDistortion = document.getElementById('distortion');
+        this.btnFaces = document.getElementById('faces');
 
         this.bindEvents();
         this.listenSystemState();
@@ -39,6 +41,16 @@ export class Toolbar
         this.btnWalkNav?.addEventListener('click', () => 
         {
             GLOBAL_BUS.emit('camera:change_mode');
+        });
+
+        this.btnDistortion?.addEventListener('click', () => 
+        {
+            GLOBAL_BUS.emit('tool:change', 'distortion');
+        });
+
+        this.btnFaces?.addEventListener('click', () => 
+        {
+            GLOBAL_BUS.emit('tool:change', 'face');
         });
     }
 

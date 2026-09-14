@@ -14,6 +14,7 @@ const inputManager = new InputManager({
     'KeyS': 'move:backward',
     'KeyA': 'move:left',
     'KeyD': 'move:right',
+    'KeyE': 'action:extrude',
     'Space': 'move:up',
     'ShiftLeft': 'move:down',
 });
