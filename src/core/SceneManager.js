@@ -40,6 +40,11 @@ export class SceneManager
 
             if (object.geometry) 
                 object.geometry.dispose();
+            // a mesh can have an array of materials
+            if (Array.isArray(object.material))
+                object.material.forEach(material => material.dispose());
+            else if (object.material)
+                object.material.dispose();
 
             return true;
         }
