@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Tool } from './Tool.js';
+import { Tool } from './tools/Tool.js';
 import { HEMesh } from '../config/HalfEdge.js'; 
 
 export class FaceTool extends Tool 

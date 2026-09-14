@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Tool } from './Tool.js';
-import { VertexCommand } from './VertexCommand.js';
+import { VertexCommand } from '../commands/VertexCommand.js';
 
 export class VertexTool extends Tool 
 {

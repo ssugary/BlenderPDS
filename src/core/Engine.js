@@ -3,13 +3,13 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { SceneManager } from './SceneManager.js';
 import { RenderEngine } from './RenderEngine.js';
 import { CameraManager } from './camera/CameraManager.js'; 
-import { SelectionManager } from './SelectionManager.js';
+import { SelectionManager } from './selection/SelectionManager.js';
 import { RaycasterManager } from './RaycasterManager.js';
-import { CommandManager } from '../commands/CommandManager.js'; 
-import { ToolManager } from '../commands/ToolManager.js';
-import { TransformTool } from '../commands/Tool.js'; 
-import { FaceTool } from '../commands/FaceTool.js';
-import { VertexTool } from '../commands/VertexTool.js'; 
+import { CommandManager } from '../transforms/CommandManager.js'; 
+import { ToolManager } from '../transforms/ToolManager.js';
+import { TransformTool } from '../transforms/tools/Tool.js'; 
+import { FaceTool } from '../transforms/FaceTool.js';
+import { VertexTool } from '../transforms/tools/VertexTool.js'; 
 import { GLOBAL_BUS } from './EventBus.js';
 
 

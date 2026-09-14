@@ -1,4 +1,4 @@
-import { TransformCommand } from './Command.js'; 
+import { TransformCommand } from '../commands/Command.js'; 
 
 export class Tool 
 {
