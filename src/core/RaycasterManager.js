@@ -18,7 +18,7 @@ export class RaycasterManager
         this.raycaster.setFromCamera(this.pointer, this.camera);
 
         const objectsToTest = Array.from(this.sceneManager.objectsMap.values());
-        const intersects = this.raycaster.intersectObjects(objectsToTest, false);
+        const intersects = this.raycaster.intersectObjects(objectsToTest, true);
 
         if (intersects.length > 0) 
             return intersects[0];

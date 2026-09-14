@@ -13,6 +13,7 @@ export class Toolbar
         this.btnVertex = document.getElementById('vertex');
         this.btnEdge = document.getElementById('edge');
         this.btnFace = document.getElementById('face');
+        this.btnAddModel = document.getElementById('addModel');
 
         this.bindEvents();
         this.listenSystemState();
@@ -25,6 +26,9 @@ export class Toolbar
             GLOBAL_BUS.emit('action:add_object', { type: 'cube' });
         });
 
+        this.btnAddModel?.addEventListener('click', () =>{
+            GLOBAL_BUS.emit('action:add_object', { type: 'model' });
+        });
         this.btnTranslate?.addEventListener('click', () => 
         {
             GLOBAL_BUS.emit('tool:change', 'translate');
