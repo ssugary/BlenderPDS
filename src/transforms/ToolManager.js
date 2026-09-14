@@ -15,19 +15,19 @@ export class ToolManager
     {
         const tool = this.tools.get(name);
 
-        if (tool) 
+        if(tool) 
             this.useTool(tool, selectedObjects);
         
     }
 
     useTool(tool, selectedObjects) 
     {
-        if (this.activeTool && this.activeTool.deactivate) 
+        if(this.activeTool && this.activeTool.deactivate) 
             this.activeTool.deactivate();
         
         this.activeTool = tool;
         
-        if (this.activeTool.activate) 
+        if(this.activeTool.activate) 
             this.activeTool.activate(selectedObjects);
         
     }

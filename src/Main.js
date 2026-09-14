@@ -14,16 +14,17 @@ const inputManager = new InputManager({
     'KeyS': 'move:backward',
     'KeyA': 'move:left',
     'KeyD': 'move:right',
-    'KeyE': 'action:extrude',
     'Space': 'move:up',
     'ShiftLeft': 'move:down',
+    'KeyE': 'action:extrude',
+    'Tab': 'editor:toggle',
 });
 
 inputManager.init();
 
 GLOBAL_BUS.on('action:add_object', ({ type }) => 
 {
-    if (type === 'cube') 
+    if(type === 'cube') 
     {
         const geo = new THREE.BoxGeometry(1, 1, 1);
         const mat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });

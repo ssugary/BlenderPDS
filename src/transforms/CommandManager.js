@@ -15,7 +15,7 @@ export class CommandManager
 
     undo() 
     {
-        if (this.undoStack.length === 0) 
+        if(this.undoStack.length === 0) 
             return;
 
         const command = this.undoStack.pop();
@@ -25,7 +25,7 @@ export class CommandManager
 
     redo() 
     {
-        if (this.redoStack.length === 0) 
+        if(this.redoStack.length === 0) 
             return;
 
         const command = this.redoStack.pop();

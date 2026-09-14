@@ -66,7 +66,7 @@ export class HEMesh
         const visited = new Set([startFace]);
         const stack = [startFace];
 
-        while (stack.length) 
+        while(stack.length) 
         {
             const face = stack.pop();
             let edge = face.halfEdge;
@@ -82,7 +82,7 @@ export class HEMesh
 
                 edge = edge.next;
 
-            }while (edge !== face.halfEdge);
+            } while(edge !== face.halfEdge);
         }
 
         return Array.from(visited);
@@ -123,11 +123,12 @@ export class HEMesh
         let current = boundaryEdges[0];
         const guard = boundaryEdges.length + 1;
 
-        for (let i = 0; i < guard && current; i++) 
+        for(let i = 0; i < guard && current; i++) 
         {
             loopVerts.push(current.vertex);
             current = byOrigin.get(current.next.vertex);
-            if (current === boundaryEdges[0]) break;
+            if (current === boundaryEdges[0])
+                break;
         }
 
         const vertMap = new Map();
@@ -146,11 +147,11 @@ export class HEMesh
                 edge.vertex = vertMap.get(edge.vertex);
                 edge.vertex.halfEdge = edge;
                 edge = edge.next;
-            } while (edge !== face.halfEdge);
+            } while(edge !== face.halfEdge);
         });
 
         const n = loopVerts.length;
-        for (let i = 0; i < n; i++) 
+        for(let i = 0; i < n; i++) 
         {
             const nextI = (i + 1) % n;
             const v0 = loopVerts[i], v1 = loopVerts[nextI];
@@ -184,21 +185,20 @@ export class HEMesh
         const positions = geometry.attributes.position;
         const indices = geometry.index ? geometry.index.array : null;
 
-        if (!indices) 
+        if(!indices) 
             return;
         
-
         const vertexMap = new Map();
         const originalToLogical = new Array(positions.count);
 
-        for (let i = 0; i < positions.count; i++) 
+        for(let i = 0; i < positions.count; i++) 
         {
             const x = positions.getX(i);
             const y = positions.getY(i);
             const z = positions.getZ(i);
             const key = `${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
 
-            if (!vertexMap.has(key)) 
+            if(!vertexMap.has(key)) 
             {
                 const newVert = new HEVertex(x, y, z);
                 this.vertices.push(newVert);
@@ -209,7 +209,7 @@ export class HEMesh
 
         const edgeMap = new Map(); 
 
-        for (let i = 0; i < indices.length; i += 3) 
+        for(let i = 0; i < indices.length; i += 3) 
         {
             const v0 = originalToLogical[indices[i]];
             const v1 = originalToLogical[indices[i + 1]];
@@ -263,23 +263,26 @@ export class HEMesh
         const indices = [];
         const vertexToIndex = new Map();
 
-        this.vertices.forEach((v, index) => {
+        this.vertices.forEach((v, index) => 
+        {
             positions.push(v.position.x, v.position.y, v.position.z);
             vertexToIndex.set(v, index);
         });
         
-        this.faces.forEach(face => {
+        this.faces.forEach(face => 
+        {
             let edge = face.halfEdge;
             const faceIndices = [];
             
-            do {
+            do 
+            {
                 faceIndices.push(vertexToIndex.get(edge.vertex));
                 edge = edge.next;
-            } while (edge !== face.halfEdge);
+            } while(edge !== face.halfEdge);
 
-            if (faceIndices.length === 3) {
+            if (faceIndices.length === 3) 
                 indices.push(faceIndices[0], faceIndices[1], faceIndices[2]);
-            }
+            
         });
 
         const geo = new THREE.BufferGeometry();
@@ -318,5 +321,23 @@ export class HEMesh
             }
         });
     }
+
+    getUniqueEdges() 
+    {
+        const seen = new Set();
+        const result = [];
+
+        this.edges.forEach(edge => 
+        {
+            if(seen.has(edge) || (edge.twin && seen.has(edge.twin))) 
+                return;
+
+            seen.add(edge);
+            result.push({edge, v0: edge.vertex, v1: edge.next.vertex});
+        });
+
+        return result;
+    }
+
 
 }

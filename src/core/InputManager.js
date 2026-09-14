@@ -26,24 +26,27 @@ export class InputManager
     onKeyDown(e) 
     {
 
-        if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) 
+        if(['INPUT', 'TEXTAREA'].includes(e.target.tagName)) 
             return;
+
+        if(e.code === 'Tab')
+            e.preventDefault();
 
         const action = this.keybindings[e.code];
 
-        if (action) 
-            GLOBAL_BUS.emit('input:action', { action, state: 'down' });
+        if(action) 
+            GLOBAL_BUS.emit('input:action', {action, state: 'down'});
         
     }
 
     onKeyUp(e) 
     {
-        if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) 
+        if(['INPUT', 'TEXTAREA'].includes(e.target.tagName)) 
             return;
 
         const action = this.keybindings[e.code];
         
-        if (action) 
+        if(action) 
             GLOBAL_BUS.emit('input:action', { action, state: 'up' });
         
     }

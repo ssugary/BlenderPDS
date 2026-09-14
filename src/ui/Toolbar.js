@@ -9,8 +9,10 @@ export class Toolbar
         this.btnRotate = document.getElementById('rotate');
         this.btnScale = document.getElementById('scale');
         this.btnWalkNav = document.getElementById('walkNav');
-        this.btnDistortion = document.getElementById('distortion');
-        this.btnFaces = document.getElementById('faces');
+        this.btnEditMode = document.getElementById('editMode');
+        this.btnVertex = document.getElementById('vertex');
+        this.btnEdge = document.getElementById('edge');
+        this.btnFace = document.getElementById('face');
 
         this.bindEvents();
         this.listenSystemState();
@@ -43,14 +45,24 @@ export class Toolbar
             GLOBAL_BUS.emit('camera:change_mode');
         });
 
-        this.btnDistortion?.addEventListener('click', () => 
+        this.btnEditMode?.addEventListener('click', () => 
         {
-            GLOBAL_BUS.emit('tool:change', 'distortion');
+            GLOBAL_BUS.emit('editor:toggle_mode')
         });
 
-        this.btnFaces?.addEventListener('click', () => 
+        this.btnVertex?.addEventListener('click', () =>
         {
-            GLOBAL_BUS.emit('tool:change', 'face');
+            GLOBAL_BUS.emit('tool:change', 'vertex')
+        });
+
+        this.btnEdge?.addEventListener('click', () =>
+        {
+            GLOBAL_BUS.emit('tool:change', 'edge')
+        });
+        
+        this.btnFace?.addEventListener('click', () => 
+        {
+            GLOBAL_BUS.emit('tool:change', 'face')
         });
     }
 
@@ -58,7 +70,12 @@ export class Toolbar
     {
         GLOBAL_BUS.on('tool:changed', (activeTool) => 
         {
-            console.log(`[UI] Atualizando destaque visual da ferramenta: ${activeTool}`);
+            console.log(`ferramenta ativa: ${activeTool}`);
+        });
+
+        GLOBAL_BUS.on('editor:mode_changed', (mode) => 
+        {
+            console.log(`modo do editor: ${mode}`)
         });
     }
 }

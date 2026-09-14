@@ -6,6 +6,7 @@ export class RaycasterManager
     {
         this.raycaster = new THREE.Raycaster();
         this.raycaster.params.Points.threshold = 0.15;
+        this.raycaster.params.Line = {threshold: 0.08};
         this.camera = camera;
         this.sceneManager = sceneManager;
         this.pointer = new THREE.Vector2();

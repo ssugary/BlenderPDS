@@ -8,10 +8,11 @@ import { RaycasterManager } from './RaycasterManager.js';
 import { CommandManager } from '../transforms/CommandManager.js'; 
 import { ToolManager } from '../transforms/ToolManager.js';
 import { TransformTool } from '../transforms/tools/Tool.js'; 
-import { FaceTool } from '../transforms/FaceTool.js';
-import { VertexTool } from '../transforms/tools/VertexTool.js'; 
 import { GLOBAL_BUS } from './EventBus.js';
-
+import { MeshEditTool } from '../transforms/tools/MeshEditTool.js';
+import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy } from './selection/SelectionStrategy.js';
+import { EditMode, ObjectMode } from './selection/EditorMode.js';
+import { EditorModeManager } from './selection/EditorModeManager.js';
 
 export class Engine 
 {
@@ -41,11 +42,15 @@ export class Engine
         this.transformControls = new TransformControls(this.cameraManager.camera, this.renderEngine.renderer.domElement);
         this.sceneManager.getNativeScene().add(this.transformControls);
 
+        this.meshEditTool = new MeshEditTool(this.transformControls, this.commandManager, this.sceneManager, new FaceSelectionStrategy());
+        this.editStrategies = {vertex: new VertexSelectionStrategy(), edge: new EdgeSelectionStrategy(), face: new FaceSelectionStrategy()};
+        this.editorModeManager = new EditorModeManager(new ObjectMode(this.selectionManager, this.toolManager), new EditMode(this.meshEditTool));
+
         this.transformControls.addEventListener('dragging-changed', (event) => 
         {
             this.cameraManager.setGizmoDragging(event.value);
 
-            const tool = this.toolManager.activeTool;
+            const tool = this.editorModeManager.current === 'edit' ? this.meshEditTool : this.toolManager.activeTool;
             const object = this.transformControls.object;
 
             if (!tool || !object) 
@@ -73,12 +78,9 @@ export class Engine
         const controls = this.transformControls;
         const cm = this.commandManager;
 
-
         this.toolManager.registerTool('translate', new TransformTool(controls, cm, 'translate'));
         this.toolManager.registerTool('rotate',    new TransformTool(controls, cm, 'rotate'));
         this.toolManager.registerTool('scale',     new TransformTool(controls, cm, 'scale'));
-        this.toolManager.registerTool('distortion',new VertexTool(controls, cm, this.sceneManager));
-        this.toolManager.registerTool('face',      new FaceTool(controls, cm, this.sceneManager));
     }
 
     start() 
@@ -89,7 +91,6 @@ export class Engine
             
             this.cameraManager.update(delta);
             this.renderEngine.render(this.cameraManager.camera);
-            
             this.animationFrameId = requestAnimationFrame(loop); 
         };
         loop();
@@ -109,35 +110,22 @@ export class Engine
                 return;
 
             const intersect = this.raycasterManager.pick(coords);
-            const activeTool = this.toolManager.activeTool;
-
-            if (activeTool instanceof VertexTool && intersect && intersect.object === activeTool.pointsMesh) 
-            {
-                activeTool.selectVertex(intersect);
-                return; 
-            }
-
-            if (activeTool instanceof FaceTool && intersect && intersect.object === activeTool.activeMesh) 
-            {
-                activeTool.selectFace(intersect);
-                return;
-            }
-
-            const intersectedObject = intersect ? intersect.object : null;
-            
-            if (intersectedObject) 
-                this.selectionManager.selectObject(intersectedObject);
-            else 
-                this.selectionManager.deselectAll();
-            
-            if (this.toolManager.activeTool) 
-                this.toolManager.activeTool.activate(this.selectionManager.getSelected());          
+            this.editorModeManager.active.onCanvasClick(intersect);
         });
 
         GLOBAL_BUS.on('tool:change', (toolName) => 
         {
-            const selectedObject = this.selectionManager.getSelected(); 
-            this.toolManager.setTool(toolName, selectedObject);
+            if (this.editorModeManager.current === 'edit' && this.editStrategies[toolName]) 
+            {
+                this.meshEditTool.setStrategy(this.editStrategies[toolName]);
+                return;
+            }
+            this.toolManager.setTool(toolName, this.selectionManager.getSelected());
+        });
+
+        GLOBAL_BUS.on('editor:toggle_mode', () => 
+        {
+            this.editorModeManager.toggle(this.selectionManager.getSelected());
         });
 
         GLOBAL_BUS.on('input:action', ({ action, state }) => 
@@ -145,19 +133,14 @@ export class Engine
             if (state !== 'down') 
                 return; 
 
-            if (action === 'action:extrude') 
-                if (this.toolManager.activeTool instanceof FaceTool) 
-                    this.toolManager.activeTool.extrudeSelectedFace();
+            if (action === 'action:extrude' && this.editorModeManager.current === 'edit') 
+                this.meshEditTool.extrudeSelected();
                 
-            
-
             if (action.startsWith('tool:')) 
-            {
-                const toolName = action.split(':')[1]; 
-                const selectedObject = this.selectionManager.getSelected(); 
-                
-                this.toolManager.setTool(toolName, selectedObject);
-            }
+                GLOBAL_BUS.emit('tool:change', action.split(':')[1]);
+
+            if (action === 'editor:toggle') 
+                this.editorModeManager.toggle(this.selectionManager.getSelected());
 
             if (action === 'system:undo') 
             {
