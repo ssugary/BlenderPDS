@@ -16,6 +16,8 @@ export class OrbitNavigation extends Navigation
         super();
         this.camera = camera;
         this.controls = new OrbitControls(camera, domElement);
+        this.controls.mouseButtons = {LEFT: null, MIDDLE: THREE.MOUSE.ROTATE, RIGHT: THREE.MOUSE.PAN};
+
         this.controls.enabled = false;
     }
 
@@ -111,7 +113,7 @@ export class WalkNavigation extends Navigation
 
         this.domElement.addEventListener('pointerdown', (e) => 
         {
-            if(!this.enabled || e.button !== 0) 
+            if(!this.enabled || e.button !== 1) 
                 return;
             this.isDragging = true;
             this.domElement.setPointerCapture(e.pointerId);
