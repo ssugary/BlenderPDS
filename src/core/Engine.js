@@ -173,6 +173,8 @@ export class Engine
 
             this.selectionManager.selectObject(object);
             this.toolManager.activeTool?.activate(object);
+
+            
         });
 
         GLOBAL_BUS.on('action:delete_object', () => 

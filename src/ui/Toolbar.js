@@ -4,7 +4,7 @@ export class Toolbar
 {
     constructor() 
     {
-        this.btnAddCube = document.getElementById('addCube');
+        this.btnAdd = document.getElementById('add');
         this.btnDelete = document.getElementById('deleteObject');
         this.btnTranslate = document.getElementById('translate');
         this.btnRotate = document.getElementById('rotate');
@@ -15,15 +15,17 @@ export class Toolbar
         this.btnEdge = document.getElementById('edge');
         this.btnFace = document.getElementById('face');
 
+        this.selectGeometry = document.getElementById('addGeometry');
+
         this.bindEvents();
         this.listenSystemState();
     }
 
     bindEvents() 
     {
-        this.btnAddCube?.addEventListener('click', () => 
+        this.btnAdd?.addEventListener('click', () => 
         {
-            GLOBAL_BUS.emit('action:add_object', { type: 'cube' });
+            GLOBAL_BUS.emit('action:add_object', { type: this.selectGeometry.value });
         });
 
         this.btnDelete?.addEventListener('click', () => 
