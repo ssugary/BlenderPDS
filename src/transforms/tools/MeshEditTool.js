@@ -38,11 +38,15 @@ export class MeshEditTool extends Tool
         this.pickHelper = this.strategy.usesMeshAsPickTarget() ? null : this.strategy.createPickHelper();
         if(this.pickHelper) 
         {
+            this.pickHelper.userData = this.pickHelper.userData || {};
+            this.pickHelper.userData.isEditorHelper = true;
             this.pickHelper.visible = false;
             this.sceneManager.addObject(this.pickHelper);
         }
 
         this.highlightObject = this.strategy.createHighlightObject();
+        this.highlightObject.userData = this.highlightObject.userData || {};
+        this.highlightObject.userData.isEditorHelper = true;
         this.highlightObject.visible = false;
         this.sceneManager.getNativeScene().add(this.highlightObject);
     }

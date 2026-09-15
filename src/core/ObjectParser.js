@@ -6,7 +6,7 @@ import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
 export class ObjectParser
 {
     /**  Parses the type of the object and inserts it into the scene*/
-    static parseObject(type, engine)
+    static parseObject(type, sceneManager)
     {
         if (type === 'cube') 
         {
@@ -14,7 +14,7 @@ export class ObjectParser
             const mat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
             const cube = new THREE.Mesh(geo, mat);
             cube.position.y = 0.5;
-            engine.sceneManager.addObject(cube);
+            sceneManager.addObject(cube);
         }
         if(type === 'model'){
             FileLoader.getfile().then((contents) => 
@@ -32,7 +32,7 @@ export class ObjectParser
                         child.position.set(0.5, 0.5, 0);
                         
                         child.material = new THREE.MeshStandardMaterial({ color: 0x88ccff });                        
-                        engine.sceneManager.addObject(child);
+                        sceneManager.addObject(child);
                     }
                 })
             }).catch((err) => 
