@@ -7,7 +7,9 @@ import { SelectionManager } from './selection/SelectionManager.js';
 import { RaycasterManager } from './RaycasterManager.js';
 import { CommandManager } from '../transforms/CommandManager.js'; 
 import { ToolManager } from '../transforms/ToolManager.js';
-import { TransformTool } from '../transforms/tools/Tool.js'; 
+import { TransformTool } from '../transforms/tools/TransformTool.js'; 
+import { CreateObjectTool } from '../transforms/tools/CreateObjectTool.js';
+import { DeleteTool } from '../transforms/tools/DeleteTool.js';
 import { GLOBAL_BUS } from './EventBus.js';
 import { MeshEditTool } from '../transforms/tools/MeshEditTool.js';
 import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy } from './selection/SelectionStrategy.js';
@@ -61,7 +63,8 @@ export class Engine
             else 
             {
                 const command = tool.createCommand(object, this.gestureStart, tool.captureState(object));
-                this.commandManager.execute(command);
+                if (command)
+                    this.commandManager.execute(command);
             }
         });
         this.transformControls.addEventListener('objectChange', () => 
@@ -77,6 +80,11 @@ export class Engine
     {
         const controls = this.transformControls;
         const cm = this.commandManager;
+
+        this.createObjectTool = new CreateObjectTool(this.sceneManager, cm);
+        this.deleteTool = new DeleteTool(this.sceneManager, cm, this.selectionManager, controls);
+        this.createObjectTool.setDeleteTool(this.deleteTool);
+        this.deleteTool.setCreateObjectTool(this.createObjectTool);
 
         this.toolManager.registerTool('translate', new TransformTool(controls, cm, 'translate'));
         this.toolManager.registerTool('rotate',    new TransformTool(controls, cm, 'rotate'));
@@ -142,6 +150,9 @@ export class Engine
             if (action === 'editor:toggle') 
                 this.editorModeManager.toggle(this.selectionManager.getSelected());
 
+            if (action === 'action:delete_object' && this.editorModeManager.current === 'object')
+                this.deleteTool.deleteSelected(this.selectionManager.getSelected());
+
             if (action === 'system:undo') 
             {
                 this.commandManager.undo();
@@ -152,6 +163,24 @@ export class Engine
                 this.commandManager.redo();
                 this.selectionManager.update();
             }
+        });
+
+        GLOBAL_BUS.on('action:add_object', ({ type }) => 
+        {
+            const object = this.createObjectTool.createPrimitive(type);
+            if (!object)
+                return;
+
+            this.selectionManager.selectObject(object);
+            this.toolManager.activeTool?.activate(object);
+        });
+
+        GLOBAL_BUS.on('action:delete_object', () => 
+        {
+            if (this.editorModeManager.current !== 'object')
+                return;
+
+            this.deleteTool.deleteSelected(this.selectionManager.getSelected());
         });
 
         GLOBAL_BUS.on('camera:change_mode', () => 

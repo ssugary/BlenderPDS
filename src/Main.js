@@ -1,8 +1,6 @@
-import * as THREE from 'three';
 import { Engine } from './core/Engine.js';
 import { InputManager } from './core/InputManager.js';
 import { UIManager } from './ui/UIManager.js';
-import { GLOBAL_BUS } from './core/EventBus.js';
 
 const engine = new Engine(document.body);
 engine.start();
@@ -18,19 +16,12 @@ const inputManager = new InputManager({
     'ShiftLeft': 'move:down',
     'KeyE': 'action:extrude',
     'Tab': 'editor:toggle',
+    'KeyX': 'action:delete_object',
+    'Delete': 'action:delete_object',
+    'Backspace': 'action:delete_object',
+    'KeyZ': 'system:undo',
+    'KeyY': 'system:redo',
 });
 
 inputManager.init();
-
-GLOBAL_BUS.on('action:add_object', ({ type }) => 
-{
-    if(type === 'cube') 
-    {
-        const geo = new THREE.BoxGeometry(1, 1, 1);
-        const mat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
-        const cube = new THREE.Mesh(geo, mat);
-        cube.position.y = 0.5;
-        engine.sceneManager.addObject(cube);
-    }
-});
 

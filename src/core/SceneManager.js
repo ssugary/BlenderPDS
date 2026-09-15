@@ -30,7 +30,7 @@ export class SceneManager
         return object.uuid;
     }
 
-    removeObject(uuid) 
+    removeObject(uuid, dispose = true) 
     {
         const object = this.objectsMap.get(uuid);
         if (object) 
@@ -38,17 +38,23 @@ export class SceneManager
             this.scene.remove(object);
             this.objectsMap.delete(uuid);
 
-            if (object.geometry) 
-                object.geometry.dispose();
-            // a mecommandManagersh can have an array of materials
-            if (Array.isArray(object.material))
-                object.material.forEach(material => material.dispose());
-            else if (object.material)
-                object.material.dispose();
+            if (dispose)
+                this.disposeObject(object);
 
             return true;
         }
         return false;
+    }
+
+    disposeObject(object)
+    {
+        if (object.geometry)
+            object.geometry.dispose();
+
+        if (Array.isArray(object.material))
+            object.material.forEach(material => material.dispose());
+        else if (object.material)
+            object.material.dispose();
     }
 
     getObject(uuid) 

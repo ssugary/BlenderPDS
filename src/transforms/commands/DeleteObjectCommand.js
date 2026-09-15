@@ -1,22 +1,27 @@
-import { Command } from "./Command";
+import { Command } from "./Command.js";
 
-export class DeletionCommand extends Command{
-
-    constructor(createObjectTool, deleteTool, object3D, oldObject3D){
-        super()
-        this.createObjectTool = createObjectTool
-        this.deleteTool = deleteTool
-        this.object = object3D
-        this.oldObject = oldObject3D.clone()
+export class DeleteObjectCommand extends Command
+{
+    constructor(createObjectTool, deleteTool, object3D)
+    {
+        super();
+        this.createObjectTool = createObjectTool;
+        this.deleteTool = deleteTool;
+        this.object = object3D;
     }
 
-    execute(){
-        this.deleteTool.deleteObject(this.object)
+    execute()
+    {
+        this.deleteTool.deleteObject(this.object);
     }
-    undo(){
-        this.createObjectTool.createObject(this.oldObject)
+
+    undo()
+    {
+        this.createObjectTool.createObject(this.object);
     }
-    redo(){
-        this.execute()
+
+    redo()
+    {
+        this.execute();
     }
 }

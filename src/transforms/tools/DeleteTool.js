@@ -1,27 +1,42 @@
 import { Tool } from './Tool.js';
+import { DeleteObjectCommand } from '../commands/DeleteObjectCommand.js';
 
-export class DeleteTool extends Tool{
-
-    constructor( sceneManager, commandManager ){
-        super()
-        this.sceneManager = sceneManager
-        this.commandManager = commandManager
+export class DeleteTool extends Tool
+{
+    constructor(sceneManager, commandManager, selectionManager, transformControls)
+    {
+        super();
+        this.sceneManager = sceneManager;
+        this.commandManager = commandManager;
+        this.selectionManager = selectionManager;
+        this.transformControls = transformControls;
+        this.createObjectTool = null;
     }
 
-    deleteObject(object){
-        if (object) 
-        {
-            this.sceneManager.getNativeScene().remove(object);
-            this.sceneManager.objectsMap.delete(object.uuid);
+    setCreateObjectTool(createObjectTool)
+    {
+        this.createObjectTool = createObjectTool;
+    }
 
-            if (object.geometry) 
-                object.geometry.dispose();
-            // a mecommandManagersh can have an array of materials
-            if (Array.isArray(object.material))
-                object.material.forEach(material => material.dispose());
-            else if (object.material)
-                object.material.dispose();
+    deleteSelected(selectedObject)
+    {
+        if (!selectedObject || !this.createObjectTool)
+            return;
 
-        }
+        this.commandManager.execute(new DeleteObjectCommand(this.createObjectTool, this, selectedObject));
+    }
+
+    deleteObject(object)
+    {
+        if (!object)
+            return;
+
+        if (this.transformControls?.object === object)
+            this.transformControls.detach();
+
+        if (this.selectionManager?.getSelected() === object)
+            this.selectionManager.deselectAll();
+
+        this.sceneManager.removeObject(object.uuid, false);
     }
 }

@@ -8,6 +8,9 @@ export class CommandManager
 
     execute(command) 
     {
+        if (!command)
+            return;
+
         command.execute();
         this.undoStack.push(command);
         this.redoStack = []; 

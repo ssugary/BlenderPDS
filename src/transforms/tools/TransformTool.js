@@ -1,4 +1,6 @@
-import { Tool } from "./Tool";
+import { Tool } from "./Tool.js";
+import { TransformCommand } from '../commands/TransformCommand.js';
+
 export class TransformTool extends Tool 
 {
     constructor(controls, commandManager, mode) 

@@ -1,21 +1,27 @@
-import { Command } from "./Command"
+import { Command } from "./Command.js";
 
 export class AddObjectCommand extends Command
 {
-    constructor(createObjectTool, deleteTool, object3D, newObject3D){
-        super()
-        this.createObjectTool = createObjectTool
-        this.deleteTool = deleteTool
-        this.object = object3D
-        this.newObject = newObject3D.clone()
+    constructor(createObjectTool, deleteTool, object3D)
+    {
+        super();
+        this.createObjectTool = createObjectTool;
+        this.deleteTool = deleteTool;
+        this.object = object3D;
     }
-    execute() {
-        this.createObjectTool.createObject(this.object)
+
+    execute() 
+    {
+        this.createObjectTool.createObject(this.object);
     }
-    undo() {
-        this.deleteTool.deleteObject(this.object)
+
+    undo() 
+    {
+        this.deleteTool.deleteObject(this.object);
     }
-    redo() {
-        this.execute()
+
+    redo() 
+    {
+        this.execute();
     } 
 }
