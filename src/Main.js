@@ -1,7 +1,8 @@
 import { Engine } from './core/Engine.js';
 import { InputManager } from './core/InputManager.js';
 import { UIManager } from './ui/UIManager.js';
-
+import { GLOBAL_BUS } from './core/EventBus.js';
+import { ObjectParser } from './core/ObjectParser.js';
 const engine = new Engine(document.body);
 engine.start();
 
@@ -27,4 +28,7 @@ const inputManager = new InputManager({
 });
 
 inputManager.init();
+
+
+
 

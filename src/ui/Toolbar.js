@@ -17,6 +17,8 @@ export class Toolbar
 
         this.selectGeometry = document.getElementById('addGeometry');
 
+        this.btnAddModel = document.getElementById('addModel');
+        this.btnExportModel = document.getElementById('exportModel');
         this.bindEvents();
         this.listenSystemState();
     }
@@ -33,6 +35,9 @@ export class Toolbar
             GLOBAL_BUS.emit('action:delete_object');
         });
 
+        this.btnAddModel?.addEventListener('click', () =>{
+            GLOBAL_BUS.emit('action:add_object', { type: 'model' });
+        });
         this.btnTranslate?.addEventListener('click', () => 
         {
             GLOBAL_BUS.emit('tool:change', 'translate');
@@ -71,6 +76,10 @@ export class Toolbar
         this.btnFace?.addEventListener('click', () => 
         {
             GLOBAL_BUS.emit('tool:change', 'face')
+        });
+        this.btnExportModel?.addEventListener('click', () =>
+        {
+            GLOBAL_BUS.emit('action:export_model');
         });
     }
 

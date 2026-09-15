@@ -15,7 +15,8 @@ import { MeshEditTool } from '../transforms/tools/MeshEditTool.js';
 import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy } from './selection/SelectionStrategy.js';
 import { EditMode, ObjectMode } from './selection/EditorMode.js';
 import { EditorModeManager } from './selection/EditorModeManager.js';
-
+import { FileExporter } from './utils/FileExporter.js';
+import { ObjectParser } from './ObjectParser.js';
 export class Engine 
 {
     constructor(domElement) 
@@ -112,6 +113,10 @@ export class Engine
 
     bindEvents() 
     {
+        GLOBAL_BUS.on('action:add_object', ({ type }) => 
+        {
+            ObjectParser.parseObject(type, this.sceneManager);
+        });
         GLOBAL_BUS.on('ui:canvas_clicked', (coords) => 
         {
             if (this.transformControls.axis !== null) 
@@ -189,6 +194,8 @@ export class Engine
         {
             this.cameraManager.changeMode();
         });
-
+        GLOBAL_BUS.on('action:export_model', () => {
+            FileExporter.exportSceneAsOBJ(this.sceneManager, 'scene.obj');
+        });
     }
 }
