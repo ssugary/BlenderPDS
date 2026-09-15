@@ -14,7 +14,7 @@ export class Toolbar
         this.btnEdge = document.getElementById('edge');
         this.btnFace = document.getElementById('face');
         this.btnAddModel = document.getElementById('addModel');
-
+        this.btnExportModel = document.getElementById('exportModel');
         this.bindEvents();
         this.listenSystemState();
     }
@@ -67,6 +67,10 @@ export class Toolbar
         this.btnFace?.addEventListener('click', () => 
         {
             GLOBAL_BUS.emit('tool:change', 'face')
+        });
+        this.btnExportModel?.addEventListener('click', () =>
+        {
+            GLOBAL_BUS.emit('action:export_model');
         });
     }
 
