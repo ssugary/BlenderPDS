@@ -151,7 +151,7 @@ export class Engine
                 this.editorModeManager.toggle(this.selectionManager.getSelected());
 
             if (action === 'action:delete_object' && this.editorModeManager.current === 'object')
-                this.deleteTool.deleteSelected(this.selectionManager.getSelected());
+                this.deleteTool.createCommand(this.selectionManager.getSelected());
 
             if (action === 'system:undo') 
             {
@@ -167,7 +167,7 @@ export class Engine
 
         GLOBAL_BUS.on('action:add_object', ({ type }) => 
         {
-            const object = this.createObjectTool.createPrimitive(type);
+            const object = this.createObjectTool.createCommand(type);
             if (!object)
                 return;
 
@@ -180,7 +180,7 @@ export class Engine
             if (this.editorModeManager.current !== 'object')
                 return;
 
-            this.deleteTool.deleteSelected(this.selectionManager.getSelected());
+            this.deleteTool.createCommand(this.selectionManager.getSelected());
         });
 
         GLOBAL_BUS.on('camera:change_mode', () => 

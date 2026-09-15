@@ -18,8 +18,7 @@ export class DeleteTool extends Tool
         this.createObjectTool = createObjectTool;
     }
 
-    deleteSelected(selectedObject)
-    {
+    createCommand(selectedObject){
         if (!selectedObject || !this.createObjectTool)
             return;
 

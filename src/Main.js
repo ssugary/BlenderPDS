@@ -21,6 +21,9 @@ const inputManager = new InputManager({
     'Backspace': 'action:delete_object',
     'KeyZ': 'system:undo',
     'KeyY': 'system:redo',
+    'KeyG': 'tool:translate',
+    'KeyR': 'tool:rotate',
+    'KeyS': 'tool:scale'
 });
 
 inputManager.init();

@@ -17,9 +17,8 @@ export class CreateObjectTool extends Tool
         this.deleteTool = deleteTool;
     }
 
-    createPrimitive(type)
-    {
-        const object = this.buildPrimitive(type);
+    createCommand(objectType){
+        const object = this.buildPrimitive(objectType);
         if (!object || !this.deleteTool)
             return null;
 
