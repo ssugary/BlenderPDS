@@ -4,19 +4,18 @@ import { AddObjectCommand } from '../commands/AddObjectCommand.js';
 import { SceneManager } from '../../core/SceneManager.js';
 import { CommandManager } from '../CommandManager.js';
 import { DeleteTool } from './DeleteTool.js';
-
 export class CreateObjectTool extends Tool
 {
 
     private sceneManager:SceneManager;
     private commandManager:CommandManager;
-    private deleteTool:DeleteTool;
-    
+    private deleteTool:DeleteTool | any;
+
     constructor(sceneManager:SceneManager, commandManager:CommandManager){
         super();
         this.sceneManager = sceneManager;
         this.commandManager = commandManager;
-        this.deleteTool = new DeleteTool();
+        this.deleteTool = null;
     }
 
     setDeleteTool(deleteTool:DeleteTool){
