@@ -1,8 +1,15 @@
 {
   "dependencies": {
-    "three": "^0.185.1"
+    "three": "^0.160.1"
   },
   "devDependencies": {
+    "@types/three": "^0.160.0",
+    "typescript": "^7.0.2",
     "vite": "^8.3.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   }
 }
