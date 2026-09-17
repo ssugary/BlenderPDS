@@ -1,3 +1,3 @@
 //descrição dos tipos Event
-enum Event{
+export enum Event{
 }

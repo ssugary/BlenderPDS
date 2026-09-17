@@ -1,21 +1,29 @@
 import * as THREE from 'three';
 import { Tool } from "./Tool.js";
 import { AddObjectCommand } from '../commands/AddObjectCommand.js';
+import { SceneManager } from '../../core/SceneManager.js';
+import { CommandManager } from '../CommandManager.js';
+import { DeleteTool } from './DeleteTool.js';
 
 export class CreateObjectTool extends Tool
 {
-    constructor(sceneManager, commandManager){
+
+    private sceneManager:SceneManager;
+    private commandManager:CommandManager;
+    private deleteTool:DeleteTool;
+    
+    constructor(sceneManager:SceneManager, commandManager:CommandManager){
         super();
         this.sceneManager = sceneManager;
         this.commandManager = commandManager;
-        this.deleteTool = null;
+        this.deleteTool = new DeleteTool();
     }
 
-    setDeleteTool(deleteTool){
+    setDeleteTool(deleteTool:DeleteTool){
         this.deleteTool = deleteTool;
     }
 
-    createCommand(objectType){
+    createCommand(objectType:string){
         const object = this.buildPrimitive(objectType);
         if (!object || !this.deleteTool)
             return null;
@@ -24,14 +32,14 @@ export class CreateObjectTool extends Tool
         return object;
     }
 
-    createObject(object){
+    createObject(object:THREE.Object3D){
         if (!object)
             return;
 
         this.sceneManager.addObject(object);
     }
 
-    buildPrimitive(type){
+    buildPrimitive(type:string){
         if (type === 'cube'){
             const geometry = new THREE.BoxGeometry(1, 1, 1);
             const material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
