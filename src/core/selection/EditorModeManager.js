@@ -1,4 +1,4 @@
-import { GLOBAL_BUS } from '../EventBus.js';
+import { GLOBAL_BUS } from '../EventBus.ts';
 
 export class EditorModeManager 
 {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLOBAL_BUS } from '../EventBus.js';
+import { GLOBAL_BUS } from '../EventBus.ts';
 
 export class Navigation 
 {

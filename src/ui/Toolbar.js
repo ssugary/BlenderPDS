@@ -1,4 +1,4 @@
-import { GLOBAL_BUS } from '../core/EventBus.js';
+import { GLOBAL_BUS } from '../core/EventBus.ts';
 
 export class Toolbar
 {
