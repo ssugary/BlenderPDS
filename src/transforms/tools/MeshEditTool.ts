@@ -2,10 +2,30 @@ import * as THREE from 'three';
 import { Tool } from './Tool.js';
 import { HEMesh } from '../../config/HalfEdge.js';
 import { MeshEditCommand, FaceExtrudeCommand } from '../commands/MeshEditCommand.js';
+import { TransformControls } from 'three/examples/jsm/Addons.js';
+import { CommandManager } from '../CommandManager.js';
+import { SceneManager } from '../../core/SceneManager.js';
+import { SelectionStrategy } from '../../core/selection/SelectionStrategy.js';
 
 export class MeshEditTool extends Tool 
 {
-    constructor(controls, commandManager, sceneManager, strategy) 
+    private controls:TransformControls;
+    private commandManager:CommandManager;
+    private sceneManager:SceneManager;
+    private strategy:SelectionStrategy;
+
+    private activeMesh:THREE.Mesh;
+    private activeHEMesh: HEMesh;
+    private selectedElements:Array<any>
+    private selectedVertices:Array<any>
+
+    private active:Boolean;
+
+    private pickHelper:any;
+    private highlightObject:any;
+    private gizmoHelper:any;
+
+    constructor(controls:TransformControls, commandManager:CommandManager, sceneManager:SceneManager, strategy:SelectionStrategy) 
     {
         super();
         this.controls = controls;
@@ -13,10 +33,12 @@ export class MeshEditTool extends Tool
         this.sceneManager = sceneManager;
         this.strategy = strategy;
 
-        this.activeMesh = null;
-        this.activeHEMesh = null;
+        this.activeMesh = new THREE.Mesh;
+        this.activeHEMesh = new HEMesh;
         this.selectedElements = [];
         this.selectedVertices = [];
+
+        this.active = false;
 
         this.pickHelper = null;
         this.highlightObject = null;
@@ -51,7 +73,7 @@ export class MeshEditTool extends Tool
         this.sceneManager.getNativeScene().add(this.highlightObject);
     }
 
-    setStrategy(strategy) 
+    setStrategy(strategy:SelectionStrategy) 
     {
         this.clearSelection();
         this.strategy = strategy;
@@ -65,10 +87,11 @@ export class MeshEditTool extends Tool
         }
     }
 
-    setTargetMesh(mesh) 
+    setTargetMesh(mesh:any) 
     {
         this.clearSelection();
         this.activeMesh = mesh;
+        this.active = true
 
         if(this.activeMesh) 
         {
@@ -85,7 +108,7 @@ export class MeshEditTool extends Tool
         }
     }
 
-    syncHelperTransform(obj) 
+    syncHelperTransform(obj:any) 
     {
         obj.position.copy(this.activeMesh.position);
         obj.rotation.copy(this.activeMesh.rotation);
@@ -115,11 +138,10 @@ export class MeshEditTool extends Tool
         if(this.pickHelper) 
             this.pickHelper.visible = false;
 
-        this.activeMesh = null;
-        this.activeHEMesh = null;
+        this.active = false;
     }
 
-    selectAt(intersect) 
+    selectAt(intersect:any) 
     {
         if(!this.activeHEMesh) 
             return;
@@ -157,7 +179,7 @@ export class MeshEditTool extends Tool
         return this.selectedVertices.map(v => v.position.clone());
     }
 
-    createCommand(object, before, after) 
+    createCommand(object:any, before:any, after:any) 
     {
         return new MeshEditCommand(this, this.activeMesh, this.selectedVertices, before, after);
     }
@@ -199,26 +221,26 @@ export class MeshEditTool extends Tool
             return;
 
         const geo = this.activeMesh.geometry;
-        const before = { positions: geo.attributes.position.array.slice(), indices: geo.index.array.slice() };
+        const before = { positions: geo.attributes.position.array.slice(), indices: geo.index?.array.slice() };
 
         this.activeHEMesh.extrudeFaceGroup(this.selectedElements);
         this.selectedVertices = this.activeHEMesh.getGroupVertices(this.selectedElements);
 
         this.rebuildGeometry();
 
-        const after = {positions: this.activeMesh.geometry.attributes.position.array.slice(), indices: this.activeMesh.geometry.index.array.slice()};
+        const after = {positions: this.activeMesh.geometry.attributes.position.array.slice(), indices: this.activeMesh.geometry.index?.array.slice()};
 
         this.recenterGizmo();
         this.updateHighlight();
         this.highlightObject.visible = true;
         this.controls.attach(this.gizmoHelper);
 
-        const command = new FaceExtrudeCommand(this.activeMesh, before, after, (mesh, data) => this.applyGeometrySnapshot(data));
+        const command = new FaceExtrudeCommand(this.activeMesh, before, after, (mesh:any, data:any) => this.applyGeometrySnapshot(data));
         this.commandManager.undoStack.push(command);
         this.commandManager.redoStack = [];
     }
 
-    applyGeometrySnapshot(data) 
+    applyGeometrySnapshot(data:any) 
     {
         this.activeMesh.geometry.dispose();
         const g = new THREE.BufferGeometry();

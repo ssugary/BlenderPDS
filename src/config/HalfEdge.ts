@@ -2,47 +2,123 @@ import * as THREE from 'three';
 
 export class HEVertex 
 {
-    public position:THREE.Vector3;
-    public halfEdge:HEEdge;
+    public position?:THREE.Vector3;
+    public halfEdge?:HEEdge;
+
     constructor(x:number, y:number, z:number) 
     {
         this.position = new THREE.Vector3(x, y, z);
         this.halfEdge = new HEEdge(); 
     }
+
+    public setXYZ(x:number, y:number, z:number):void
+    {
+        this.position = new THREE.Vector3(x,y,z);
+    }
+    public getXYZ():THREE.Vector3
+    {
+        if(this.position) return this.position;
+        else throw Error('HalfEdge position undefined');
+    }
+
+    public setHalfEdge(halfEdge:HEEdge):void
+    {
+        this.halfEdge = halfEdge;
+    }
+    public getHalfEdge():HEEdge
+    {
+        if(this.halfEdge) return this.halfEdge;
+        else throw Error('HalfEdge undefined');
+    }
 }
 
 export class HEFace 
 {
-    public halfEdge:HEEdge;
+    public halfEdge?:HEEdge;
     constructor() 
     {
         this.halfEdge = new HEEdge(); 
     }
+
+    public setHalfEdge(halfEdge:HEEdge):void
+    {
+        this.halfEdge = halfEdge;
+    }
+    public getHalfEdge():HEEdge
+    {
+        if(this.halfEdge) return this.halfEdge;
+        else throw Error('HalfFace halfEdge undefined');
+    }
 }
 
-export class HEEdge 
-{
-    public vertex:any;
-    public twin:any;
-    public next:any;
-    public prev:any;
-    public face:any;
-    
-    constructor() 
+export class HEEdge {
+    public vertex?: HEVertex;
+    public twin?: HEEdge;
+    public next?: HEEdge;
+    public prev?: HEEdge;
+    public face?: HEFace;
+
+    constructor() {}
+
+    public deleteTwin():void
     {
-        this.vertex = null; 
-        this.twin = null;   
-        this.next = null;   
-        this.prev = null;   
-        this.face = null;   
+        this.twin = undefined;
+    }
+
+    public setVertex(vertex: HEVertex): void 
+    {
+        this.vertex = vertex;
+    }
+    public getVertex(): HEVertex {
+        if (this.vertex) return this.vertex;
+        else throw Error('HalfEdge vertex undefined');
+    }
+
+    public setTwin(twin: HEEdge): void {
+        this.twin = twin;
+    }
+    public getTwin(): HEEdge {
+        if (this.twin) return this.twin;
+        else throw Error('HalfEdge twin undefined');
+    }
+
+    public setNext(next: HEEdge): void {
+        this.next = next;
+    }
+    public getNext(): HEEdge {
+        if (this.next) return this.next;
+        else throw Error('HalfEdge next undefined');
+    }
+
+    public setPrev(prev: HEEdge): void {
+        this.prev = prev;
+    }
+    public getPrev(): HEEdge {
+        if (this.prev) return this.prev;
+        else throw Error('HalfEdge prev undefined');
+    }
+
+    public setFace(face: HEFace): void {
+        this.face = face;
+    }
+    public getFace(): HEFace {
+        if (this.face) return this.face;
+        else throw Error('HalfEdge face undefined');
+    }
+
+    public hasTwin(): boolean {
+        return this.twin !== undefined;
+    }
+    public hasFace(): boolean {
+        return this.face !== undefined;
     }
 }
 
 export class HEMesh 
 {
-    public vertices:any;
-    public faces:any;
-    public edges:any;
+    public vertices:Array<HEVertex>;
+    public faces:Array<HEFace>;
+    public edges:Array<HEEdge>;
     constructor() 
     {
         this.vertices = [];
@@ -51,28 +127,28 @@ export class HEMesh
     }
 
 
-    faceVertices(face:any) 
+    faceVertices(face:HEFace):Array<HEVertex>
     {
-        const verts = [];
-        let edge = face.halfEdge;
+        const verts = new Array<HEVertex>;
+        let edge = face.getHalfEdge();
         do 
         { 
-            verts.push(edge.vertex); edge = edge.next; 
+            verts.push(edge.getVertex()); 
+            edge = edge.getNext(); 
         } while(edge !== face.halfEdge);
         
         return verts;
     }
-    computeNormal(face:any) 
+    computeNormal(face:HEFace):THREE.Vector3
     {
         const [a, b, c] = this.faceVertices(face);
-
-        const ab = a.position.clone().sub(b.position);
-        const cb = c.position.clone().sub(b.position);
-
+        const ab = a.getXYZ().clone().sub(b.getXYZ());
+        const cb = c.getXYZ().clone().sub(b.getXYZ());
+        
         return cb.cross(ab).normalize();
     }
 
-    getCoplanarGroup(startFace:any, dotThreshold:number = 0.999) 
+    getCoplanarGroup(startFace:HEFace, dotThreshold:number = 0.999) 
     {
         const groupNormal = this.computeNormal(startFace);
         const visited = new Set([startFace]);
@@ -81,85 +157,93 @@ export class HEMesh
         while(stack.length) 
         {
             const face = stack.pop();
-            let edge = face.halfEdge;
+       
+            let edge = face?.getHalfEdge();
             do 
             {
-                const twin = edge.twin;
-
-                if (twin && !visited.has(twin.face) && this.computeNormal(twin.face).dot(groupNormal) > dotThreshold) 
+                const twin = edge?.getTwin();
+                if(twin && twin.getFace())
                 {
-                    visited.add(twin.face);
-                    stack.push(twin.face);
+                    const twinNormal = this.computeNormal(twin.getFace());
+                    if(twinNormal && groupNormal)
+                    {
+                        if (!visited.has(twin.getFace()) && twinNormal.dot(groupNormal) > dotThreshold) 
+                        {
+                            visited.add(twin.getFace());
+                            stack.push(twin.getFace());
+                        }
+                    }
+                    edge = edge?.getNext();
                 }
-
-                edge = edge.next;
-
-            } while(edge !== face.halfEdge);
+            } while(edge !== face?.getHalfEdge());
         }
 
         return Array.from(visited);
     }
 
-    getGroupVertices(faces:any) 
+    getGroupVertices(faces:Array<HEFace>):Array<HEVertex>
     {
-        const set = new Set();
-        faces.forEach((f:any) => this.faceVertices(f).forEach(v => set.add(v)));
+        const set = new Set<HEVertex>();
+        faces.forEach((f:HEFace) => this.faceVertices(f).forEach((v:HEVertex) => set.add(v)));
 
         return Array.from(set);
     }
 
-    getGroupBoundaryEdges(faces:any) 
+    getGroupBoundaryEdges(faces:Array<HEFace>):Array<HEEdge>
     {
         const faceSet = new Set(faces);
-        const boundary:any = [];
-        faces.forEach((face:any) => 
+        const boundary = new Array<HEEdge>;
+        faces.forEach((face:HEFace) => 
         {
-            let edge = face.halfEdge;
+            let edge = face.getHalfEdge();
             do 
             {
-                if (!edge.twin || !faceSet.has(edge.twin.face)) 
+                if (!edge.getTwin() || !faceSet.has(edge.getTwin().getFace())) 
                     boundary.push(edge);
-                edge = edge.next;
+                edge = edge.getNext();
             } while(edge !== face.halfEdge);
         });
         return boundary;
     }
 
-    extrudeFaceGroup(faces:any) 
+    extrudeFaceGroup(faces:Array<HEFace>) 
     {
         const boundaryEdges = this.getGroupBoundaryEdges(faces);
         const groupVerts = this.getGroupVertices(faces);
 
-        const byOrigin = new Map(boundaryEdges.map((e:any) => [e.vertex, e]));
-        const loopVerts = [];
-        let current = boundaryEdges[0];
+        const byOrigin = new Map(boundaryEdges.map((e:HEEdge) => [e.getVertex(), e]));
+        const loopVerts = new Array<HEVertex>;
+        let current:HEEdge | undefined = boundaryEdges[0]; // quick fix 
         const guard = boundaryEdges.length + 1;
 
         for(let i = 0; i < guard && current; i++) 
         {
-            loopVerts.push(current.vertex);
-            current = byOrigin.get(current.next.vertex);
+            loopVerts.push(current.getVertex());
+            current = byOrigin.get(current.getNext().getVertex());
             if (current === boundaryEdges[0])
                 break;
         }
 
-        const vertMap = new Map();
-        groupVerts.forEach((v:any) => 
+        const vertMap = new Map<HEVertex, HEVertex>();
+        groupVerts.forEach((v:HEVertex) => 
         {
-            const nv = new HEVertex(v.position.x, v.position.y, v.position.z);
+            const nv = new HEVertex(v.getXYZ().x, v.getXYZ().y, v.getXYZ().z);
             this.vertices.push(nv);
             vertMap.set(v, nv);
         });
 
-        faces.forEach((face:any) => 
+        faces.forEach((face:HEFace) => 
         {
-            let edge = face.halfEdge;
+            let edge = face.getHalfEdge();
             do 
             {
-                edge.vertex = vertMap.get(edge.vertex);
-                edge.vertex.halfEdge = edge;
-                edge = edge.next;
-            } while(edge !== face.halfEdge);
+                const auxEdge = vertMap.get(edge.getVertex())
+                if (auxEdge) edge.setVertex(auxEdge);
+                else throw new Error('Edge not found in map');
+
+                edge.getVertex().setHalfEdge(edge)
+                edge = edge.getNext();
+            } while(edge !== face.getHalfEdge());
         });
 
         const n = loopVerts.length;
@@ -192,7 +276,7 @@ export class HEMesh
 
 
 
-    fromBufferGeometry(geometry:any) 
+    fromBufferGeometry(geometry:THREE.BufferGeometry) 
     {
         const positions = geometry.attributes.position;
         const indices = geometry.index ? geometry.index.array : null;
@@ -246,9 +330,9 @@ export class HEMesh
 
             this.edges.push(he0, he1, he2);
 
-            const connectTwin = (edge:any, fromVert:any, toVert:any) => 
+            const connectTwin = (edge:HEEdge, fromVert:HEVertex, toVert:HEVertex) => 
             {
-                const edgeKey = `${toVert.position.toArray().join(',')}-${fromVert.position.toArray().join(',')}`;
+                const edgeKey = `${toVert.getXYZ().toArray().join(',')}-${fromVert.getXYZ().toArray().join(',')}`;
                 if (edgeMap.has(edgeKey)) 
                 {
                     const twinEdge = edgeMap.get(edgeKey);
@@ -258,7 +342,7 @@ export class HEMesh
                 } 
                 else 
                 {
-                    const reverseKey = `${fromVert.position.toArray().join(',')}-${toVert.position.toArray().join(',')}`;
+                    const reverseKey = `${fromVert.getXYZ().toArray().join(',')}-${toVert.getXYZ().toArray().join(',')}`;
                     edgeMap.set(reverseKey, edge);
                 }
             };
@@ -271,26 +355,26 @@ export class HEMesh
 
     toBufferGeometry() 
     {
-        const positions:any = [];
-        const indices:any = [];
+        const positions = new Array<number>;
+        const indices:Array<number> = [];
         const vertexToIndex = new Map();
 
-        this.vertices.forEach((v:any, index:any) => 
+        this.vertices.forEach((v:HEVertex, index:number) => 
         {
-            positions.push(v.position.x, v.position.y, v.position.z);
+            positions.push(v.getXYZ().x, v.getXYZ().y, v.getXYZ().z);
             vertexToIndex.set(v, index);
         });
         
-        this.faces.forEach((face:any) => 
+        this.faces.forEach((face:HEFace) => 
         {
-            let edge = face.halfEdge;
+            let edge = face.getHalfEdge();
             const faceIndices = [];
             
             do 
             {
-                faceIndices.push(vertexToIndex.get(edge.vertex));
-                edge = edge.next;
-            } while(edge !== face.halfEdge);
+                faceIndices.push(vertexToIndex.get(edge.getVertex()));
+                edge = edge.getNext();
+            } while(edge !== face.getHalfEdge());
 
             if (faceIndices.length === 3) 
                 indices.push(faceIndices[0], faceIndices[1], faceIndices[2]);
@@ -310,25 +394,25 @@ export class HEMesh
     recalculateTwins() 
     {
         const edgeMap = new Map();
-        this.edges.forEach((e:any) => e.twin = null); 
+        this.edges.forEach((e:HEEdge) => e.deleteTwin()); 
 
-        this.edges.forEach((edge:any) => 
+        this.edges.forEach((edge:HEEdge) => 
         {
-            const fromVert = edge.vertex;
-            const toVert = edge.next.vertex;
+            const fromVert = edge.getVertex();
+            const toVert = edge.getNext().getVertex();
             
-            const key = `${toVert.position.x},${toVert.position.y},${toVert.position.z}-${fromVert.position.x},${fromVert.position.y},${fromVert.position.z}`;
+            const key = `${toVert.getXYZ().x},${toVert.getXYZ().y},${toVert.getXYZ().z}-${fromVert.getXYZ().x},${fromVert.getXYZ().y},${fromVert.getXYZ().z}`;
             
             if (edgeMap.has(key)) 
             {
                 const twin = edgeMap.get(key);
-                edge.twin = twin;
-                twin.twin = edge;
+                edge.setTwin(twin);
+                twin.setTwin(edge);
                 edgeMap.delete(key);
             } 
             else 
             {
-                const revKey = `${fromVert.position.x},${fromVert.position.y},${fromVert.position.z}-${toVert.position.x},${toVert.position.y},${toVert.position.z}`;
+                const revKey = `${fromVert.getXYZ().x},${fromVert.getXYZ().y},${fromVert.getXYZ().z}-${toVert.getXYZ().x},${toVert.getXYZ().y},${toVert.getXYZ().z}`;
                 edgeMap.set(revKey, edge);
             }
         });
@@ -336,16 +420,16 @@ export class HEMesh
 
     getUniqueEdges() 
     {
-        const seen = new Set();
-        const result:any = [];
+        const seen = new Set<HEEdge>();
+        const result: { edge: HEEdge; v0: HEVertex; v1: HEVertex }[] = [];
 
-        this.edges.forEach((edge:any) => 
+        this.edges.forEach((edge:HEEdge) => 
         {
-            if(seen.has(edge) || (edge.twin && seen.has(edge.twin))) 
+            if(seen.has(edge) || (edge.getTwin() && seen.has(edge.getTwin()))) 
                 return;
 
             seen.add(edge);
-            result.push({edge, v0: edge.vertex, v1: edge.next.vertex});
+            result.push({edge, v0: edge.getVertex(), v1: edge.getNext().getVertex()});
         });
 
         return result;
