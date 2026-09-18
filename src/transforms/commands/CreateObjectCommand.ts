@@ -1,8 +1,14 @@
+import { Object3D } from "three";
+import { CreateObjectTool } from "../tools/CreateObjectTool.js";
+import { DeleteTool } from "../tools/DeleteTool.js";
 import { Command } from "./Command.js";
 
 export class AddObjectCommand extends Command
 {
-    constructor(createObjectTool, deleteTool, object3D)
+    private createObjectTool:CreateObjectTool;
+    private deleteTool:DeleteTool;
+    private object:Object3D
+    constructor(createObjectTool:CreateObjectTool, deleteTool:DeleteTool, object3D:Object3D)
     {
         super();
         this.createObjectTool = createObjectTool;

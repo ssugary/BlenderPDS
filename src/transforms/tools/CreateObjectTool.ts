@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Tool } from "./Tool.js";
-import { AddObjectCommand } from '../commands/AddObjectCommand.js';
+import { AddObjectCommand } from '../commands/CreateObjectCommand.js';
 import { SceneManager } from '../../core/SceneManager.js';
 import { CommandManager } from '../CommandManager.js';
 import { DeleteTool } from './DeleteTool.js';
