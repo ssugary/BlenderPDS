@@ -12,7 +12,7 @@ export class MeshEditTool extends Tool
     private controls:TransformControls;
     private commandManager:CommandManager;
     private sceneManager:SceneManager;
-    private strategy:SelectionStrategy;
+    public strategy:SelectionStrategy;
 
     private activeMesh:THREE.Mesh;
     private activeHEMesh: HEMesh;
@@ -48,6 +48,13 @@ export class MeshEditTool extends Tool
 
         this.rebuildAuxObjects();
         this.bindControls();
+    }
+    
+
+    public getPickhelper():THREE.Object3D | null
+    {
+        if(this.pickHelper) return this.pickHelper;
+        else return null;
     }
 
     public rebuildAuxObjects():void
@@ -116,23 +123,23 @@ export class MeshEditTool extends Tool
         obj.scale.copy(this.activeMesh.scale);
     }
 
-    public getPickTarget()
+    public getPickTarget():THREE.Object3D | null
     {
         return this.strategy.usesMeshAsPickTarget() ? this.activeMesh : this.pickHelper;
     }
 
-    public clearSelection() 
+    public clearSelection():void
     {
         this.controls.detach();
 
         if(this.highlightObject) 
             this.highlightObject.visible = false;
 
-        this.selectedElements = [];
-        this.selectedVertices = [];
+        this.selectedElements = new Array<any>;
+        this.selectedVertices = new Array<HEVertex>;
     }
 
-    public deactivate() 
+    public deactivate():void
     {
         this.clearSelection();
 
@@ -142,7 +149,7 @@ export class MeshEditTool extends Tool
         this.active = false;
     }
 
-    public selectAt(intersect:any) 
+    public selectAt(intersect:any):void
     {
         if(!this.activeHEMesh) 
             return;
@@ -161,15 +168,15 @@ export class MeshEditTool extends Tool
         this.controls.attach(this.gizmoHelper);
     }
 
-    public recenterGizmo() 
+    public recenterGizmo():void
     {
         const center = new THREE.Vector3();
-        this.selectedVertices.forEach(v => center.add(v.getXYZ()));
+        this.selectedVertices.forEach((v:HEVertex) => center.add(v.getXYZ()));
         center.divideScalar(this.selectedVertices.length);
         this.gizmoHelper.position.copy(center).applyMatrix4(this.activeMesh.matrixWorld);
     }
 
-    public updateHighlight() 
+    public updateHighlight():void
     {
         if(this.highlightObject)
         {
@@ -178,17 +185,17 @@ export class MeshEditTool extends Tool
         }
     }
 
-    public captureState() 
+    public captureState():Array<THREE.Vector3>
     {
         return this.selectedVertices.map(v => v.getXYZ().clone());
     }
 
-    public createCommand(object:any, before:any, after:any) 
+    public createCommand(object:any, before:Array<THREE.Vector3>, after:Array<THREE.Vector3>):MeshEditCommand
     {
         return new MeshEditCommand(this, this.activeMesh, this.selectedVertices, before, after);
     }
 
-    public bindControls() 
+    public bindControls():void
     {
         this.controls.addEventListener('change', () => 
         {
@@ -199,11 +206,11 @@ export class MeshEditTool extends Tool
             this.activeMesh.worldToLocal(localPos);
 
             const center = new THREE.Vector3();
-            this.selectedVertices.forEach(v => center.add(v.getXYZ()));
+            this.selectedVertices.forEach((v:HEVertex) => center.add(v.getXYZ()));
             center.divideScalar(this.selectedVertices.length);
 
             const offset = localPos.clone().sub(center);
-            this.selectedVertices.forEach(v => v.getXYZ().add(offset));
+            this.selectedVertices.forEach((v:HEVertex) => v.getXYZ().add(offset));
 
             this.rebuildGeometry();
             this.updateHighlight();
@@ -213,13 +220,13 @@ export class MeshEditTool extends Tool
         });
     }
 
-    public rebuildGeometry() 
+    public rebuildGeometry():void
     {
         this.activeMesh.geometry.dispose();
         this.activeMesh.geometry = this.activeHEMesh.toBufferGeometry();
     }
 
-    public extrudeSelected() 
+    public extrudeSelected():void
     {
         if(!this.strategy.supportsExtrude() || !this.activeMesh || this.selectedElements.length === 0) 
             return;
@@ -240,8 +247,9 @@ export class MeshEditTool extends Tool
         this.controls.attach(this.gizmoHelper);
 
         const command = new FaceExtrudeCommand(this.activeMesh, before, after, (mesh:any, data:any) => this.applyGeometrySnapshot(data));
-        this.commandManager.undoStack.push(command);
-        this.commandManager.redoStack = [];
+        
+        this.commandManager.addToUndoStack(command);
+        this.commandManager.clearRedoStack();
     }
 
     public applyGeometrySnapshot(data:any) 
