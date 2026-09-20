@@ -1,24 +1,27 @@
-import { GLOBAL_BUS } from '../core/EventBus.ts';
+import { GLOBAL_BUS } from '../core/EventBus';
 
 export class Viewport
 {
-    constructor(domElement) 
+    private domElement: HTMLCanvasElement;
+    private pointerDownCoords: { x: number; y: number };
+
+    public constructor(domElement: HTMLCanvasElement) 
     {
         this.domElement = domElement;
         this.pointerDownCoords = { x: 0, y: 0 };
         this.bindEvents();
     }
 
-    bindEvents() 
+    private bindEvents(): void 
     {
-        this.domElement.addEventListener('pointerdown', (e) => 
+        this.domElement.addEventListener('pointerdown', (e: PointerEvent) => 
         {
             if(e.button !== 0) 
                 return;
             this.pointerDownCoords = { x: e.clientX, y: e.clientY };
         });
 
-        this.domElement.addEventListener('pointerup', (e) => 
+        this.domElement.addEventListener('pointerup', (e: PointerEvent) => 
         {
             if(e.button !== 0) 
                 return;
@@ -36,5 +39,4 @@ export class Viewport
             GLOBAL_BUS.emit('ui:canvas_clicked', coords);
         });
     }
-
 }
