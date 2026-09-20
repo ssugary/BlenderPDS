@@ -25,7 +25,8 @@ export class MeshEditTool extends Tool
     private highlightObject:any;
     private gizmoHelper:any;
 
-    constructor(controls:TransformControls, commandManager:CommandManager, sceneManager:SceneManager, strategy:SelectionStrategy) 
+    constructor(controls:TransformControls, commandManager:CommandManager, sceneManager:SceneManager, 
+        strategy:SelectionStrategy)
     {
         super();
         this.controls = controls;
@@ -49,7 +50,7 @@ export class MeshEditTool extends Tool
         this.bindControls();
     }
 
-    rebuildAuxObjects() 
+    public rebuildAuxObjects():void
     {
         if(this.pickHelper) 
             this.sceneManager.removeObject(this.pickHelper.uuid);
@@ -73,7 +74,7 @@ export class MeshEditTool extends Tool
         this.sceneManager.getNativeScene().add(this.highlightObject);
     }
 
-    setStrategy(strategy:SelectionStrategy) 
+    public setStrategy(strategy:SelectionStrategy):void 
     {
         this.clearSelection();
         this.strategy = strategy;
@@ -87,7 +88,7 @@ export class MeshEditTool extends Tool
         }
     }
 
-    setTargetMesh(mesh:any) 
+    public setTargetMesh(mesh:THREE.Mesh):void
     {
         this.clearSelection();
         this.activeMesh = mesh;
@@ -108,19 +109,19 @@ export class MeshEditTool extends Tool
         }
     }
 
-    syncHelperTransform(obj:any) 
+    public syncHelperTransform(obj:THREE.Object3D):void
     {
         obj.position.copy(this.activeMesh.position);
         obj.rotation.copy(this.activeMesh.rotation);
         obj.scale.copy(this.activeMesh.scale);
     }
 
-    getPickTarget() 
+    public getPickTarget()
     {
         return this.strategy.usesMeshAsPickTarget() ? this.activeMesh : this.pickHelper;
     }
 
-    clearSelection() 
+    public clearSelection() 
     {
         this.controls.detach();
 
@@ -131,7 +132,7 @@ export class MeshEditTool extends Tool
         this.selectedVertices = [];
     }
 
-    deactivate() 
+    public deactivate() 
     {
         this.clearSelection();
 
@@ -141,7 +142,7 @@ export class MeshEditTool extends Tool
         this.active = false;
     }
 
-    selectAt(intersect:any) 
+    public selectAt(intersect:any) 
     {
         if(!this.activeHEMesh) 
             return;
@@ -160,7 +161,7 @@ export class MeshEditTool extends Tool
         this.controls.attach(this.gizmoHelper);
     }
 
-    recenterGizmo() 
+    public recenterGizmo() 
     {
         const center = new THREE.Vector3();
         this.selectedVertices.forEach(v => center.add(v.position));
@@ -168,23 +169,23 @@ export class MeshEditTool extends Tool
         this.gizmoHelper.position.copy(center).applyMatrix4(this.activeMesh.matrixWorld);
     }
 
-    updateHighlight() 
+    public updateHighlight() 
     {
         this.strategy.updateHighlightObject(this.highlightObject, this.activeHEMesh, this.selectedElements, this.selectedVertices);
         this.syncHelperTransform(this.highlightObject);
     }
 
-    captureState() 
+    public captureState() 
     {
         return this.selectedVertices.map(v => v.position.clone());
     }
 
-    createCommand(object:any, before:any, after:any) 
+    public createCommand(object:any, before:any, after:any) 
     {
         return new MeshEditCommand(this, this.activeMesh, this.selectedVertices, before, after);
     }
 
-    bindControls() 
+    public bindControls() 
     {
         this.controls.addEventListener('change', () => 
         {
@@ -209,13 +210,13 @@ export class MeshEditTool extends Tool
         });
     }
 
-    rebuildGeometry() 
+    public rebuildGeometry() 
     {
         this.activeMesh.geometry.dispose();
         this.activeMesh.geometry = this.activeHEMesh.toBufferGeometry();
     }
 
-    extrudeSelected() 
+    public extrudeSelected() 
     {
         if(!this.strategy.supportsExtrude() || !this.activeMesh || this.selectedElements.length === 0) 
             return;
@@ -240,7 +241,7 @@ export class MeshEditTool extends Tool
         this.commandManager.redoStack = [];
     }
 
-    applyGeometrySnapshot(data:any) 
+    public applyGeometrySnapshot(data:any) 
     {
         this.activeMesh.geometry.dispose();
         const g = new THREE.BufferGeometry();

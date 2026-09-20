@@ -126,6 +126,41 @@ export class HEMesh
         this.edges = [];
     }
 
+    public getVertices(): Array<HEVertex>
+    {
+        if (this.vertices) return this.vertices;
+        else throw Error('HEMesh vertices undefined');
+    }
+
+    public setVertices(vertices: Array<HEVertex>): void
+    {
+        if (vertices) this.vertices = vertices;
+        else throw Error('HEMesh vertices invalid');
+    }
+
+    public getFaces(): Array<HEFace>
+    {
+        if (this.faces) return this.faces;
+        else throw Error('HEMesh faces undefined');
+    }
+
+    public setFaces(faces: Array<HEFace>): void
+    {
+        if (faces) this.faces = faces;
+        else throw Error('HEMesh faces invalid');
+    }
+
+    public getEdges(): Array<HEEdge>
+    {
+        if (this.edges) return this.edges;
+        else throw Error('HEMesh edges undefined');
+    }
+
+    public setEdges(edges: Array<HEEdge>): void
+    {
+        if (edges) this.edges = edges;
+        else throw Error('HEMesh edges invalid');
+    }
 
     faceVertices(face:HEFace):Array<HEVertex>
     {
