@@ -1,18 +1,22 @@
 import * as THREE from 'three';
+import { SceneManager } from '../SceneManager';
 
 export class SelectionManager 
 {
-    constructor(sceneManager) 
+    public sceneManager:SceneManager;
+    public selectedObject:THREE.Mesh | null;
+    public selectionBox:THREE.BoxHelper;
+    constructor(sceneManager:SceneManager) 
     {
         this.sceneManager = sceneManager;
         this.selectedObject = null;
         
-        this.selectionBox = new THREE.BoxHelper(undefined, 0xffff00);
+        this.selectionBox = new THREE.BoxHelper(new THREE.Object3D(), 0xffff00);
         this.selectionBox.visible = false;
         this.sceneManager.getNativeScene().add(this.selectionBox);
     }
 
-    selectObject(object) 
+    selectObject(object:THREE.Mesh):void
     {
         if(this.selectedObject === object) 
             return;
@@ -22,19 +26,19 @@ export class SelectionManager
         this.selectionBox.visible = true;
     }
 
-    deselectAll() 
+    deselectAll():void
     {
         this.selectedObject = null;
         this.selectionBox.visible = false;
     }
 
-    update()
+    update():void
     {
         if(this.selectedObject)
             this.selectionBox.update();
     }
 
-    getSelected() 
+    getSelected():THREE.Mesh | null
     {
         return this.selectedObject;
     }
