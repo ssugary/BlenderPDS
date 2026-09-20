@@ -9,7 +9,7 @@ export class CreateObjectTool extends Tool
 
     private sceneManager:SceneManager;
     private commandManager:CommandManager;
-    private deleteTool:DeleteTool | any;
+    private deleteTool:DeleteTool | null;
 
     constructor(sceneManager:SceneManager, commandManager:CommandManager){
         super();
@@ -18,11 +18,13 @@ export class CreateObjectTool extends Tool
         this.deleteTool = null;
     }
 
-    setDeleteTool(deleteTool:DeleteTool){
+    public setDeleteTool(deleteTool:DeleteTool):void
+    {
         this.deleteTool = deleteTool;
     }
 
-    createCommand(objectType:string){
+    public createCommand(objectType:string):THREE.Mesh | null
+    {
         const object = this.buildPrimitive(objectType);
         if (!object || !this.deleteTool)
             return null;
@@ -31,14 +33,16 @@ export class CreateObjectTool extends Tool
         return object;
     }
 
-    createObject(object:THREE.Object3D){
+    public createObject(object:THREE.Object3D):void
+    {
         if (!object)
             return;
 
         this.sceneManager.addObject(object);
     }
 
-    buildPrimitive(type:string){
+    public buildPrimitive(type:string):THREE.Mesh | null
+    {
         if (type === 'cube'){
             const geometry = new THREE.BoxGeometry(1, 1, 1);
             const material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });

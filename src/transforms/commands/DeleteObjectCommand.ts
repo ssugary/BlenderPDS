@@ -17,17 +17,17 @@ export class DeleteObjectCommand extends Command
         this.object = object3D;
     }
 
-    execute()
+    public execute():void
     {
         this.deleteTool.deleteObject(this.object);
     }
 
-    undo()
+    public undo():void
     {
         this.createObjectTool.createObject(this.object);
     }
 
-    redo()
+    public redo():void
     {
         this.execute();
     }

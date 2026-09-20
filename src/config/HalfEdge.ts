@@ -162,7 +162,7 @@ export class HEMesh
         else throw Error('HEMesh edges invalid');
     }
 
-    faceVertices(face:HEFace):Array<HEVertex>
+    public faceVertices(face:HEFace):Array<HEVertex>
     {
         const verts = new Array<HEVertex>;
         let edge = face.getHalfEdge();
@@ -174,7 +174,7 @@ export class HEMesh
         
         return verts;
     }
-    computeNormal(face:HEFace):THREE.Vector3
+    public computeNormal(face:HEFace):THREE.Vector3
     {
         const [a, b, c] = this.faceVertices(face);
         const ab = a.getXYZ().clone().sub(b.getXYZ());
@@ -183,7 +183,7 @@ export class HEMesh
         return cb.cross(ab).normalize();
     }
 
-    getCoplanarGroup(startFace:HEFace, dotThreshold:number = 0.999) 
+    public getCoplanarGroup(startFace:HEFace, dotThreshold:number = 0.999) 
     {
         const groupNormal = this.computeNormal(startFace);
         const visited = new Set([startFace]);
@@ -216,7 +216,7 @@ export class HEMesh
         return Array.from(visited);
     }
 
-    getGroupVertices(faces:Array<HEFace>):Array<HEVertex>
+    public getGroupVertices(faces:Array<HEFace>):Array<HEVertex>
     {
         const set = new Set<HEVertex>();
         faces.forEach((f:HEFace) => this.faceVertices(f).forEach((v:HEVertex) => set.add(v)));
@@ -224,7 +224,7 @@ export class HEMesh
         return Array.from(set);
     }
 
-    getGroupBoundaryEdges(faces:Array<HEFace>):Array<HEEdge>
+    public getGroupBoundaryEdges(faces:Array<HEFace>):Array<HEEdge>
     {
         const faceSet = new Set(faces);
         const boundary = new Array<HEEdge>;
@@ -241,7 +241,7 @@ export class HEMesh
         return boundary;
     }
 
-    extrudeFaceGroup(faces:Array<HEFace>) 
+    public extrudeFaceGroup(faces:Array<HEFace>) 
     {
         const boundaryEdges = this.getGroupBoundaryEdges(faces);
         const groupVerts = this.getGroupVertices(faces);
@@ -311,7 +311,7 @@ export class HEMesh
 
 
 
-    fromBufferGeometry(geometry:THREE.BufferGeometry) 
+    public fromBufferGeometry(geometry:THREE.BufferGeometry) 
     {
         const positions = geometry.attributes.position;
         const indices = geometry.index ? geometry.index.array : null;
@@ -388,7 +388,7 @@ export class HEMesh
         }
     }
 
-    toBufferGeometry() 
+    public toBufferGeometry() 
     {
         const positions = new Array<number>;
         const indices:Array<number> = [];
@@ -426,7 +426,7 @@ export class HEMesh
         return geo;
     }
 
-    recalculateTwins() 
+    public recalculateTwins() 
     {
         const edgeMap = new Map();
         this.edges.forEach((e:HEEdge) => e.deleteTwin()); 
@@ -453,7 +453,7 @@ export class HEMesh
         });
     }
 
-    getUniqueEdges() 
+    public getUniqueEdges() 
     {
         const seen = new Set<HEEdge>();
         const result: { edge: HEEdge; v0: HEVertex; v1: HEVertex }[] = [];

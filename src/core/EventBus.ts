@@ -8,10 +8,10 @@ export class EventBus
     
     public constructor() 
     {
-        this.listeners = new Map();
+        this.listeners = new Map<string, Array<ListenerFunction>>();
     }
 
-    public on(event:string, callback:ListenerFunction) 
+    public on(event:string, callback:ListenerFunction):void
     {
 
         const callbacks = this.listeners.get(event);
@@ -29,7 +29,7 @@ export class EventBus
         }    
     }
 
-    public off(event:string, callback:ListenerFunction) 
+    public off(event:string, callback:ListenerFunction):void
     {
         const callbacks = this.listeners.get(event);
 
@@ -39,7 +39,7 @@ export class EventBus
         }
     }
 
-    public emit(event:string, data:any) 
+    public emit(event:string, data:any):void
     {
         const callbacks = this.listeners.get(event);
         if(callbacks)

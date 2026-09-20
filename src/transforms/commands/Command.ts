@@ -1,6 +1,6 @@
-export class Command 
+export abstract class Command 
 {
-    execute() {}
-    undo() {}
-    redo() {} 
+    abstract execute():void;
+    abstract undo():void;
+    abstract redo():void; 
 }

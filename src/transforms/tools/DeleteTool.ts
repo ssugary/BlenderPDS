@@ -12,7 +12,7 @@ export class DeleteTool extends Tool
     private commandManager:CommandManager;
     private selectionManager:SelectionManager;
     private transformControls:TransformControls;
-    private createObjectTool:CreateObjectTool | any;
+    private createObjectTool:CreateObjectTool | null;
     constructor(sceneManager:SceneManager, commandManager:CommandManager, selectionManager:SelectionManager, transformControls:TransformControls)
     {
         super();
@@ -23,19 +23,20 @@ export class DeleteTool extends Tool
         this.createObjectTool = null;
     }
 
-    setCreateObjectTool(createObjectTool:CreateObjectTool)
+    public setCreateObjectTool(createObjectTool:CreateObjectTool):void
     {
         this.createObjectTool = createObjectTool;
     }
 
-    createCommand(selectedObject:Object3D){
+    public createCommand(selectedObject:Object3D):void
+    {
         if (!selectedObject || !this.createObjectTool)
             return;
 
         this.commandManager.execute(new DeleteObjectCommand(this.createObjectTool, this, selectedObject));
     }
 
-    deleteObject(object:Object3D)
+    public deleteObject(object:Object3D):void
     {
         if (!object)
             return;

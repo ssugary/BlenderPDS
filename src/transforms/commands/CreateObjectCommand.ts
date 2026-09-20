@@ -16,17 +16,17 @@ export class AddObjectCommand extends Command
         this.object = object3D;
     }
 
-    execute() 
+    public execute():void
     {
         this.createObjectTool.createObject(this.object);
     }
 
-    undo() 
+    public undo():void
     {
         this.deleteTool.deleteObject(this.object);
     }
 
-    redo() 
+    public redo():void
     {
         this.execute();
     } 

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Tool } from './Tool.js';
-import { HEMesh } from '../../config/HalfEdge.js';
+import { HEMesh, HEVertex } from '../../config/HalfEdge.js';
 import { MeshEditCommand, FaceExtrudeCommand } from '../commands/MeshEditCommand.js';
 import { TransformControls } from 'three/examples/jsm/Addons.js';
 import { CommandManager } from '../CommandManager.js';
@@ -16,13 +16,13 @@ export class MeshEditTool extends Tool
 
     private activeMesh:THREE.Mesh;
     private activeHEMesh: HEMesh;
-    private selectedElements:Array<any>
-    private selectedVertices:Array<any>
+    private selectedElements:Array<any> // this might be an Array<HEFace>
+    private selectedVertices:Array<HEVertex>
 
     private active:Boolean;
 
-    private pickHelper:any;
-    private highlightObject:any;
+    private pickHelper:THREE.Object3D | null;
+    private highlightObject:THREE.Object3D | null;
     private gizmoHelper:any;
 
     constructor(controls:TransformControls, commandManager:CommandManager, sceneManager:SceneManager, 
@@ -157,27 +157,30 @@ export class MeshEditTool extends Tool
 
         this.recenterGizmo();
         this.updateHighlight();
-        this.highlightObject.visible = true;
+        if(this.highlightObject) this.highlightObject.visible = true;
         this.controls.attach(this.gizmoHelper);
     }
 
     public recenterGizmo() 
     {
         const center = new THREE.Vector3();
-        this.selectedVertices.forEach(v => center.add(v.position));
+        this.selectedVertices.forEach(v => center.add(v.getXYZ()));
         center.divideScalar(this.selectedVertices.length);
         this.gizmoHelper.position.copy(center).applyMatrix4(this.activeMesh.matrixWorld);
     }
 
     public updateHighlight() 
     {
-        this.strategy.updateHighlightObject(this.highlightObject, this.activeHEMesh, this.selectedElements, this.selectedVertices);
-        this.syncHelperTransform(this.highlightObject);
+        if(this.highlightObject)
+        {
+            this.strategy.updateHighlightObject(this.highlightObject, this.activeHEMesh, this.selectedElements, this.selectedVertices);
+            this.syncHelperTransform(this.highlightObject);
+        }
     }
 
     public captureState() 
     {
-        return this.selectedVertices.map(v => v.position.clone());
+        return this.selectedVertices.map(v => v.getXYZ().clone());
     }
 
     public createCommand(object:any, before:any, after:any) 
@@ -196,11 +199,11 @@ export class MeshEditTool extends Tool
             this.activeMesh.worldToLocal(localPos);
 
             const center = new THREE.Vector3();
-            this.selectedVertices.forEach(v => center.add(v.position));
+            this.selectedVertices.forEach(v => center.add(v.getXYZ()));
             center.divideScalar(this.selectedVertices.length);
 
             const offset = localPos.clone().sub(center);
-            this.selectedVertices.forEach(v => v.position.add(offset));
+            this.selectedVertices.forEach(v => v.getXYZ().add(offset));
 
             this.rebuildGeometry();
             this.updateHighlight();
@@ -233,7 +236,7 @@ export class MeshEditTool extends Tool
 
         this.recenterGizmo();
         this.updateHighlight();
-        this.highlightObject.visible = true;
+        if(this.highlightObject) this.highlightObject.visible = true;
         this.controls.attach(this.gizmoHelper);
 
         const command = new FaceExtrudeCommand(this.activeMesh, before, after, (mesh:any, data:any) => this.applyGeometrySnapshot(data));

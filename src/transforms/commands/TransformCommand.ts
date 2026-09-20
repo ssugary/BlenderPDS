@@ -15,19 +15,19 @@ export class TransformCommand extends Command
         this.newMatrix = newMatrix.clone();
     }
 
-    execute()
+    public execute():void
     {        
         this.object.matrix.copy(this.newMatrix);
         this.object.matrix.decompose(this.object.position, this.object.quaternion, this.object.scale);
     }
 
-    undo() 
+    public undo():void
     {
         this.object.matrix.copy(this.oldMatrix);
         this.object.matrix.decompose(this.object.position, this.object.quaternion, this.object.scale);
     }
 
-    redo()
+    public redo():void
     {
         this.execute();
     }

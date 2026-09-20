@@ -26,17 +26,17 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
         super();
     }
 
-    usesMeshAsPickTarget():boolean
+    public usesMeshAsPickTarget():boolean
     {
         return false;
     }
 
-    createPickHelper():THREE.Points
+    public createPickHelper():THREE.Points
     {
         return new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0x00ffff, size: 0.15 }));
     }
 
-    updatePickHelper(pickHelper:THREE.Points, heMesh:HEMesh) 
+    public updatePickHelper(pickHelper:THREE.Points, heMesh:HEMesh):void
     {
         const positions = new Array<number>;
         heMesh.vertices.forEach((v:HEVertex) => positions.push(v.getXYZ().x, v.getXYZ().y, v.getXYZ().z));
@@ -46,7 +46,7 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
         pickHelper.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     }
 
-    pick(heMesh:HEMesh, intersect:any) // não sei que tipo de dado entra em intersect :(
+    public pick(heMesh:HEMesh, intersect:any) // não sei que tipo de dado entra em intersect :(
     { 
         if(intersect.index === undefined) 
             return {elements: [], vertices: []};
@@ -56,12 +56,12 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
         return {elements: [vertex], vertices: [vertex]};
     }
     
-    createHighlightObject():THREE.Points 
+    public createHighlightObject():THREE.Points 
     {
         return new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xffff00, size: 0.25 }));
     }
 
-    updateHighlightObject(highlightObject:THREE.Points, heMesh:HEMesh, elements:any, vertices:Array<HEVertex>):void //WARNING: some atributes are not used here
+    public updateHighlightObject(highlightObject:THREE.Points, heMesh:HEMesh, elements:any, vertices:Array<HEVertex>):void //WARNING: some atributes are not used here
     {
         const positions = new Array<number>;
         vertices.forEach((v:HEVertex) => positions.push(v.getXYZ().x, v.getXYZ().y, v.getXYZ().z));
@@ -71,7 +71,7 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
         highlightObject.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     }
 
-    supportsExtrude():boolean
+    public supportsExtrude():boolean
     {
         return false;
     }
@@ -84,7 +84,7 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
         super();
     }
 
-    public updatePickHelper(pickHelper: any, heMesh: any): void 
+    public updatePickHelper(pickHelper: any, heMesh: any):void 
     {
         return;    
     }
@@ -94,12 +94,12 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
         return true; 
     } 
 
-    createPickHelper(): THREE.Mesh 
+    public createPickHelper(): THREE.Mesh 
     {
         return new THREE.Mesh
     }
 
-    pick(heMesh:HEMesh, intersect:any) 
+    public pick(heMesh:HEMesh, intersect:any) 
     {
         if(intersect.faceIndex === undefined) 
             return {elements: [], vertices: []};
@@ -112,12 +112,12 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
         return {elements: group, vertices: heMesh.getGroupVertices(group)};
     }
 
-    createHighlightObject():THREE.Mesh
+    public createHighlightObject():THREE.Mesh
     {
         return new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0.5, transparent: true, side: THREE.DoubleSide}));
     }
 
-    updateHighlightObject(highlightObject:THREE.Mesh, heMesh:HEMesh, elements:any) // não sei oq é element, e acho q isso aq nunca é chamado
+    public updateHighlightObject(highlightObject:THREE.Mesh, heMesh:HEMesh, elements:any) // não sei oq é element, e acho q isso aq nunca é chamado
     {
         const positions = new Array<number>;
         elements.forEach((face:HEFace) => 
@@ -135,7 +135,7 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
         highlightObject.geometry.computeVertexNormals();
     }
 
-    supportsExtrude() 
+    public supportsExtrude():boolean
     { 
         return true; 
     }
@@ -161,12 +161,12 @@ export class EdgeSelectionStrategy extends SelectionStrategy<THREE.LineSegments>
         return false;
     }
 
-    createPickHelper():THREE.LineSegments
+    public createPickHelper():THREE.LineSegments
     {
         return new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x00ffff }));
     }
 
-    pick(heMesh:any, intersect:any) // pick is never used
+    public pick(heMesh:HEMesh, intersect:any) // pick is never used
     {
         if(intersect.index === undefined) 
             return {elements: [], vertices: []};
@@ -179,7 +179,7 @@ export class EdgeSelectionStrategy extends SelectionStrategy<THREE.LineSegments>
         return {elements: [entry.edge], vertices: [entry.v0, entry.v1]};
     }
 
-    public updatePickHelper(pickHelper:THREE.LineSegments, heMesh:HEMesh) 
+    public updatePickHelper(pickHelper:THREE.LineSegments, heMesh:HEMesh):void
     {
         this.uniqueEdges = heMesh.getUniqueEdges();
         const positions = new Array<number>;
@@ -197,12 +197,12 @@ export class EdgeSelectionStrategy extends SelectionStrategy<THREE.LineSegments>
     }
 
 
-    createHighlightObject() 
+    public createHighlightObject():THREE.LineSegments
     {
         return new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 3 }));
     }
 
-    updateHighlightObject(highlightObject:THREE.LineSegments, heMesh:HEMesh, elements:any, vertices:Array<HEVertex>) 
+    public updateHighlightObject(highlightObject:THREE.LineSegments, heMesh:HEMesh, elements:any, vertices:Array<HEVertex>):void
     {
         const [v0, v1] = vertices;
         const positions = [v0.getXYZ().x, v0.getXYZ().y, v0.getXYZ().z, v1.getXYZ().x, v1.getXYZ().y, v1.getXYZ().z];
