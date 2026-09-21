@@ -2,16 +2,19 @@ import * as THREE from 'three';
 
 export class SceneManager 
 {
-    constructor() 
+    private scene: THREE.Scene;
+    public objectsMap: Map<string, THREE.Object3D>;
+
+    public constructor() 
     {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x242424);
-        this.objectsMap = new Map();
+        this.objectsMap = new Map<string, THREE.Object3D>();
 
         this.initEnvironment();
     }
 
-    initEnvironment() 
+    private initEnvironment(): void 
     {
         const grid = new THREE.GridHelper(20, 20, 0x444444, 0x222222); 
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -22,7 +25,7 @@ export class SceneManager
         this.scene.add(grid, dirLight, ambLight);
     }
 
-    addObject(object) 
+    public addObject(object: THREE.Object3D): string 
     {
         this.scene.add(object);
         this.objectsMap.set(object.uuid, object);
@@ -30,7 +33,7 @@ export class SceneManager
         return object.uuid;
     }
 
-    removeObject(uuid, dispose = true) 
+    public removeObject(uuid: string, dispose: boolean = true): boolean 
     {
         const object = this.objectsMap.get(uuid);
         if (object) 
@@ -46,23 +49,25 @@ export class SceneManager
         return false;
     }
 
-    disposeObject(object)
+    private disposeObject(object: THREE.Object3D): void
     {
-        if (object.geometry)
-            object.geometry.dispose();
+        const mesh = object as THREE.Mesh;
 
-        if (Array.isArray(object.material))
-            object.material.forEach(material => material.dispose());
-        else if (object.material)
-            object.material.dispose();
+        if (mesh.geometry)
+            mesh.geometry.dispose();
+
+        if (Array.isArray(mesh.material))
+            mesh.material.forEach((material: THREE.Material) => material.dispose());
+        else if (mesh.material)
+            mesh.material.dispose();
     }
 
-    getObject(uuid) 
+    public getObject(uuid: string): THREE.Object3D | undefined 
     {
         return this.objectsMap.get(uuid);
     }
 
-    getNativeScene() 
+    public getNativeScene(): THREE.Scene 
     {
         return this.scene;
     }

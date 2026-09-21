@@ -3,7 +3,7 @@ import { Tool } from "./tools/Tool";
 
 export class ToolManager 
 {
-    private activeTool:Tool | null;
+    public activeTool: Tool | null;
     private tools:Map<string, Tool>;
     constructor() 
     {

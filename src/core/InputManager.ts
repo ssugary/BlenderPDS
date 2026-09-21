@@ -1,9 +1,12 @@
-import { GLOBAL_BUS } from './EventBus.ts';
+import { GLOBAL_BUS } from './EventBus';
+
+type KeybindingsConfig = Record<string, string>;
 
 export class InputManager 
 {
-    
-    constructor(keybindingsConfig = {}) 
+    private keybindings: KeybindingsConfig;
+
+    public constructor(keybindingsConfig: KeybindingsConfig = {}) 
     {
         this.keybindings = keybindingsConfig;
         
@@ -11,43 +14,42 @@ export class InputManager
         this.onKeyUp = this.onKeyUp.bind(this);
     }
 
-    init() 
+    public init(): void 
     {
         window.addEventListener('keydown', this.onKeyDown);
         window.addEventListener('keyup', this.onKeyUp);
     }
 
-    destroy() 
+    public destroy(): void 
     {
         window.removeEventListener('keydown', this.onKeyDown);
         window.removeEventListener('keyup', this.onKeyUp);
     }
 
-    onKeyDown(e) 
+    private onKeyDown(e: KeyboardEvent): void 
     {
-
-        if(['INPUT', 'TEXTAREA'].includes(e.target.tagName)) 
+        const target = e.target as HTMLElement;
+        if (['INPUT', 'TEXTAREA'].includes(target.tagName)) 
             return;
 
-        if(e.code === 'Tab')
+        if (e.code === 'Tab')
             e.preventDefault();
 
         const action = this.keybindings[e.code];
 
-        if(action) 
-            GLOBAL_BUS.emit('input:action', {action, state: 'down'});
-        
+        if (action) 
+            GLOBAL_BUS.emit('input:action', { action, state: 'down' });
     }
 
-    onKeyUp(e) 
+    private onKeyUp(e: KeyboardEvent): void 
     {
-        if(['INPUT', 'TEXTAREA'].includes(e.target.tagName)) 
+        const target = e.target as HTMLElement;
+        if (['INPUT', 'TEXTAREA'].includes(target.tagName)) 
             return;
 
         const action = this.keybindings[e.code];
         
-        if(action) 
+        if (action) 
             GLOBAL_BUS.emit('input:action', { action, state: 'up' });
-        
     }
 }
