@@ -1,8 +1,12 @@
 import * as THREE from 'three';
+import { SceneManager } from './SceneManager';
 
 export class RenderEngine
 {
-    constructor(sceneManager, containerElement, camera)
+    private sceneManager:SceneManager;
+    private container:HTMLElement;
+    public renderer:THREE.WebGLRenderer;
+    constructor(sceneManager:SceneManager, containerElement:HTMLElement)
     {
 
         this.sceneManager = sceneManager;
@@ -15,17 +19,17 @@ export class RenderEngine
         this.container.appendChild(this.renderer.domElement);
     };
 
-    render(camera) 
+    public render(camera:THREE.PerspectiveCamera):void
     {
         this.renderer.render(this.sceneManager.getNativeScene(), camera);
     }
 
-    bindEvents(camera) 
+    public bindEvents(camera:THREE.PerspectiveCamera):void
     {
         window.addEventListener('resize', () => this.handleResize(camera));
     }
 
-    handleResize(camera) 
+    public handleResize(camera:THREE.PerspectiveCamera):void
     {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         camera.aspect = window.innerWidth / window.innerHeight;

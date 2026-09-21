@@ -3,23 +3,26 @@ import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import * as THREE from 'three';
 
 export class FileExporter {
-    static exportSceneAsOBJ(sceneManager, filename = 'scene.obj') {
+    public static exportSceneAsOBJ(sceneManager: SceneManager, filename: string = 'scene.obj'): void {
         const exporter = new OBJExporter();
         const exportRoot = new THREE.Group();
-        const exportableObjects = [];
+        const exportableObjects: THREE.Mesh[] = [];
 
         for (const object of sceneManager.objectsMap.values()) {
             if (!object || object.userData?.isEditorHelper) continue;
-            if (!object.isMesh) continue;
+            
+            const mesh = object as THREE.Mesh;
+            if (!mesh.isMesh) continue;
 
-            const hasPosition = object.geometry
-                && object.geometry.attributes
-                && object.geometry.attributes.position;
+            const hasPosition = mesh.geometry
+                && mesh.geometry.attributes
+                && mesh.geometry.attributes.position;
 
             if (hasPosition) {
-                exportableObjects.push(object);
+                exportableObjects.push(mesh);
             }
         }
+        
         for (const mesh of exportableObjects) {
             const material = Array.isArray(mesh.material)
                 ? mesh.material.map((m) => m.clone())

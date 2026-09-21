@@ -1,8 +1,14 @@
+import { PerspectiveCamera } from 'three';
 import { OrbitNavigation, WalkNavigation } from './Navigation.js';
 
 export class CameraManager 
 {
-    constructor(camera, domElement) 
+    public camera:PerspectiveCamera;
+    private domElement:HTMLCanvasElement;
+    private strategies:any;
+    private navMode:string;
+    private active:any;
+    constructor(camera:PerspectiveCamera, domElement:HTMLCanvasElement) 
     {
         this.camera = camera;
         this.domElement = domElement;
@@ -17,7 +23,7 @@ export class CameraManager
         this.setMode(this.navMode === 'walk' ? 'orbit' : 'walk');
     }
 
-    setMode(mode)
+    setMode(mode:string)
     {
         if (mode === this.navMode) 
             return; 
@@ -32,7 +38,7 @@ export class CameraManager
         this.active.enable();
     }
     
-    setGizmoDragging(isDragging) 
+    setGizmoDragging(isDragging:boolean) 
     {
         if (this.navMode === 'orbit') 
             this.strategies.orbit.controls.enabled = !isDragging;
@@ -40,7 +46,7 @@ export class CameraManager
             this.strategies.walk.enabled = !isDragging;
     }
 
-    update(delta) 
+    update(delta:number) 
     { 
         this.active.update(delta); 
     }

@@ -19,7 +19,26 @@ import { FileExporter } from './utils/FileExporter.js';
 import { ObjectParser } from './ObjectParser.js';
 export class Engine 
 {
-    constructor(domElement) 
+
+    private clock:THREE.Clock;
+    private animationFrameId:any;
+    private sceneManager:SceneManager;
+    public renderEngine:RenderEngine;
+    private cameraManager:CameraManager;
+    private selectionManager:SelectionManager;
+    private raycasterManager:RaycasterManager;
+    private commandManager:CommandManager;
+    private toolManager:ToolManager;
+    private transformControls:TransformControls;
+    private meshEditTool:MeshEditTool;
+    private editStrategies:any;
+    private editorModeManager:EditorModeManager;
+    private gestureStart:any;
+
+    private createObjectTool:any;
+    private deleteTool:any;
+
+    constructor(domElement:HTMLElement) 
     {
         this.clock = new THREE.Clock();
         this.animationFrameId = null;
@@ -49,7 +68,8 @@ export class Engine
         this.editStrategies = {vertex: new VertexSelectionStrategy(), edge: new EdgeSelectionStrategy(), face: new FaceSelectionStrategy()};
         this.editorModeManager = new EditorModeManager(new ObjectMode(this.selectionManager, this.toolManager), new EditMode(this.meshEditTool));
 
-        this.transformControls.addEventListener('dragging-changed', (event) => 
+        this.gestureStart
+        this.transformControls.addEventListener('dragging-changed', (event:any) => 
         {
             this.cameraManager.setGizmoDragging(event.value);
 
@@ -133,12 +153,16 @@ export class Engine
                 this.meshEditTool.setStrategy(this.editStrategies[toolName]);
                 return;
             }
-            this.toolManager.setTool(toolName, this.selectionManager.getSelected());
+            const selection = this.selectionManager.getSelected()
+            if(selection )
+            this.toolManager.setTool(toolName, selection);
         });
 
         GLOBAL_BUS.on('editor:toggle_mode', () => 
         {
-            this.editorModeManager.toggle(this.selectionManager.getSelected());
+            const selection = this.selectionManager.getSelected()
+            if(selection)
+            this.editorModeManager.toggle(selection);
         });
 
         GLOBAL_BUS.on('input:action', ({ action, state }) => 
@@ -153,7 +177,11 @@ export class Engine
                 GLOBAL_BUS.emit('tool:change', action.split(':')[1]);
 
             if (action === 'editor:toggle') 
-                this.editorModeManager.toggle(this.selectionManager.getSelected());
+            {
+                const selection = this.selectionManager.getSelected();
+                if(selection)
+                this.editorModeManager.toggle(selection);
+            }
 
             if (action === 'action:delete_object' && this.editorModeManager.current === 'object')
                 this.deleteTool.createCommand(this.selectionManager.getSelected());

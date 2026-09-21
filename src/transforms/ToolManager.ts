@@ -16,7 +16,7 @@ export class ToolManager
         this.tools.set(name, toolInstance);
     }
 
-    setTool(name:string, selectedObjects:Array<Object3D>) 
+    setTool(name:string, selectedObjects:any) 
     {
         const tool = this.tools.get(name);
 

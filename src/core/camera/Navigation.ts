@@ -1,17 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLOBAL_BUS } from '../EventBus.ts';
+import { GLOBAL_BUS } from '../EventBus.js';
 
 export class Navigation 
 {
     enable() {}
     disable() {}
-    update(delta) {}
+    update(delta:any) {}
 }
 
 export class OrbitNavigation extends Navigation 
 {
-    constructor(camera, domElement) 
+    private camera:THREE.PerspectiveCamera;
+    private controls:OrbitControls;
+
+    constructor(camera:THREE.PerspectiveCamera, domElement:HTMLCanvasElement) 
     {
         super();
         this.camera = camera;
@@ -29,7 +32,7 @@ export class OrbitNavigation extends Navigation
     { 
         this.controls.enabled = false; 
     }
-    update(delta) 
+    update(delta:any) 
     { 
         if(this.controls.enabled) 
             this.controls.update(); 
@@ -52,7 +55,17 @@ export class OrbitNavigation extends Navigation
 
 export class WalkNavigation extends Navigation 
 {
-    constructor(camera, domElement) 
+    private camera:THREE.PerspectiveCamera;
+    private domElement:HTMLElement
+    private enabled:boolean;
+    private isDragging:boolean;
+
+    private rotation:THREE.Euler;
+    private speed:number;
+    private lookSpeed:number;
+    private moveState:{ forward:boolean, backward:boolean, left:boolean, right:boolean, up:boolean, down:boolean };
+
+    constructor(camera:THREE.PerspectiveCamera, domElement:HTMLElement) 
     {
         super();
         this.camera = camera;
@@ -111,7 +124,7 @@ export class WalkNavigation extends Navigation
             }
         });
 
-        this.domElement.addEventListener('pointerdown', (e) => 
+        this.domElement.addEventListener('pointerdown', (e:any) => 
         {
             if(!this.enabled || e.button !== 1) 
                 return;
@@ -139,7 +152,7 @@ export class WalkNavigation extends Navigation
         });
     }
 
-    update(delta) 
+    update(delta:any) 
     {
         const actualSpeed = this.speed * delta;
         
