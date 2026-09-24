@@ -10,14 +10,6 @@ export class ObjectParser
     //WARNING: some types are not declared
     static parseObject(type:any, sceneManager:SceneManager)
     {
-        if (type === 'cube') 
-        {
-            const geo = new THREE.BoxGeometry(1, 1, 1);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
-            const cube = new THREE.Mesh(geo, mat);
-            cube.position.y = 0.5;
-            sceneManager.addObject(cube);
-        }
         if(type === 'model'){
             FileLoader.getfile().then((contents:any) => 
             {
