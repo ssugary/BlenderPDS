@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { Tool } from './Tool.js';
-import { HEMesh, HEVertex } from '../../config/HalfEdge.js';
+import { HEEdge, HEMesh, HEVertex } from '../../config/HalfEdge.js';
 import { MeshEditCommand, FaceExtrudeCommand } from '../commands/MeshEditCommand.js';
 import { TransformControls } from 'three/examples/jsm/Addons.js';
 import { CommandManager } from '../CommandManager.js';
 import { SceneManager } from '../../core/SceneManager.js';
-import { SelectionStrategy } from '../../core/selection/SelectionStrategy.js';
+import { SelectionStrategy, VertexSelectionStrategy } from '../../core/selection/SelectionStrategy.js';
 
 export class MeshEditTool extends Tool 
 {
@@ -164,7 +164,8 @@ export class MeshEditTool extends Tool
 
         this.recenterGizmo();
         this.updateHighlight();
-        if(this.highlightObject) this.highlightObject.visible = true;
+        if(this.highlightObject) 
+            this.highlightObject.visible = true;
         this.controls.attach(this.gizmoHelper);
     }
 
@@ -266,7 +267,38 @@ export class MeshEditTool extends Tool
         this.activeMesh.userData.heMesh = this.activeHEMesh;
 
         this.clearSelection();
+
         if(this.pickHelper) 
             this.strategy.updatePickHelper(this.pickHelper, this.activeHEMesh);
+    }
+
+
+    public splitSelectedEdges():void
+    {
+        if(!this.strategy.supportsEdgeSplit() || !this.activeMesh || this.selectedElements.length === 0) 
+            return;
+
+        const geo = this.activeMesh.geometry;
+        const before = {positions: geo.attributes.position.array.slice(), indices: geo.index?.array.slice()};
+
+        const newVerts = (this.selectedElements as Array<HEEdge>).map((edge:HEEdge) => this.activeHEMesh.splitEdge(edge));
+
+        this.selectedVertices = newVerts;
+        this.rebuildGeometry();
+
+        const after = {positions: this.activeMesh.geometry.attributes.position.array.slice(), indices: this.activeMesh.geometry.index?.array.slice()};
+
+        this.strategy = new VertexSelectionStrategy();
+        this.rebuildAuxObjects();
+
+        if(this.pickHelper) 
+            this.strategy.updatePickHelper(this.pickHelper, this.activeHEMesh);
+
+        this.selectAt(newVerts);
+        this.setStrategy(this.strategy);
+        const command = new FaceExtrudeCommand(this.activeMesh, before, after, (mesh:any, data:any) => this.applyGeometrySnapshot(data));
+
+        this.commandManager.addToUndoStack(command);
+        this.commandManager.clearRedoStack();
     }
 }

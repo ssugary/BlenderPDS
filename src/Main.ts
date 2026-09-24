@@ -14,6 +14,7 @@ const inputManager = new InputManager({
     'Space': 'move:up',
     'ShiftLeft': 'move:down',
     'KeyE': 'action:extrude',
+    'KeyP': 'action:split_edge',
     'Tab': 'editor:toggle',
     'KeyX': 'action:delete_object',
     'Delete': 'action:delete_object',

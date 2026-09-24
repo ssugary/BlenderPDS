@@ -172,6 +172,9 @@ export class Engine
 
             if (action === 'action:extrude' && this.editorModeManager.current === 'edit') 
                 this.meshEditTool.extrudeSelected();
+
+            if (action === 'action:split_edge' && this.editorModeManager.current === 'edit') 
+                this.meshEditTool.splitSelectedEdges();
                 
             if (action.startsWith('tool:')) 
                 GLOBAL_BUS.emit('tool:change', action.split(':')[1]);

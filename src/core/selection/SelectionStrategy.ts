@@ -16,6 +16,8 @@ export abstract class SelectionStrategy<T extends THREE.Object3D = THREE.Object3
     abstract updateHighlightObject(highlightObject:T, heMesh:HEMesh, elements:any, vertices:Array<HEVertex>):void;
     
     abstract supportsExtrude():boolean;
+
+    abstract supportsEdgeSplit():boolean;
 }
 
 export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points> 
@@ -72,6 +74,11 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
     }
 
     public supportsExtrude():boolean
+    {
+        return false;
+    }
+
+    public supportsEdgeSplit():boolean
     {
         return false;
     }
@@ -140,6 +147,11 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
         return true; 
     }
 
+    public supportsEdgeSplit():boolean
+    {
+        return false;
+    }
+
 }
 
 export class EdgeSelectionStrategy extends SelectionStrategy<THREE.LineSegments>
@@ -154,6 +166,11 @@ export class EdgeSelectionStrategy extends SelectionStrategy<THREE.LineSegments>
     public supportsExtrude(): boolean 
     {
         return false;
+    }
+
+    public supportsEdgeSplit():boolean
+    {
+        return true;
     }
 
     public usesMeshAsPickTarget(): boolean 

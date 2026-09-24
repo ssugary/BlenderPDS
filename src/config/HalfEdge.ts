@@ -470,5 +470,91 @@ export class HEMesh
         return result;
     }
 
+    public splitEdge(edge:HEEdge)
+    {
+        const twin = edge.hasTwin() ? edge.getTwin() : undefined;
+
+        const v0 = edge.getVertex();
+        const v1 = edge.getNext().getVertex();
+
+        const midpoint = v0.getXYZ().clone().add(v1.getXYZ()).multiplyScalar(0.5);
+        const newVert = new HEVertex(midpoint.x, midpoint.y, midpoint.z);
+        this.vertices.push(newVert);
+
+        if (edge.hasFace()) 
+            this.splitTriangleAtEdge(edge, newVert);
+        
+        if (twin && twin.hasFace()) 
+            this.splitTriangleAtEdge(twin, newVert);
+
+        this.recalculateTwins();
+
+        return newVert;
+    }
+
+    public splitTriangleAtEdge(edge : HEEdge, vertex : HEVertex)
+    {
+        const face = edge.getFace();
+
+        const e01 = edge;             
+        const e12 = edge.getNext();   
+        const e20 = e12.getNext();    
+
+        const v0 = e01.getVertex();
+        const v2 = e20.getVertex();
+
+        this.edges = this.edges.filter((e:HEEdge) => e !== e01 && e !== e12);
+
+        const eA0 = new HEEdge(); 
+        eA0.setVertex(v0);      
+        eA0.setFace(face);
+
+        const eA1 = new HEEdge(); 
+        eA1.setVertex(vertex);
+        eA1.setFace(face);
+
+        const eA2 = e20;
+        eA2.setFace(face); 
+        eA0.setNext(eA1); 
+        eA1.setNext(eA2); 
+        eA2.setNext(eA0);
+
+        eA0.setPrev(eA2); 
+        eA1.setPrev(eA0); 
+        eA2.setPrev(eA1);
+
+        face.setHalfEdge(eA0);
+
+        const faceB = new HEFace();
+        const eB0 = new HEEdge(); 
+        eB0.setVertex(vertex); 
+        eB0.setFace(faceB);
+
+        const eB1 = e12;
+        eB1.setFace(faceB); 
+        const eB2 = new HEEdge(); 
+        eB2.setVertex(v2);      
+        eB2.setFace(faceB);
+
+        eB0.setNext(eB1); 
+        eB1.setNext(eB2); 
+        eB2.setNext(eB0);
+
+        eB0.setPrev(eB2); 
+        eB1.setPrev(eB0); 
+        eB2.setPrev(eB1);
+        faceB.setHalfEdge(eB0);
+
+        this.faces.push(faceB);
+
+        v0.setHalfEdge(eA0);
+        vertex.setHalfEdge(eA1);
+        v2.setHalfEdge(eA2);
+        eB1.getVertex().setHalfEdge(eB1);
+
+        this.edges.push(eA0, eA1, eA2, eB0, eB1, eB2);
+
+    }
+
 
 }
