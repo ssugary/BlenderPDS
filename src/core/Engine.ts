@@ -19,6 +19,7 @@ import { ObjectParser } from './ObjectParser.js';
 import { CommandManager } from '../manager/CommandManager.js';
 import { CreatePrimitiveCommand } from '../command/implementation/CreatePrimitiveCommand.js';
 import { DeleteObjectCommand } from '../command/implementation/DeleteObjectCommand.js';
+import { TransformCommand } from '../command/implementation/TransformCommand.js';
 export class Engine 
 {
 
@@ -85,9 +86,12 @@ export class Engine
                 this.gestureStart = tool.captureState(object);
             else 
             {
-                const command = tool.createCommand(object, this.gestureStart, tool.captureState(object));
-                if (command)
+                //const command = tool.createCommand(object, this.gestureStart, tool.captureState(object));
+                if(tool instanceof TransformTool)
+                {
+                    const command = new TransformCommand(object, this.gestureStart, tool.captureState(object))
                     this.commandManager.execute(command);
+                }
             }
         });
         this.transformControls.addEventListener('objectChange', () => 
@@ -107,9 +111,9 @@ export class Engine
         this.createObjectTool = new CreateObjectTool(this.sceneManager);
         this.deleteTool = new DeleteTool(this.sceneManager, cm, this.selectionManager, controls);
 
-        this.toolManager.registerTool('translate', new TransformTool(controls,cm,  'translate'));
-        this.toolManager.registerTool('rotate',    new TransformTool(controls,cm,  'rotate'));
-        this.toolManager.registerTool('scale',     new TransformTool(controls,cm,  'scale'));
+        this.toolManager.registerTool('translate', new TransformTool(controls,  'translate'));
+        this.toolManager.registerTool('rotate',    new TransformTool(controls,  'rotate'));
+        this.toolManager.registerTool('scale',     new TransformTool(controls,  'scale'));
     }
 
     start() 
