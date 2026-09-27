@@ -5,26 +5,27 @@ import { Command } from "../Command.js";
 
 export class DeleteObjectCommand extends Command
 {
-    private createObjectTool:CreateObjectTool;
-    private deleteTool:DeleteTool;
-    private object:Object3D;
     
-    constructor(createObjectTool:CreateObjectTool, deleteTool:DeleteTool, object3D:Object3D)
+    constructor(
+        private createObjectTool:CreateObjectTool,
+        private deleteTool:DeleteTool,
+        private object:Object3D | null,
+    )
     {
         super();
-        this.createObjectTool = createObjectTool;
-        this.deleteTool = deleteTool;
-        this.object = object3D;
     }
 
     public execute():void
     {
-        this.deleteTool.deleteObject(this.object);
+        if(this.object)
+            this.deleteTool.deleteObject(this.object);
+
     }
 
     public undo():void
     {
-        this.createObjectTool.createObject(this.object);
+        if(this.object)
+            this.createObjectTool.createObject(this.object);
     }
 
     public redo():void

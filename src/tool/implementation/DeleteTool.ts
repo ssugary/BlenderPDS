@@ -29,15 +29,6 @@ export class DeleteTool extends Tool
     {
         this.createObjectTool = createObjectTool;
     }
-
-    public createCommand(selectedObject:Object3D):void
-    {
-        if (!selectedObject || !this.createObjectTool)
-            return;
-
-        this.commandManager.execute(new DeleteObjectCommand(this.createObjectTool, this, selectedObject));
-    }
-
     public deleteObject(object:Object3D):void
     {
         if (!object)

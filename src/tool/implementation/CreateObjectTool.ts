@@ -1,44 +1,21 @@
 import * as THREE from 'three';
 import { Tool } from "../Tool.js";
 import { SceneManager } from '../../manager/SceneManager.js';
-import { DeleteTool } from './DeleteTool.js';
-import { CommandManager } from '../../manager/CommandManager.js';
-import { AddObjectCommand } from '../../command/implementation/CreateObjectCommand.js';
 export class CreateObjectTool extends Tool
 {
 
-    private sceneManager:SceneManager;
-    private commandManager:CommandManager;
-    private deleteTool:DeleteTool | null;
-
-    constructor(sceneManager:SceneManager, commandManager:CommandManager){
+    constructor(
+        private sceneManager:SceneManager
+    )
+    {
         super();
-        this.sceneManager = sceneManager;
-        this.commandManager = commandManager;
-        this.deleteTool = null;
-    }
-
-    public setDeleteTool(deleteTool:DeleteTool):void
-    {
-        this.deleteTool = deleteTool;
-    }
-
-    public createCommand(objectType:string):THREE.Mesh | null
-    {
-        const object = this.buildPrimitive(objectType);
-        if (!object || !this.deleteTool)
-            return null;
-
-        this.commandManager.execute(new AddObjectCommand(this, this.deleteTool, object));
-        return object;
     }
 
     public createObject(object:THREE.Object3D):void
     {
-        if (!object)
-            return;
-
-        this.sceneManager.addObject(object);
+        if (object)
+            this.sceneManager.addObject(object);
+                
     }
 
     public buildPrimitive(type:string):THREE.Mesh | null

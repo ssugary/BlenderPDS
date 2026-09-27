@@ -1,5 +1,3 @@
-
-//this needs to be refactored into a interface
 export class Tool 
 {
     activate(selectedObject:any):void {}

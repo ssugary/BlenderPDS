@@ -17,6 +17,8 @@ import { EditorModeManager } from '../manager/EditorModeManager.js';
 import { FileExporter } from './utils/FileExporter.js';
 import { ObjectParser } from './ObjectParser.js';
 import { CommandManager } from '../manager/CommandManager.js';
+import { CreatePrimitiveCommand } from '../command/implementation/CreatePrimitiveCommand.js';
+import { DeleteObjectCommand } from '../command/implementation/DeleteObjectCommand.js';
 export class Engine 
 {
 
@@ -102,14 +104,12 @@ export class Engine
         const controls = this.transformControls;
         const cm = this.commandManager;
 
-        this.createObjectTool = new CreateObjectTool(this.sceneManager, cm);
+        this.createObjectTool = new CreateObjectTool(this.sceneManager);
         this.deleteTool = new DeleteTool(this.sceneManager, cm, this.selectionManager, controls);
-        this.createObjectTool.setDeleteTool(this.deleteTool);
-        this.deleteTool.setCreateObjectTool(this.createObjectTool);
 
-        this.toolManager.registerTool('translate', new TransformTool(controls, cm, 'translate'));
-        this.toolManager.registerTool('rotate',    new TransformTool(controls, cm, 'rotate'));
-        this.toolManager.registerTool('scale',     new TransformTool(controls, cm, 'scale'));
+        this.toolManager.registerTool('translate', new TransformTool(controls,cm,  'translate'));
+        this.toolManager.registerTool('rotate',    new TransformTool(controls,cm,  'rotate'));
+        this.toolManager.registerTool('scale',     new TransformTool(controls,cm,  'scale'));
     }
 
     start() 
@@ -176,7 +176,7 @@ export class Engine
             if (action === 'action:split_edge' && this.editorModeManager.current === 'edit') 
                 this.meshEditTool.splitSelectedEdges();
                 
-            if (action.startsWith('tool:')) 
+            if (action.split(':')[0] == 'tool') 
                 GLOBAL_BUS.emit('tool:change', action.split(':')[1]);
 
             if (action === 'editor:toggle') 
@@ -187,7 +187,7 @@ export class Engine
             }
 
             if (action === 'action:delete_object' && this.editorModeManager.current === 'object')
-                this.deleteTool.createCommand(this.selectionManager.getSelected());
+                this.commandManager.execute(new DeleteObjectCommand(this.createObjectTool, this.deleteTool, this.selectionManager.getSelected()))
 
             if (action === 'system:undo') 
             {
@@ -203,22 +203,17 @@ export class Engine
 
         GLOBAL_BUS.on('action:add_object', ({ type }) => 
         {
-            const object = this.createObjectTool.createCommand(type);
-            if (!object)
-                return;
-
-            this.selectionManager.selectObject(object);
-            this.toolManager.activeTool?.activate(object);
-
+            this.commandManager.execute(new CreatePrimitiveCommand(this.createObjectTool, this.deleteTool, type));
             
         });
 
-        GLOBAL_BUS.on('action:delete_object', () => 
+        GLOBAL_BUS.on('action:delete_object', ({}) => 
         {
+            console.log('call')
             if (this.editorModeManager.current !== 'object')
                 return;
 
-            this.deleteTool.createCommand(this.selectionManager.getSelected());
+            this.commandManager.execute(new DeleteObjectCommand(this.createObjectTool, this.deleteTool, this.selectionManager.getSelected()));
         });
 
         GLOBAL_BUS.on('camera:change_mode', () => 
