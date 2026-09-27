@@ -460,8 +460,9 @@ export class HEMesh
 
         this.edges.forEach((edge:HEEdge) => 
         {
-            if(seen.has(edge) || (edge.getTwin() && seen.has(edge.getTwin()))) 
-                return;
+            if(seen.has(edge) || edge.hasTwin())
+                if(seen.has(edge.getTwin())) 
+                    return;
 
             seen.add(edge);
             result.push({edge, v0: edge.getVertex(), v1: edge.getNext().getVertex()});
