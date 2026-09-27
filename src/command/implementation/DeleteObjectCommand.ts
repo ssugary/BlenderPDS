@@ -1,7 +1,7 @@
 import { Object3D } from "three";
-import { CreateObjectTool } from "../tools/CreateObjectTool.js";
-import { DeleteTool } from "../tools/DeleteTool.js";
-import { Command } from "./Command.js";
+import { CreateObjectTool } from "../../tool/implementation/CreateObjectTool.js";
+import { DeleteTool } from "../../tool/implementation/DeleteTool.js";
+import { Command } from "../Command.js";
 
 export class DeleteObjectCommand extends Command
 {

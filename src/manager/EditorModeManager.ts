@@ -1,6 +1,6 @@
 import { Object3D } from 'three';
-import { GLOBAL_BUS } from '../EventBus.js';
-import { EditMode, EditorMode, ObjectMode } from './EditorMode.js';
+import { GLOBAL_BUS } from '../core/EventBus.js';
+import { EditMode, EditorMode, ObjectMode } from '../entity/EditorMode.js';
 
 export class EditorModeManager 
 {

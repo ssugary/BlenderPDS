@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { Tool } from './Tool.js';
-import { HEEdge, HEMesh, HEVertex } from '../../config/HalfEdge.js';
-import { MeshEditCommand, FaceExtrudeCommand } from '../commands/MeshEditCommand.js';
+import { Tool } from '../Tool.js';
+import { HEEdge, HEMesh, HEVertex } from '../../entity/HalfEdge.js';
 import { TransformControls } from 'three/examples/jsm/Addons.js';
-import { CommandManager } from '../CommandManager.js';
-import { SceneManager } from '../../core/SceneManager.js';
-import { SelectionStrategy, VertexSelectionStrategy } from '../../core/selection/SelectionStrategy.js';
+import { SceneManager } from '../../manager/SceneManager.js';
+import { SelectionStrategy, VertexSelectionStrategy } from '../../entity/SelectionStrategy.js';
+import { CommandManager } from '../../manager/CommandManager.js';
+import { FaceExtrudeCommand, MeshEditCommand } from '../../command/implementation/MeshEditCommand.js';
 
 export class MeshEditTool extends Tool 
 {

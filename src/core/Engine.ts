@@ -1,22 +1,22 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { SceneManager } from './SceneManager.js';
+import { SceneManager } from '../manager/SceneManager.js';
 import { RenderEngine } from './RenderEngine.js';
-import { CameraManager } from './camera/CameraManager.js'; 
-import { SelectionManager } from './selection/SelectionManager.js';
-import { RaycasterManager } from './RaycasterManager.js';
-import { CommandManager } from '../transforms/CommandManager.js'; 
-import { ToolManager } from '../transforms/ToolManager.js';
-import { TransformTool } from '../transforms/tools/TransformTool.js'; 
-import { CreateObjectTool } from '../transforms/tools/CreateObjectTool.js';
-import { DeleteTool } from '../transforms/tools/DeleteTool.js';
+import { CameraManager } from '../manager/CameraManager.js'; 
+import { SelectionManager } from '../manager/SelectionManager.js';
+import { RaycasterManager } from '../manager/RaycasterManager.js';
+import { ToolManager } from '../manager/ToolManager.js';
+import { TransformTool } from '../tool/implementation/TransformTool.js'; 
+import { CreateObjectTool } from '../tool/implementation/CreateObjectTool.js';
+import { DeleteTool } from '../tool/implementation/DeleteTool.js';
 import { GLOBAL_BUS } from './EventBus.js';
-import { MeshEditTool } from '../transforms/tools/MeshEditTool.js';
-import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy } from './selection/SelectionStrategy.js';
-import { EditMode, ObjectMode } from './selection/EditorMode.js';
-import { EditorModeManager } from './selection/EditorModeManager.js';
+import { MeshEditTool } from '../tool/implementation/MeshEditTool.js';
+import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy } from '../entity/SelectionStrategy.js';
+import { EditMode, ObjectMode } from '../entity/EditorMode.js';
+import { EditorModeManager } from '../manager/EditorModeManager.js';
 import { FileExporter } from './utils/FileExporter.js';
 import { ObjectParser } from './ObjectParser.js';
+import { CommandManager } from '../manager/CommandManager.js';
 export class Engine 
 {
 

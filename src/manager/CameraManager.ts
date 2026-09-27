@@ -1,5 +1,5 @@
 import { PerspectiveCamera } from 'three';
-import { OrbitNavigation, WalkNavigation } from './Navigation.js';
+import { OrbitNavigation, WalkNavigation } from '../entity/Navigation';
 
 export class CameraManager 
 {

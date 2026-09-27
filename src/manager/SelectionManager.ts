@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SceneManager } from '../SceneManager';
+import { SceneManager } from './SceneManager';
 
 export class SelectionManager 
 {

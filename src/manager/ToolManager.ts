@@ -1,5 +1,5 @@
 import { Object3D } from "three";
-import { Tool } from "./tools/Tool";
+import { Tool } from "../tool/Tool";
 
 export class ToolManager 
 {

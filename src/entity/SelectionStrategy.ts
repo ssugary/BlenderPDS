@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HEEdge, HEFace, HEMesh, HEVertex } from '../../config/HalfEdge';
+import { HEEdge, HEFace, HEMesh, HEVertex } from './HalfEdge';
 
 export abstract class SelectionStrategy<T extends THREE.Object3D = THREE.Object3D>
 {

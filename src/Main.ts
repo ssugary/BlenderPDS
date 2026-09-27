@@ -1,5 +1,5 @@
 import { Engine } from './core/Engine.js';
-import { InputManager } from './core/InputManager.js';
+import { InputManager } from './manager/InputManager.js';
 import { UIManager } from './ui/UIManager.js';
 const engine = new Engine(document.body);
 engine.start();

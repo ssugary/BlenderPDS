@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { Tool } from "./Tool.js";
-import { AddObjectCommand } from '../commands/CreateObjectCommand.js';
-import { SceneManager } from '../../core/SceneManager.js';
-import { CommandManager } from '../CommandManager.js';
+import { Tool } from "../Tool.js";
+import { SceneManager } from '../../manager/SceneManager.js';
 import { DeleteTool } from './DeleteTool.js';
+import { CommandManager } from '../../manager/CommandManager.js';
+import { AddObjectCommand } from '../../command/implementation/CreateObjectCommand.js';
 export class CreateObjectTool extends Tool
 {
 

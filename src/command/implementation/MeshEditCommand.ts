@@ -1,10 +1,11 @@
-import { Tool } from '../tools/Tool.js';
-import { Command } from './Command.js';
-import { HEVertex } from '../../config/HalfEdge.js';
-import { MeshEditTool } from '../tools/MeshEditTool.js';
-import { Mesh, Vector3 } from 'three';
 
-export class MeshEditCommand extends Command 
+import { Mesh, Vector3 } from 'three';
+import { Command } from '../Command';
+import { Tool } from '../../tool/Tool';
+import { HEVertex } from '../../entity/HalfEdge';
+import { MeshEditTool } from '../../tool/implementation/MeshEditTool';
+
+export class MeshEditCommand extends Command
 {
     public tool:Tool;
     public mesh:THREE.Mesh;

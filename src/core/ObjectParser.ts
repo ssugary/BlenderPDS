@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { FileLoader } from './utils/FileLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
-import { SceneManager } from './SceneManager.js';
+import { SceneManager } from '../manager/SceneManager.js';
 
 export class ObjectParser
 {

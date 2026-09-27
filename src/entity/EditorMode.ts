@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { SelectionManager } from './SelectionManager';
-import { ToolManager } from '../../transforms/ToolManager.js';
-import { MeshEditTool } from '../../transforms/tools/MeshEditTool.js';
+import { SelectionManager } from '../manager/SelectionManager';
+import { ToolManager } from '../manager/ToolManager.js';
+import { MeshEditTool } from '../tool/implementation/MeshEditTool.js';
 
 export class EditorMode 
 {

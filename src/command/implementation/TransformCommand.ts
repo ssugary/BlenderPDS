@@ -1,5 +1,5 @@
 import {  Matrix4, Object3D } from "three";
-import { Command } from "./Command.js";
+import { Command } from "../Command.js";
 
 export class TransformCommand extends Command 
 {

@@ -1,4 +1,4 @@
-import { GLOBAL_BUS } from './EventBus';
+import { GLOBAL_BUS } from '../core/EventBus';
 
 type KeybindingsConfig = Record<string, string>;
 

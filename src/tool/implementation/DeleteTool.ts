@@ -1,11 +1,13 @@
-import { Tool } from './Tool.js';
-import { DeleteObjectCommand } from '../commands/DeleteObjectCommand.js';
-import { SceneManager } from '../../core/SceneManager.js';
-import { CommandManager } from '../CommandManager.js';
-import { SelectionManager } from '../../core/selection/SelectionManager.js';
-import { TransformControls } from 'three/examples/jsm/Addons.js';
-import { CreateObjectTool } from './CreateObjectTool.js';
-import { Object3D } from 'three';
+import { TransformControls } from "three/examples/jsm/Addons.js";
+import { CommandManager } from "../../manager/CommandManager";
+import { SceneManager } from "../../manager/SceneManager";
+import { SelectionManager } from "../../manager/SelectionManager";
+import { Tool } from "../Tool";
+import { CreateObjectTool } from "./CreateObjectTool";
+import { Object3D } from "three";
+import { DeleteObjectCommand } from "../../command/implementation/DeleteObjectCommand.js";
+
+
 export class DeleteTool extends Tool
 {
     private sceneManager:SceneManager;

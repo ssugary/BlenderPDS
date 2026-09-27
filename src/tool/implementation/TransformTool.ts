@@ -1,8 +1,8 @@
-import { Tool } from "./Tool.js";
-import { TransformCommand } from '../commands/TransformCommand.js';
-import { CommandManager } from "../CommandManager.js";
+import { Tool } from "../Tool.js";
+import { TransformCommand } from '../../command/implementation/TransformCommand.js';
 import { Matrix4, Object3D } from "three";
 import { TransformControls } from "three/examples/jsm/Addons.js";
+import { CommandManager } from "../../manager/CommandManager.js";
 
 export class TransformTool extends Tool 
 {

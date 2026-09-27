@@ -1,4 +1,3 @@
-import { Mesh, Object3D } from "three";
 
 //this needs to be refactored into a interface
 export class Tool 
