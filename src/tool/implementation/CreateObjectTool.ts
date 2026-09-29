@@ -44,6 +44,22 @@ export class CreateObjectTool extends Tool
             return torus;
         }
 
+        if(type === 'sphere'){
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.y = 0.5;
+            return sphere;
+        }
+
+        if(type === 'pill'){
+            const geometry = new THREE.CapsuleGeometry(0.3, 0.8, 16, 32);
+            const material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
+            const pill = new THREE.Mesh(geometry, material);
+            pill.position.y = 0.5;
+            return pill;
+        }
+
         return null;
     }
 }
