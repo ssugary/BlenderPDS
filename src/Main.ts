@@ -1,6 +1,19 @@
 import { Engine } from './core/Engine.js';
 import { InputManager } from './manager/InputManager.js';
 import { UIManager } from './ui/UIManager.js';
+import { Lobby } from './ui/Lobby.js';
+import { ChatPanel } from './ui/ChatPanel.js';
+import { GLOBAL_BUS } from './core/EventBus.js';
+
+const session = await new Lobby().run();
+if (session)
+{
+    GLOBAL_BUS.emit('network:connected', session);
+    new ChatPanel(session);
+}
+
+document.getElementById('ui')!.style.display = '';
+
 const engine = new Engine(document.body);
 engine.start();
 
