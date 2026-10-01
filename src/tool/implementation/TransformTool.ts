@@ -20,7 +20,9 @@ export class TransformTool extends Tool
         selectedObject ? this.controls.attach(selectedObject) : this.controls.detach();
     }
     captureState(object:Object3D):Matrix4
-    { 
+    {
+        // The matrix is refreshed on render, so refresh it here to be sure it matches position/rotation/scale.
+        object.updateMatrix();
         return object.matrix.clone(); 
     }
 }

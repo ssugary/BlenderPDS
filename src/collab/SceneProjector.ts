@@ -14,6 +14,10 @@ import { CreateObjectTool } from '../tool/implementation/CreateObjectTool';
 export class SceneProjector
 {
     private meshes = new Map<string, THREE.Mesh>();
+    private draggingId: string | null = null;
+
+    /** Called just before a shared mesh leaves the scene, so the engine can detach gizmos from it. */
+    public onMeshRemoved: ((mesh: THREE.Mesh) => void) | null = null;
 
     public constructor(
         private readonly session: ReplicaSession,
@@ -49,10 +53,9 @@ export class SceneProjector
                     this.removeMesh(record.id);
                     break;
                 case 'transform':
-                    this.applyTransform(this.meshes.get(record.id), record);
-                    break;
-                case 'material':
-                    this.applyColor(this.meshes.get(record.id), record);
+                    // Don't move an object under the cursor of the user who is dragging it.
+                    if (record.id !== this.draggingId)
+                        this.applyTransform(this.meshes.get(record.id), record);
                     break;
             }
         }
@@ -84,6 +87,8 @@ export class SceneProjector
         if (this.selectionManager.getSelected() === mesh)
             this.selectionManager.deselectAll();
 
+        this.onMeshRemoved?.(mesh);
+
         this.sceneManager.removeObject(mesh.uuid);
         this.meshes.delete(objectId);
     }
@@ -104,7 +109,25 @@ export class SceneProjector
         if (!mesh)
             return;
 
-        (mesh.material as THREE.MeshStandardMaterial).color.setHex(record.color.value);
+        (mesh.material as THREE.MeshStandardMaterial).color.setHex(record.color);
+    }
+
+    /**
+     * Call with the id when a local drag starts and with null when it ends (after committing the result).
+     * While held, remote transforms for that object are stored but not drawn. On release the mesh is
+     * redrawn from the state, so it shows whichever write won.
+     */
+    public holdTransform(objectId: string | null): void
+    {
+        const previous = this.draggingId;
+        this.draggingId = objectId;
+
+        if (objectId === null && previous !== null)
+        {
+            const record = this.session.state.get(previous);
+            if (record && !record.deleted)
+                this.applyTransform(this.meshes.get(previous), record);
+        }
     }
 
     /** Raycast hit -> objectId. Walks up the parents in case the hit is a child of a shared mesh. */

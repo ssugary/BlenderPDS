@@ -1,15 +1,12 @@
-import { Object3D } from "three";
-import { CreateObjectTool } from "../../tool/implementation/CreateObjectTool.js";
-import { DeleteTool } from "../../tool/implementation/DeleteTool.js";
 import { Command } from "../Command.js";
+import { ReplicaSession } from "../../collab/ReplicaSession.js";
 
+/** Deleting tombstones the object, and undo re-adds the same id with its current transform and its color. */
 export class DeleteObjectCommand extends Command
 {
-    
     constructor(
-        private createObjectTool:CreateObjectTool,
-        private deleteTool:DeleteTool,
-        private object:Object3D | null,
+        private session:ReplicaSession,
+        private objectId:string,
     )
     {
         super();
@@ -17,15 +14,22 @@ export class DeleteObjectCommand extends Command
 
     public execute():void
     {
-        if(this.object)
-            this.deleteTool.deleteObject(this.object);
-
+        this.session.commit({ kind: 'remove_object', objectId: this.objectId });
     }
 
     public undo():void
     {
-        if(this.object)
-            this.createObjectTool.createObject(this.object);
+        const record = this.session.state.get(this.objectId);
+        if(!record)
+            return;
+
+        this.session.commit({
+            kind: 'add_object',
+            objectId: this.objectId,
+            geometry: record.geometry,
+            transform: record.transform.value,
+            color: record.color,
+        });
     }
 
     public redo():void

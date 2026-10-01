@@ -4,6 +4,9 @@ import { UIManager } from './ui/UIManager.js';
 import { Lobby } from './ui/Lobby.js';
 import { ChatPanel } from './ui/ChatPanel.js';
 import { GLOBAL_BUS } from './core/EventBus.js';
+import { ReplicaSession } from './collab/ReplicaSession.js';
+import { Toast } from './ui/Toast.js';
+import { TimelinePanel } from './ui/TimelinePanel.js';
 
 const session = await new Lobby().run();
 if (session)
@@ -14,8 +17,12 @@ if (session)
 
 document.getElementById('ui')!.style.display = '';
 
-const engine = new Engine(document.body);
+const replica = new ReplicaSession();
+const engine = new Engine(document.body, replica, session);
 engine.start();
+
+new Toast();
+new TimelinePanel(replica.log);
 
 const uiManager = new UIManager(engine.renderEngine.renderer.domElement);
 

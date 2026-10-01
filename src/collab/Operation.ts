@@ -37,13 +37,6 @@ export interface SetTransform extends BaseOperation
     matrix: number[];
 }
 
-export interface SetMaterial extends BaseOperation
-{
-    kind: 'set_material';
-    objectId: string;
-    color: number;
-}
-
 /** Stage 2 (after the MVP): vertex drags and topology edits on stable vertex/face ids. */
 export interface MeshEdit extends BaseOperation
 {
@@ -60,7 +53,7 @@ export interface UndoOp extends BaseOperation
     targets: OpId[];
 }
 
-export type Operation = AddObject | RemoveObject | SetTransform | SetMaterial | MeshEdit | UndoOp;
+export type Operation = AddObject | RemoveObject | SetTransform | MeshEdit | UndoOp;
 
 /** Distributes Omit over the union so callers can build an op without id/author/deps. */
 export type NewOperation = Operation extends infer O ? (O extends Operation ? Omit<O, 'id' | 'author' | 'deps'> : never) : never;
