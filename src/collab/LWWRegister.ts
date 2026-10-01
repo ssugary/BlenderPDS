@@ -13,11 +13,15 @@ export class LWWRegister<T>
 
     /**
      * Returns true if the value changed (so DocumentState knows to report a change to the projector).
-     * TODO: if compareOpId(stamp, this.stamp) > 0 then store both and return true, else return false.
      */
     public set(_value: T, _stamp: OpId): boolean
     {
-        throw new Error('not implemented');
+        if (compareOpId(_stamp, this.stamp) > 0) {
+            this.value = _value;
+            this.stamp = _stamp;
+            return true;  
+        }
+        return false;      
     }
 
     /** Exported so the compare used by set() is easy to unit test on its own. */
