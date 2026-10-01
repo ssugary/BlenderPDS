@@ -6,7 +6,8 @@ import { OpId } from './OpId';
 export interface ObjectRecord
 {
     id: string;
-    geometry: string;
+    geometry: string;//placeholder for basic shapes
+    //cube, pill, sphere, torus, etc
     createdBy: OpId;
     /** Tombstone: keep the record so late ops for this id don't crash, and so undo can revive it. */
     deleted: boolean;
@@ -41,7 +42,46 @@ export class DocumentState
      */
     public apply(_op: Operation): Change[]
     {
-        throw new Error('not implemented');
+        switch(_op.kind){
+            case 'add_object':
+                if(!this.objects.has(_op.objectId)){
+                    this.objects.set(_op.objectId, {
+                        id: _op.objectId,
+                        geometry: _op.geometry,
+                        createdBy: _op.id,
+                        deleted: false,
+                        transform: new LWWRegister<number[]>(_op.transform, _op.id),
+                        color: new LWWRegister<number>(_op.color, _op.id)
+                    });
+                    return [{type: 'added', objectId: _op.objectId}];
+                }
+                return [];
+            case 'remove_object':
+                const record = this.objects.get(_op.objectId);
+                if(record && !record.deleted){
+                    record.deleted = true;
+                    return [{type: 'removed', objectId: _op.objectId}];
+                }
+                return [];
+            case 'set_transform':
+                const transformRecord = this.objects.get(_op.objectId);
+                if(transformRecord && !transformRecord.deleted){
+                    if(transformRecord.transform.set(_op.matrix, _op.id)){
+                        return [{type: 'transform', objectId: _op.objectId}];
+                    }
+                }
+                return [];
+            case 'set_material':
+                const materialRecord = this.objects.get(_op.objectId);
+                if(materialRecord && !materialRecord.deleted){
+                    if(materialRecord.color.set(_op.color, _op.id)){
+                        return [{type: 'material', objectId: _op.objectId}];
+                    }
+                }
+                return [];
+            default:
+                return [];
+        }
     }
 
     public get(objectId: string): ObjectRecord | undefined
@@ -55,8 +95,11 @@ export class DocumentState
     }
 
     /** Used by the timeline: rebuild a state from a log prefix into a scratch DocumentState. */
-    public static replay(_ops: readonly Operation[]): DocumentState
+    public static replay(ops: readonly Operation[]): DocumentState
     {
-        throw new Error('not implemented');
+        const state = new DocumentState();
+        for (const op of ops)
+            state.apply(op);
+        return state;
     }
 }

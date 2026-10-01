@@ -21,24 +21,38 @@ export class ReplicaSession
         this.clock = new LamportClock(siteId);
     }
 
-    /**
-     * Local edit. Never waits for the network.
-     * TODO: build the full Operation (id = clock.tick(), author = siteId, deps = latest known),
-     *       log.append, state.apply, notify onChange listeners, notify onLocalOp listeners (SyncEngine).
-     */
-    public commit(_op: NewOperation): Operation
+    /** Local edit. Never waits for the network. */
+    public commit(newOp: NewOperation): Operation
     {
-        throw new Error('not implemented');
+        // deps stays empty for the MVP; fill it with the ids you had seen if you need causal delivery later.
+        const op = { ...newOp, id: this.clock.tick(), author: this.clock.id, deps: [] } as Operation;
+
+        this.log.append(op);
+        this.notifyChanges(this.state.apply(op));
+
+        for (const listener of this.localListeners)
+            listener(op);
+
+        return op;
     }
 
-    /**
-     * Remote edit.
-     * TODO: if log.append() returns false it's a duplicate, so stop.
-     *       Otherwise clock.observe(op.id), state.apply, notify onChange listeners.
-     */
-    public receive(_op: Operation): void
+    /** Remote edit. Duplicates are dropped, and it never fires onLocalOp (no echo back to the sender). */
+    public receive(op: Operation): void
     {
-        throw new Error('not implemented');
+        if (!this.log.append(op))
+            return;
+
+        this.clock.observe(op.id);
+        this.notifyChanges(this.state.apply(op));
+    }
+
+    private notifyChanges(changes: Change[]): void
+    {
+        if (changes.length === 0)
+            return;
+
+        for (const listener of this.changeListeners)
+            listener(changes);
     }
 
     /** SceneProjector subscribes here. */
