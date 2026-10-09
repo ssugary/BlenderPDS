@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SceneManager } from './SceneManager';
+import { SceneManager } from '../manager/SceneManager';
 
 export class RenderEngine
 {

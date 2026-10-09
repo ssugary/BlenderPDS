@@ -1,4 +1,4 @@
-import { SceneManager } from '../SceneManager.js';
+import { SceneManager } from '../../manager/SceneManager.js';
 import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import * as THREE from 'three';
 

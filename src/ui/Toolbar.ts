@@ -49,7 +49,7 @@ export class Toolbar
 
         this.btnDelete?.addEventListener('click', () => 
         {
-            GLOBAL_BUS.emit('action:delete_object', undefined);
+            GLOBAL_BUS.emit('action:delete_object', {});
         });
 
         this.btnAddModel?.addEventListener('click', () =>

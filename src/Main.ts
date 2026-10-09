@@ -1,8 +1,28 @@
 import { Engine } from './core/Engine.js';
-import { InputManager } from './core/InputManager.js';
+import { InputManager } from './manager/InputManager.js';
 import { UIManager } from './ui/UIManager.js';
-const engine = new Engine(document.body);
+import { Lobby } from './ui/Lobby.js';
+import { ChatPanel } from './ui/ChatPanel.js';
+import { GLOBAL_BUS } from './core/EventBus.js';
+import { ReplicaSession } from './collab/ReplicaSession.js';
+import { Toast } from './ui/Toast.js';
+import { TimelinePanel } from './ui/TimelinePanel.js';
+
+const session = await new Lobby().run();
+if (session)
+{
+    GLOBAL_BUS.emit('network:connected', session);
+    new ChatPanel(session);
+}
+
+document.getElementById('ui')!.style.display = '';
+
+const replica = new ReplicaSession();
+const engine = new Engine(document.body, replica, session);
 engine.start();
+
+new Toast();
+new TimelinePanel(replica.log);
 
 const uiManager = new UIManager(engine.renderEngine.renderer.domElement);
 
