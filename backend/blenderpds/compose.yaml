@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: 'postgres:16'
+    environment:
+      - 'POSTGRES_DB=blenderpds'
+      - 'POSTGRES_PASSWORD=senha123'
+      - 'POSTGRES_USER=blender'
+    ports:
+      - '5432'
+    volumes:
+      - 'blenderpds-data:/var/lib/postgresql/data'
+
+volumes:
+  blenderpds-data:
