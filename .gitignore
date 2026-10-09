@@ -1,1 +1,4 @@
 node_modules/
+.freebuff/
+.idea/
+package-lock.json
