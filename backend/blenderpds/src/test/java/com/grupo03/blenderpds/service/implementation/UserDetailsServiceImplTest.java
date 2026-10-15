@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.grupo03.blenderpds.model.Role;
 import com.grupo03.blenderpds.model.User;
 import com.grupo03.blenderpds.repository.UserRepository;
+import com.grupo03.blenderpds.service.EmailService;
 import com.grupo03.blenderpds.service.UserDetailsService;
 import com.grupo03.blenderpds.service.UserService;
 import jakarta.persistence.EntityManager;
@@ -21,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -41,6 +43,10 @@ class UserDetailsServiceImplTest {
 
     @PersistenceContext
     private EntityManager em;
+
+    // o register agora dispara e-mail real; aqui só interessa o login, então mocka
+    @MockitoBean
+    private EmailService emailService;
 
     @Test
     void isHookedIntoSpringSecurity() {

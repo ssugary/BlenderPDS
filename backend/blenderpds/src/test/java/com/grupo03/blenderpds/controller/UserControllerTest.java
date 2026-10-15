@@ -8,14 +8,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.grupo03.blenderpds.service.EmailService;
 import com.grupo03.blenderpds.service.UserService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,17 @@ class UserControllerTest {
 
     @Autowired
     private UserService userService;
+
+    // o register dispara e-mail; aqui interessa só o HTTP, então mocka o envio
+    @MockitoBean
+    private EmailService emailService;
+
+    private String lastSentToken() {
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(emailService)
+                .sendConfirmationEmail(org.mockito.ArgumentMatchers.any(), captor.capture());
+        return captor.getValue();
+    }
 
     @Test
     void registerReturnsCreatedWithoutExposingPassword() throws Exception {
@@ -145,6 +159,31 @@ class UserControllerTest {
         mockMvc.perform(post("/users/" + id + "/confirm-email").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.emailVerified").value(true));
+    }
+
+    @Test
+    @WithAnonymousUser
+    void confirmEmailByLinkFromEmailWorksAnonymously() throws Exception {
+        userService.register("lara", "lara@example.com", "senha12345");
+        String token = lastSentToken();
+
+        mockMvc.perform(get("/users/confirm-email").param("token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("lara@example.com"))
+                .andExpect(jsonPath("$.emailVerified").value(true))
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void confirmEmailWithBadOrMissingTokenReturns400() throws Exception {
+        userService.register("lara", "lara@example.com", "senha12345");
+
+        mockMvc.perform(get("/users/confirm-email").param("token", "nao-existe"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/users/confirm-email"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

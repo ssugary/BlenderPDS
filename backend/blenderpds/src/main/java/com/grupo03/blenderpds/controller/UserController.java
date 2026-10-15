@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -79,6 +80,20 @@ public class UserController {
         }
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Confirmação pelo link enviado por e-mail (GET para funcionar como link
+     * clicável, sem CSRF). Não exige login — o usuário ainda nem consegue logar
+     * antes de confirmar.
+     */
+    @GetMapping("/confirm-email")
+    public ResponseEntity<UserDto> confirmEmailByToken(@RequestParam(required = false) String token) {
+        return userService.confirmEmailByToken(token)
+                .map(UserDto::from)
+                .map(ResponseEntity::ok)
+                // token desconhecido ou expirado: 400 (não vaza qual dos dois)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PostMapping("/{id}/confirm-email")

@@ -2,18 +2,28 @@ package com.grupo03.blenderpds.service.implementation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
+import com.grupo03.blenderpds.model.EmailConfirmationToken;
 import com.grupo03.blenderpds.model.Role;
 import com.grupo03.blenderpds.model.User;
+import com.grupo03.blenderpds.repository.EmailConfirmationTokenRepository;
 import com.grupo03.blenderpds.repository.UserRepository;
+import com.grupo03.blenderpds.service.EmailService;
 import com.grupo03.blenderpds.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -27,7 +37,14 @@ class UserServiceImplTest {
     private UserRepository userRepository;
 
     @Autowired
+    private EmailConfirmationTokenRepository tokenRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    // não queremos SMTP real em teste de serviço: o envio é verificado pelo mock
+    @MockitoBean
+    private EmailService emailService;
 
     @PersistenceContext
     private EntityManager em;
@@ -135,5 +152,67 @@ class UserServiceImplTest {
     void deleteOfUnknownUserThrows() {
         assertThatThrownBy(() -> userService.delete(999999L))
                 .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void registerCreatesTokenAndSendsConfirmationEmail() {
+        User user = userService.register("bia", "bia@example.com", "senha123");
+
+        ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(emailService).sendConfirmationEmail(userCaptor.capture(), tokenCaptor.capture());
+
+        assertThat(userCaptor.getValue().getEmail()).isEqualTo("bia@example.com");
+        String token = tokenCaptor.getValue();
+        assertThat(token).isNotBlank();
+
+        EmailConfirmationToken stored = tokenRepository.findByToken(token).orElseThrow();
+        assertThat(stored.getUser().getId()).isEqualTo(user.getId());
+        assertThat(stored.getExpiresAt()).isAfter(Instant.now());
+        assertThat(stored.getExpiresAt()).isBefore(Instant.now().plus(25, ChronoUnit.HOURS));
+        assertThat(user.isEmailVerified()).isFalse();
+    }
+
+    @Test
+    void confirmEmailByTokenVerifiesUserAndConsumesToken() {
+        User user = userService.register("carla", "carla@example.com", "senha123");
+        ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendConfirmationEmail(any(), tokenCaptor.capture());
+        String token = tokenCaptor.getValue();
+
+        Optional<User> confirmed = userService.confirmEmailByToken(token);
+
+        assertThat(confirmed).isPresent();
+        assertThat(confirmed.orElseThrow().isEmailVerified()).isTrue();
+        em.flush();
+        em.clear();
+        assertThat(userRepository.findById(user.getId()).orElseThrow().isEmailVerified()).isTrue();
+        // token é de uso único
+        assertThat(tokenRepository.findByToken(token)).isEmpty();
+        assertThat(userService.confirmEmailByToken(token)).isEmpty();
+    }
+
+    @Test
+    void confirmEmailByUnknownTokenReturnsEmpty() {
+        assertThat(userService.confirmEmailByToken("nao-existe")).isEmpty();
+        assertThat(userService.confirmEmailByToken(null)).isEmpty();
+        assertThat(userService.confirmEmailByToken("  ")).isEmpty();
+    }
+
+    @Test
+    void confirmEmailByExpiredTokenReturnsEmptyAndKeepsUserUnverified() {
+        User user = userService.register("davi", "davi@example.com", "senha123");
+        ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendConfirmationEmail(any(), tokenCaptor.capture());
+        String token = tokenCaptor.getValue();
+
+        EmailConfirmationToken stored = tokenRepository.findByToken(token).orElseThrow();
+        stored.setExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES));
+        tokenRepository.save(stored);
+        em.flush();
+        em.clear();
+
+        assertThat(userService.confirmEmailByToken(token)).isEmpty();
+        assertThat(userRepository.findById(user.getId()).orElseThrow().isEmailVerified()).isFalse();
     }
 }

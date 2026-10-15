@@ -10,5 +10,13 @@ services:
     volumes:
       - 'blenderpds-data:/var/lib/postgresql/data'
 
+  # Servidor SMTP local para desenvolvimento: a UI em http://localhost:8025
+  # mostra os e-mails enviados (inclusive o de confirmação de cadastro).
+  mailpit:
+    image: 'axllent/mailpit:latest'
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
 volumes:
   blenderpds-data:
