@@ -83,6 +83,46 @@ class UserControllerTest {
     }
 
     @Test
+    void registerWithTooShortPasswordReturns400() throws Exception {
+        mockMvc.perform(post("/users").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nickname":"bia","email":"bia@example.com","password":"senha12"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registerWithTooLongPasswordReturns400() throws Exception {
+        String password = "a".repeat(129);
+        mockMvc.perform(post("/users").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nickname\":\"bia\",\"email\":\"bia@example.com\","
+                                + "\"password\":\"" + password + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registerWithTooShortNicknameReturns400() throws Exception {
+        mockMvc.perform(post("/users").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nickname":"ab","email":"bia@example.com","password":"senha12345"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registerWithTooLongNicknameReturns400() throws Exception {
+        String nickname = "a".repeat(33);
+        mockMvc.perform(post("/users").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nickname\":\"" + nickname + "\",\"email\":\"bia@example.com\","
+                                + "\"password\":\"senha12345\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void registerDuplicatedEmailReturns409() throws Exception {
         userService.register("bia", "bia@example.com", "senha12345");
 

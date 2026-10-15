@@ -1,7 +1,10 @@
 package com.grupo03.blenderpds.controller;
 
+import com.grupo03.blenderpds.dto.FriendRequestCreateDto;
+import com.grupo03.blenderpds.dto.FriendRequestDto;
 import com.grupo03.blenderpds.dto.UserDto;
 import com.grupo03.blenderpds.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +35,14 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserDto> register(@Valid @RequestBody UserDto body) {
-        if (body.getPassword() == null || body.getPassword().isBlank()) {
+        // Regras do cadastro: senha 8–128 caracteres (o DTO também valida min 8)…
+        if (body.getPassword() == null || body.getPassword().isBlank()
+                || body.getPassword().length() < 8 || body.getPassword().length() > 128) {
+            return ResponseEntity.badRequest().build();
+        }
+        // …e nickname 3–32 caracteres (regra só do registro; o PUT não a impõe).
+        if (body.getNickname() == null || body.getNickname().length() < 3
+                || body.getNickname().length() > 32) {
             return ResponseEntity.badRequest().build();
         }
         if (userService.getByEmail(body.getEmail()).isPresent()) {
@@ -111,6 +121,94 @@ public class UserController {
     /** E-mail duplicado (corrida entre o pré-checagem e o insert) vira 409 em vez de 500. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<Void> duplicateEmail(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    // ---------------- Pedidos de amizade ----------------
+
+    /**
+     * Envia pedido de amizade: {id} é o remetente, o corpo traz o destinatário.
+     * 400 = pedido para si mesmo · 404 = usuário/pedido inexistente ·
+     * 409 = já são amigos, pedido duplicado ou pedido inverso pendente.
+     */
+    @PostMapping("/{id}/friend-requests")
+    public ResponseEntity<FriendRequestDto> sendFriendRequest(
+            @PathVariable Long id, @Valid @RequestBody FriendRequestCreateDto body) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(FriendRequestDto.from(userService.sendFriendRequest(id, body.receiverId())));
+    }
+
+    /** Pedidos pendentes RECEBIDOS por {id} (para aceitar ou recusar). */
+    @GetMapping("/{id}/friend-requests")
+    public List<FriendRequestDto> pendingFriendRequests(@PathVariable Long id) {
+        return userService.getPendingFriendRequests(id).stream()
+                .map(FriendRequestDto::from)
+                .toList();
+    }
+
+    /** Pedidos pendentes ENVIADOS por {id} (para acompanhar/cancelar). */
+    @GetMapping("/{id}/friend-requests/sent")
+    public List<FriendRequestDto> sentFriendRequests(@PathVariable Long id) {
+        return userService.getSentFriendRequests(id).stream()
+                .map(FriendRequestDto::from)
+                .toList();
+    }
+
+    /**
+     * Aceita o pedido {requestId} em nome de {id} (só o destinatário pode).
+     * Devolve o UserDto do novo amigo.
+     */
+    @PostMapping("/{id}/friend-requests/{requestId}/accept")
+    public ResponseEntity<UserDto> acceptFriendRequest(
+            @PathVariable Long id, @PathVariable Long requestId) {
+        var request = userService.acceptFriendRequest(requestId, id);
+        return ResponseEntity.ok(UserDto.from(request.getSender()));
+    }
+
+    /** Recusa o pedido {requestId} em nome de {id} (só o destinatário pode). */
+    @PostMapping("/{id}/friend-requests/{requestId}/reject")
+    public ResponseEntity<Void> rejectFriendRequest(
+            @PathVariable Long id, @PathVariable Long requestId) {
+        userService.rejectFriendRequest(requestId, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Cancela o pedido enviado {requestId} em nome de {id} (só o remetente pode). */
+    @DeleteMapping("/{id}/friend-requests/{requestId}")
+    public ResponseEntity<Void> cancelFriendRequest(
+            @PathVariable Long id, @PathVariable Long requestId) {
+        userService.cancelFriendRequest(requestId, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Lista de amigos confirmados de {id}. */
+    @GetMapping("/{id}/friends")
+    public List<UserDto> friends(@PathVariable Long id) {
+        return userService.getFriendList(id).stream().map(UserDto::from).toList();
+    }
+
+    /** Remove a amizade dos dois lados. */
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        userService.removeFriend(id, friendId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Usuário ou pedido inexistente (vindo do serviço) → 404. */
+    @ExceptionHandler(EntityNotFoundException.class)
+    ResponseEntity<Void> notFound(EntityNotFoundException ex) {
+        return ResponseEntity.notFound().build();
+    }
+
+    /** Regra inválida (ex.: pedido de amizade para si mesmo) → 400. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<Void> badRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().build();
+    }
+
+    /** Conflito de amizade (já são amigos / pedido duplicado) → 409. */
+    @ExceptionHandler(IllegalStateException.class)
+    ResponseEntity<Void> friendshipConflict(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 }

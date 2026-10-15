@@ -8,11 +8,16 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -62,6 +67,18 @@ public class User {
      */
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
+
+    /**
+     * Lista de amigos confirmados — auto-relacionamento N:N (tabela user_friends).
+     * O pedido PENDENTE não fica aqui: mora em {@code friend_requests} e só entra
+     * nesta lista quando aceito (ambos os lados recebem a adição).
+     */
+    @ToString.Exclude
+    @ManyToMany
+    @JoinTable(name = "user_friends",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "friend_id"))
+    private Set<User> friendList = new HashSet<>();
 
     /** Preenchido automaticamente na criação pela auditoria do Spring Data. */
     @CreatedDate
