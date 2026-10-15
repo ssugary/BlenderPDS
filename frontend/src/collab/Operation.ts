@@ -29,6 +29,12 @@ export interface RemoveObject extends BaseOperation
     kind: 'remove_object';
     objectId: string;
 }
+export interface ChangeColor extends BaseOperation
+{
+    kind: 'change_color';
+    objectId: string;
+    color: number;
+}
 
 export interface SetTransform extends BaseOperation
 {
@@ -53,7 +59,7 @@ export interface UndoOp extends BaseOperation
     targets: OpId[];
 }
 
-export type Operation = AddObject | RemoveObject | SetTransform | MeshEdit | UndoOp;
+export type Operation = AddObject | RemoveObject | SetTransform | MeshEdit | UndoOp | ChangeColor;
 
 /** Distributes Omit over the union so callers can build an op without id/author/deps. */
 export type NewOperation = Operation extends infer O ? (O extends Operation ? Omit<O, 'id' | 'author' | 'deps'> : never) : never;

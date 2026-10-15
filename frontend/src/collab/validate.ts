@@ -44,6 +44,8 @@ export function isOperation(value: unknown): value is Operation
             return isShortString(op.objectId);
         case 'set_transform':
             return isShortString(op.objectId) && isMatrix(op.matrix);
+        case 'change_color':
+            return isShortString(op.objectId) && isColor(op.color);
         default:
             return false;
     }

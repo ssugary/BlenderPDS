@@ -16,14 +16,15 @@ export interface ObjectRecord
     removeStamp: OpId | null;
     transform: LWWRegister<number[]>;
     /** Set when the object is created. Nothing changes it afterwards, so it needs no register. */
-    color: number;
+    color: LWWRegister<number>;
 }
 
 /** What apply() reports back, so SceneProjector only touches what actually changed. */
 export type Change =
     | { type: 'added'; objectId: string }
     | { type: 'removed'; objectId: string }
-    | { type: 'transform'; objectId: string };
+    | { type: 'transform'; objectId: string }
+    | { type: 'color'; objectId: string };
 
 /**
  * The CRDT. Given the same set of ops it ends in the same state, whatever the arrival order.
@@ -57,7 +58,7 @@ export class DocumentState
                         addStamp: op.id,
                         removeStamp: null,
                         transform: new LWWRegister<number[]>(op.transform, op.id),
-                        color: op.color,
+                        color: new LWWRegister<number>(op.color, op.id),
                     });
                     return [{ type: 'added', objectId: op.objectId }];
                 }
@@ -101,7 +102,15 @@ export class DocumentState
                 const changed = record.transform.set(op.matrix, op.id);
                 return changed && !record.deleted ? [{ type: 'transform', objectId: op.objectId }] : [];
             }
+            case 'change_color':
+            {
+                const record = this.objects.get(op.objectId);
+                if (!record)
+                    return [];
 
+                const changed = record.color.set(op.color, op.id);
+                return changed && !record.deleted ? [{ type: 'color', objectId: op.objectId }] : [];
+            }
             default:
                 return [];
         }

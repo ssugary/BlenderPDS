@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SceneManager } from './SceneManager';
+import { GLOBAL_BUS } from '../core/EventBus';
 
 export class SelectionManager 
 {
@@ -24,12 +25,14 @@ export class SelectionManager
         this.selectedObject = object;
         this.selectionBox.setFromObject(object);
         this.selectionBox.visible = true;
+        GLOBAL_BUS.emit('selection:changed', { object });
     }
 
     deselectAll():void
     {
         this.selectedObject = null;
         this.selectionBox.visible = false;
+        GLOBAL_BUS.emit('selection:changed', { object: null });
     }
 
     update():void

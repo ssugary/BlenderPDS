@@ -26,6 +26,7 @@ import { SyncEngine } from '../collab/SyncEngine';
 import { PresenceService } from '../collab/PresenceService';
 import { RemoteSelectionView } from '../collab/RemoteSelectionView';
 import { Session } from '../network/Session';
+import { ColorEditCommand } from '../command/implementation/ColorEditCommand';
 export class Engine 
 {
 
@@ -277,6 +278,27 @@ export class Engine
 
             this.editorModeManager.active.onCanvasClick(intersect);
             this.syncPresence();
+            this.notifySelectionChange();
+        });
+
+        this.subscribe('action:preview_color', ({ color }) => 
+        {
+            const selected = this.selectionManager.getSelected();
+            if(!selected) 
+                return;
+
+            const material = selected.material as THREE.MeshStandardMaterial;
+            if (color instanceof THREE.Color)
+                material.color.copy(color); 
+            else 
+            {
+                const objectId = this.projector.objectIdFor(selected);
+                const record = objectId ? this.replica.state.get(objectId) : undefined;
+                
+                if(record) 
+                    material.color.setHex(record.color.value);
+                
+            }
         });
 
         this.subscribe('tool:change', (toolName) => 
@@ -288,14 +310,14 @@ export class Engine
             }
             const selection = this.selectionManager.getSelected()
             if(selection )
-            this.toolManager.setTool(toolName, selection);
+                this.toolManager.setTool(toolName, selection);
         });
 
         this.subscribe('editor:toggle_mode', () => 
         {
             const selection = this.selectionManager.getSelected()
             if(selection)
-            this.editorModeManager.toggle(selection);
+                this.editorModeManager.toggle(selection);
         });
 
         this.subscribe('input:action', ({ action, state }) => 
@@ -316,7 +338,7 @@ export class Engine
             {
                 const selection = this.selectionManager.getSelected();
                 if(selection)
-                this.editorModeManager.toggle(selection);
+                    this.editorModeManager.toggle(selection);
             }
 
             if (action === 'action:delete_object' && this.editorModeManager.current === 'object')
@@ -350,12 +372,52 @@ export class Engine
             this.deleteSelected();
         });
 
+        this.subscribe('action:change_color', ({ color }) =>
+        {
+            if(this.editorModeManager.current !== 'object')
+                return;
+
+            const objectId = this.projector.objectIdFor(this.selectionManager.getSelected());
+            const record = objectId ? this.replica.state.get(objectId) : undefined;
+            const hex = color.getHex();
+
+            if(!objectId || !record || record.color.value === hex)
+                return;
+
+            this.commandManager.execute(
+                new ColorEditCommand(this.replica, objectId, hex, record.color.value)
+            );
+        });
+
+    
         this.subscribe('camera:change_mode', () => 
         {
             this.cameraManager.changeMode();
         });
         this.subscribe('action:export_model', () => {
             FileExporter.exportSceneAsOBJ(this.sceneManager, 'scene.obj');
+        });
+    }
+
+    private notifySelectionChange() 
+    {
+        const selectedMesh = this.selectionManager.getSelected();
+        
+        if (!selectedMesh)
+        {
+            GLOBAL_BUS.emit('selection:changed', { objectId: null, color: null });
+            return;
+        }
+
+        const objectId = this.projector.objectIdFor(selectedMesh);
+        
+        const record = objectId ? this.replica.state.get(objectId) : undefined;
+        const colorHex = record ? record.color.value : (selectedMesh.material as THREE.MeshStandardMaterial).color.getHex();
+
+        GLOBAL_BUS.emit('selection:changed', 
+        {
+            objectId: objectId,
+            color: colorHex
         });
     }
 }
