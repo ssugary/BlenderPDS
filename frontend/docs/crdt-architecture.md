@@ -7,7 +7,7 @@ The core idea:
 - **Operation log** is the source of truth. Every edit is an immutable `Operation` with a unique id, appended to the log.
 - **DocumentState** is a CRDT built by folding the log. Two replicas that hold the same set of operations hold the same state, regardless of arrival order.
 - **Scene** (three.js) is only a view. `SceneProjector` turns state changes into `SceneManager` calls.
-- **Transport** (WebRTC data channel, already built) only moves operations between replicas. No host is needed for correctness, so the lobby's host/guest roles only matter for connection setup.
+- **Transport** only moves operations between replicas. No host is needed for correctness, so the lobby's host/guest roles only matter for connection setup. The transport is now the backend WebSocket (`session-backend.md`), which also sequences and stores the operations; WebRTC remains in the tree as the direct peer-to-peer option.
 
 ## 1. Modules and responsibilities
 
@@ -275,7 +275,7 @@ Note over SY,R: On reconnect, both sides exchange version vectors and send only 
 | `CommandManager` has undo and redo stacks of commands | Per-user stack of `OpId`s. Undo emits an inverse operation (or an `Undo` marker) | Undo must never rewind other people's edits. |
 | `SceneManager` is the source of truth | `DocumentState` is the source of truth, and `SceneManager` is a view | Nothing outside `SceneProjector` should call `SceneManager.addObject` for shared content. |
 | `Transport` carries chat only | `Transport` carries `hello`, `ops`, `presence` and `chat` messages | Add a `type` switch, which `ChatPanel` already does. |
-| Host and guest roles | Symmetric peers after the handshake | Host only matters for the offer/answer exchange. |
+| Host and guest roles | Symmetric peers after the handshake | The host owns the room lifecycle (creates it, may end it, and only their friends can join); merging stays symmetric. See `session-backend.md`. |
 | HEMesh vertex and face arrays with index-based ids | Stable ids on `HEVertex` and `HEFace` | Required for merging mesh edits. Do this first. |
 
 ## 5. Suggested build order
@@ -291,5 +291,5 @@ Note over SY,R: On reconnect, both sides exchange version vectors and send only 
 
 - **Library or hand-rolled.** Automerge or Yjs give you the sync protocol and compaction, but topology edits still need a custom model. A hand-rolled log and LWW registers are small for this scope and easy to explain in a course report.
 - **Topology merges.** Two concurrent extrudes on one face can produce an invalid half-edge mesh. The simplest safe rule is to lock a mesh to one author while it is in edit mode, and use operations for everything else.
-- **Log growth.** Every drag can produce many operations. Emit one `SetTransform` on release, not on every frame. Add snapshots later to compact the log.
+- **Log growth.** Every drag can produce many operations. Emit one `SetTransform` on release, not on every frame. The backend now stores a client-produced snapshot of the scene next to the log (still a log-replay for correctness; nothing reads the snapshot back into a `DocumentState` yet).
 - **Security.** A peer can send arbitrary operations. Validate the shape and size of every incoming payload before applying it, as `ChatPanel` does for chat.

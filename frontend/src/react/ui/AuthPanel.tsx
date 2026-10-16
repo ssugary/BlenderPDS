@@ -8,7 +8,7 @@ type AuthMode = 'login' | 'register';
 interface AuthPanelProps
 {
     social: Social;
-    /** Called after a successful login or registration. */
+    /** Called after a successful login. */
     onDone: () => void;
 }
 
@@ -18,29 +18,49 @@ const tabStyle = (active: boolean): CSSProperties => ({
     border: 'none',
     borderBottom: `2px solid ${active ? ACCENT : '#444'}`,
     borderRadius: 0,
-    color: active ? '#fff' : '#9a9aa6'
+    color: active ? '#fff' : '#9aa0a6'
 });
 
+/**
+ * Sign in / register against the backend.
+ *
+ * Registering does NOT sign the user in: the account starts unconfirmed and the login
+ * is blocked until the link that the backend e-mails is clicked (see Mailpit in dev).
+ */
 export function AuthPanel({ social, onDone }: AuthPanelProps)
 {
     const [mode, setMode] = useState<AuthMode>('login');
-    const [name, setName] = useState('');
+    const [nickname, setNickname] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
     const [busy, setBusy] = useState(false);
 
     const switchMode = (next: AuthMode) =>
     {
         setMode(next);
         setError('');
+        setNotice('');
     };
 
     const submit = async (event: FormEvent) =>
     {
         event.preventDefault();
         setError('');
+        setNotice('');
 
+        if (email.trim() === '')
+        {
+            setError('Type your e-mail.');
+            return;
+        }
+        if (mode === 'register' && nickname.trim().length < 3)
+        {
+            setError('The nickname needs at least 3 characters.');
+            return;
+        }
         if (mode === 'register' && password !== confirm)
         {
             setError('Passwords do not match.');
@@ -49,14 +69,25 @@ export function AuthPanel({ social, onDone }: AuthPanelProps)
 
         setBusy(true);
         const problem = mode === 'login'
-            ? await social.login(name, password)
-            : await social.register(name, password);
+            ? await social.login(email, password)
+            : await social.register(nickname, email, password);
         setBusy(false);
 
         if (problem)
+        {
             setError(problem);
-        else
-            onDone();
+            return;
+        }
+
+        if (mode === 'register')
+        {
+            setNotice('Account created. Click the link we e-mailed you to confirm it, then sign in.');
+            setPassword('');
+            setConfirm('');
+            return;
+        }
+
+        onDone();
     };
 
     return (
@@ -66,12 +97,22 @@ export function AuthPanel({ social, onDone }: AuthPanelProps)
                 <button type="button" style={tabStyle(mode === 'register')} onClick={() => switchMode('register')}>Register</button>
             </div>
 
+            {mode === 'register' && (
+                <input
+                    type="text"
+                    placeholder="Nickname"
+                    autoComplete="nickname"
+                    value={nickname}
+                    onChange={(event) => setNickname(event.target.value)}
+                    style={inputStyle}
+                />
+            )}
             <input
-                type="text"
-                placeholder="Username"
-                autoComplete="username"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+                type="email"
+                placeholder="E-mail"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 style={inputStyle}
             />
             <input
@@ -94,6 +135,7 @@ export function AuthPanel({ social, onDone }: AuthPanelProps)
             )}
 
             {error !== '' && <p style={{ ...mutedStyle, color: '#ff7b7b' }}>{error}</p>}
+            {notice !== '' && <p style={{ ...mutedStyle, color: '#3ddc84' }}>{notice}</p>}
 
             <button type="submit" disabled={busy} style={{ background: ACCENT, borderColor: ACCENT, color: '#111', fontWeight: 'bold' }}>
                 {busy ? 'Please wait...' : (mode === 'login' ? 'Sign in' : 'Create account')}

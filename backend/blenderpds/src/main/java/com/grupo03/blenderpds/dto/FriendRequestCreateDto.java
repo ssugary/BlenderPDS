@@ -3,7 +3,7 @@ package com.grupo03.blenderpds.dto;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * Entrada de POST /users/{id}/friend-requests: o remetente vem no path,
- * o destinatário no corpo. Campos desconhecidos do JSON são ignorados.
+ * Input of POST /users/{id}/friend-requests: the sender comes in the path, the
+ * receiver in the body. Unknown JSON fields are ignored.
  */
 public record FriendRequestCreateDto(@NotNull Long receiverId) {}

@@ -105,24 +105,117 @@ class EntityMappingTest {
         assertThat(afterUpdate.getCreatedAt()).isEqualTo(createdAt);
     }
 
+    private Session newSession(User host, String code) {
+        Session session = new Session();
+        session.setHost(host);
+        session.setCode(code);
+        session.setStatus(SessionStatus.WAITING);
+        return session;
+    }
+
     @Test
-    void sessionPointsToItsOwner() {
-        User owner = new User();
-        owner.setNickname("rene");
-        owner.setEmail("rene@example.com");
-        owner.setPasswordHash("{bcrypt}$2a$10$abcdefghijklmnopqrstuv");
-        owner.setRole(Role.USER);
+    void sessionPointsToItsHostAndIsAudited() {
+        User owner = newUser("rene", "rene@example.com");
         em.persist(owner);
-        Session session = new Session(null, owner);
+        Session session = newSession(owner, "CODE000001");
         em.persist(session);
         em.flush();
         em.clear();
 
         Session found = em.find(Session.class, session.getId());
         assertThat(found).isNotNull();
-        assertThat(found.getUser()).isNotNull();
-        assertThat(found.getUser().getId()).isEqualTo(owner.getId());
-        assertThat(found.getUser().getNickname()).isEqualTo("rene");
+        assertThat(found.getHost()).isNotNull();
+        assertThat(found.getHost().getId()).isEqualTo(owner.getId());
+        assertThat(found.getHost().getNickname()).isEqualTo("rene");
+        assertThat(found.getStatus()).isEqualTo(SessionStatus.WAITING);
+        assertThat(found.getCode()).isEqualTo("CODE000001");
+        // @CreatedDate/@LastModifiedDate do not fire without @EntityListeners: this test is the safety net
+        assertThat(found.getCreatedAt()).isNotNull();
+        assertThat(found.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void participantBelongsToSessionAndUserOncePerPair() {
+        User host = newUser("paula", "paula@example.com");
+        em.persist(host);
+        Session session = newSession(host, "CODE000002");
+        em.persist(session);
+
+        SessionParticipant participant = new SessionParticipant();
+        participant.setSession(session);
+        participant.setUser(host);
+        participant.setActive(true);
+        participant.setLastSeenAt(Instant.now());
+        em.persist(participant);
+        em.flush();
+        em.clear();
+
+        SessionParticipant found = em.find(SessionParticipant.class, participant.getId());
+        assertThat(found).isNotNull();
+        assertThat(found.isActive()).isTrue();
+        assertThat(found.getJoinedAt()).isNotNull();
+        assertThat(found.getUser().getNickname()).isEqualTo("paula");
+
+        // the (session, user) pair is unique: joining twice reactivates the same row
+        SessionParticipant duplicated = new SessionParticipant();
+        duplicated.setSession(em.find(Session.class, session.getId()));
+        duplicated.setUser(em.find(User.class, host.getId()));
+        assertThatThrownBy(() -> {
+            em.persist(duplicated);
+            em.flush();
+        }).isNotNull();
+    }
+
+    @Test
+    void operationStoresRawPayloadAndRejectsDuplicatedOpAndSeq() {
+        User host = newUser("otavio", "otavio@example.com");
+        em.persist(host);
+        Session session = newSession(host, "CODE000003");
+        em.persist(session);
+
+        SessionOperation operation = new SessionOperation();
+        operation.setSession(session);
+        operation.setSeq(1L);
+        operation.setSiteId("site-otavio");
+        operation.setLamport(1L);
+        operation.setAuthor(host);
+        operation.setKind("add_object");
+        operation.setPayload("{\"id\":{\"lamport\":1,\"siteId\":\"site-otavio\"}}");
+        em.persist(operation);
+        em.flush();
+        em.clear();
+
+        SessionOperation found = em.find(SessionOperation.class, operation.getId());
+        assertThat(found.getPayload()).contains("site-otavio");
+        assertThat(found.getCreatedAt()).isNotNull();
+        assertThat(found.getAuthor().getId()).isEqualTo(host.getId());
+
+        // the same op (siteId + lamport) resent must not become a new row
+        SessionOperation redelivered = new SessionOperation();
+        redelivered.setSession(em.find(Session.class, session.getId()));
+        redelivered.setSeq(2L);
+        redelivered.setSiteId("site-otavio");
+        redelivered.setLamport(1L);
+        redelivered.setKind("add_object");
+        redelivered.setPayload("{}");
+        assertThatThrownBy(() -> {
+            em.persist(redelivered);
+            em.flush();
+            em.clear();
+        }).isNotNull();
+
+        // and seq is unique within the session
+        SessionOperation sameSeq = new SessionOperation();
+        sameSeq.setSession(em.find(Session.class, session.getId()));
+        sameSeq.setSeq(1L);
+        sameSeq.setSiteId("site-outro");
+        sameSeq.setLamport(9L);
+        sameSeq.setKind("add_object");
+        sameSeq.setPayload("{}");
+        assertThatThrownBy(() -> {
+            em.persist(sameSeq);
+            em.flush();
+        }).isNotNull();
     }
 
     @Test
@@ -140,8 +233,10 @@ class EntityMappingTest {
     void tablesWereCreatedInPostgres() {
         Integer tables = jdbc.queryForObject(
                 "select count(*) from information_schema.tables "
-                        + "where table_schema = 'public' and table_name in ('users', 'sessions')",
+                        + "where table_schema = 'public' and table_name in "
+                        + "('users', 'user_friends', 'friend_requests', 'email_confirm_tokens', "
+                        + "'sessions', 'session_participants', 'session_operations')",
                 Integer.class);
-        assertThat(tables).isEqualTo(2);
+        assertThat(tables).isEqualTo(7);
     }
 }

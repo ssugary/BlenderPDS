@@ -51,7 +51,7 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    /** Hash da senha (nunca a senha em texto puro). */
+    /** Password hash (never the plain-text password). */
     @NotBlank
     @Size(max = 100)
     @Column(name = "password_hash", nullable = false, length = 100)
@@ -63,15 +63,15 @@ public class User {
     private Role role = Role.USER;
 
     /**
-     * false enquanto o e-mail não for confirmado — deve bloquear o login.
+     * false until the e-mail is confirmed — it must block the login.
      */
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
     /**
-     * Lista de amigos confirmados — auto-relacionamento N:N (tabela user_friends).
-     * O pedido PENDENTE não fica aqui: mora em {@code friend_requests} e só entra
-     * nesta lista quando aceito (ambos os lados recebem a adição).
+     * Confirmed friend list — an N:N self relationship (user_friends table).
+     * The PENDING request does not live here: it sits in {@code friend_requests} and
+     * only joins this list once accepted (both sides get the addition).
      */
     @ToString.Exclude
     @ManyToMany
@@ -80,7 +80,7 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "friend_id"))
     private Set<User> friendList = new HashSet<>();
 
-    /** Preenchido automaticamente na criação pela auditoria do Spring Data. */
+    /** Filled in automatically on creation by Spring Data's auditing. */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

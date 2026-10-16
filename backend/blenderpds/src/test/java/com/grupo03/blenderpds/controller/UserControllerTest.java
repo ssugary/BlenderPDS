@@ -34,7 +34,7 @@ class UserControllerTest {
     @Autowired
     private UserService userService;
 
-    // o register dispara e-mail; aqui interessa só o HTTP, então mocka o envio
+    // register fires an e-mail; only the HTTP matters here, so mock the sending
     @MockitoBean
     private EmailService emailService;
 

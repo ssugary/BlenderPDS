@@ -16,10 +16,13 @@ export default defineConfig({
         host: true,
         port: 5173,
         proxy: {
-            // REST: /api/** reaches Spring untouched, so the browser sees a single origin during dev.
+            // REST: the front always calls /api/... and the prefix is stripped here, so the
+            // controller paths stay plain (/sessions, /users) on the backend and the browser
+            // still sees a single origin — which is also what makes the session cookie work.
             '/api': {
                 target: backendUrl,
-                changeOrigin: true
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '')
             },
             // Signalling and collaboration socket. `ws: true` upgrades instead of proxying as HTTP.
             '/ws': {

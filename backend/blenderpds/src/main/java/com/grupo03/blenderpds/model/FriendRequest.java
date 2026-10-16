@@ -21,11 +21,11 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
- * Pedido de amizade PENDENTE. A tabela guarda apenas o estado pendente: ao ser
- * aceito (ou recusado/cancelado) a linha é apagada e a amizade passa a viver em
- * {@code users.friendList} — fonte única da lista de amigos. Um único par
- * (sender, receiver) pode ter no máximo um pedido aberto, garantido pela
- * constraint única abaixo.
+ * A PENDING friend request. The table only holds the pending state: once accepted
+ * (or rejected/cancelled) the row is deleted and the friendship lives on in
+ * {@code users.friendList} — the single source of the friend list. A single
+ * (sender, receiver) pair may have at most one open request, guaranteed by the
+ * unique constraint below.
  */
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -42,17 +42,17 @@ public class FriendRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Quem enviou o pedido. */
+    /** Who sent the request. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    /** Quem precisa aceitar (único que pode aceitar/recusar). */
+    /** Who has to accept it (the only one who may accept/reject). */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 
-    /** Preenchido pela auditoria na criação — usado para ordenar a lista pendente. */
+    /** Filled in by the auditing on creation — used to order the pending list. */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -18,8 +18,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 /**
- * Teste de unidade (sem Spring): o {@link JavaMailSender} é mockado e a mensagem
- * montada é inspecionada diretamente.
+ * Unit test (no Spring): the {@link JavaMailSender} is mocked and the assembled
+ * message is inspected directly.
  */
 class EmailServiceImplTest {
 
@@ -30,7 +30,7 @@ class EmailServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // mensagem real "vazia": pode ser montada sem servidor SMTP por perto
+        // a real "empty" message: it can be built with no SMTP server around
         when(mailSender.createMimeMessage()).thenReturn(new JavaMailSenderImpl().createMimeMessage());
     }
 
@@ -73,7 +73,7 @@ class EmailServiceImplTest {
 
     @Test
     void transportFailurePropagatesAsMailSendException() {
-        // send(MimeMessage) é void: doThrow em vez de when(...).thenThrow(...)
+        // send(MimeMessage) is void: doThrow instead of when(...).thenThrow(...)
         org.mockito.Mockito.doThrow(new MailSendException("SMTP fora do ar"))
                 .when(mailSender).send(any(MimeMessage.class));
 
@@ -81,8 +81,8 @@ class EmailServiceImplTest {
         user.setNickname("bia");
         user.setEmail("bia@example.com");
 
-        // a falha de transporte é unchecked (MailSendException) e propaga direto,
-        // derrubando o registro na transação — sem engolir o erro
+        // the transport failure is unchecked (MailSendException) and propagates straight,
+        // rolling back the registration in the transaction — without swallowing the error
         assertThatThrownBy(() -> service.sendConfirmationEmail(user, "token"))
                 .isInstanceOf(MailSendException.class)
                 .hasMessageContaining("SMTP fora do ar");

@@ -1,7 +1,7 @@
 package com.grupo03.blenderpds.model;
 
 /**
- * Papel do usuário no sistema.
+ * The user's role in the system.
  */
 public enum Role {
 

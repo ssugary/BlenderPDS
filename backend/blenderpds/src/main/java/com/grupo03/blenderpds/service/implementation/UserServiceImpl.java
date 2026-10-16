@@ -8,6 +8,7 @@ import com.grupo03.blenderpds.repository.EmailConfirmationTokenRepository;
 import com.grupo03.blenderpds.repository.FriendRequestRepository;
 import com.grupo03.blenderpds.repository.UserRepository;
 import com.grupo03.blenderpds.service.EmailService;
+import com.grupo03.blenderpds.service.SessionService;
 import com.grupo03.blenderpds.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Duration;
@@ -25,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    /** Validade do link de confirmação enviado por e-mail. */
+    /** Lifetime of the confirmation link sent by e-mail. */
     private static final Duration CONFIRM_TOKEN_TTL = Duration.ofHours(24);
 
     private final UserRepository userRepository;
@@ -33,6 +34,8 @@ public class UserServiceImpl implements UserService {
     private final FriendRequestRepository friendRequestRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    /** Collaborative rooms: a user must not be deleted leaving FKs behind. */
+    private final SessionService sessionService;
 
     @Override
     @Transactional
@@ -44,9 +47,9 @@ public class UserServiceImpl implements UserService {
         user.setEmailVerified(false);
         User created = create(user, rawPassword);
 
-        // gera o token e envia o e-mail DENTRO da transação: se o SMTP falhar,
-        // nada é persistido e o cliente recebe o erro em vez de um cadastro
-        // órfão que nunca pode ser confirmado.
+        // The token is generated and the e-mail is sent INSIDE the transaction: if
+        // SMTP fails, nothing is persisted and the client gets the error instead of a
+        // registration that is orphaned and can never be confirmed.
         EmailConfirmationToken token = new EmailConfirmationToken();
         token.setToken(UUID.randomUUID().toString());
         token.setUser(created);
@@ -131,22 +134,25 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void delete(Long id) {
         User user = findOrThrow(id);
-        // FK de user_friends: as linhas em que user é DONO (user_id) o Hibernate apaga
-        // sozinho, mas as em que ele é o AMIGO (friend_id) ficam — remove o usuário da
-        // lista de cada amigo antes, senão o DELETE viola a constraint.
+        // user_friends FK: Hibernate deletes on its own the rows where the user is the
+        // OWNER (user_id), but the ones where they are the FRIEND (friend_id) stay —
+        // remove the user from every friend's list first, otherwise the DELETE violates
+        // the constraint.
         for (User friend : Set.copyOf(user.getFriendList())) {
             friend.getFriendList().remove(user);
             userRepository.save(friend);
         }
-        // FK de friend_requests.sender_id/receiver_id
+        // friend_requests.sender_id/receiver_id FK
         friendRequestRepository.deleteBySenderId(user.getId());
         friendRequestRepository.deleteByReceiverId(user.getId());
-        // FK de email_confirm_tokens.user_id: sem isto o delete viola a constraint
+        // email_confirm_tokens.user_id FK: without this the delete violates the constraint
         confirmationTokenRepository.deleteByUser(user);
+        // sessions/session_participants/session_operations.user_id FK
+        sessionService.deleteAllForUser(user.getId());
         userRepository.delete(user);
     }
 
-    // ---------------- Pedidos de amizade ----------------
+    // ---------------- Friend requests ----------------
 
     @Override
     @Transactional
@@ -178,12 +184,12 @@ public class UserServiceImpl implements UserService {
         FriendRequest request = findRequestReceivedBy(requestId, receiverId);
         User sender = request.getSender();
         User receiver = request.getReceiver();
-        // amizade é mútua: ambos ganham o outro na lista
+        // friendship is mutual: both gain the other in their list
         sender.getFriendList().add(receiver);
         receiver.getFriendList().add(sender);
         userRepository.save(sender);
         userRepository.save(receiver);
-        friendRequestRepository.delete(request); // consumido
+        friendRequestRepository.delete(request); // consumed
         return request;
     }
 
@@ -235,7 +241,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(friend);
     }
 
-    /** Pedido que foi recebido por receiverId (ou 404 — não vaza pedidos de terceiros). */
+    /** The request was received by receiverId (or 404 — it does not leak third parties' requests). */
     private FriendRequest findRequestReceivedBy(Long requestId, Long receiverId) {
         return friendRequestRepository.findById(requestId)
                 .filter(r -> receiverId != null && receiverId.equals(r.getReceiver().getId()))

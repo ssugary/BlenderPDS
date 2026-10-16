@@ -20,11 +20,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Prova ponta a ponta do e-mail de confirmação: o registro envia um e-mail REAL
- * pelo SMTP (Mailpit do compose.yaml, sem @MockitoBean), o teste busca a mensagem
- * na API do Mailpit, extrai o token do link e confirma a conta com ele.
+ * End-to-end proof of the confirmation e-mail: the registration sends a REAL e-mail
+ * through SMTP (the Mailpit from compose.yaml, no @MockitoBean), the test fetches the
+ * message from the Mailpit API, extracts the token out of the link and confirms the
+ * account with it.
  *
- * <p>Requer o compose de testes no ar (spring.docker.compose.skip.in-tests=false).
+ * <p>Requires the test compose up (spring.docker.compose.skip.in-tests=false).
  */
 @SpringBootTest
 @Transactional
@@ -41,29 +42,29 @@ class EmailConfirmationEndToEndTest {
 
         userService.register("e2e", email, "senha123");
 
-        // 1) o e-mail chega de verdade ao servidor SMTP
+        // 1) the e-mail really arrives at the SMTP server
         String messageJson = waitForMailpitMessage(email);
 
-        // 2) o corpo contém o link de confirmação com o token
+        // 2) the body contains the confirmation link with the token
         Matcher matcher = Pattern.compile("confirm-email\\?token=([0-9a-fA-F-]{36})").matcher(messageJson);
         assertThat(matcher.find())
-                .as("o e-mail deve conter o link /users/confirm-email?token=<uuid>")
+                .as("the e-mail must contain the /users/confirm-email?token=<uuid> link")
                 .isTrue();
         String token = matcher.group(1);
 
-        // 3) o token confirma a conta (fluxo que o usuário faria clicando no link)
+        // 3) the token confirms the account (the flow the user would do by clicking the link)
         Optional<User> confirmed = userService.confirmEmailByToken(token);
         assertThat(confirmed).isPresent();
         assertThat(confirmed.orElseThrow().getEmail()).isEqualTo(email);
         assertThat(confirmed.orElseThrow().isEmailVerified()).isTrue();
     }
 
-    /** Consulta a API do Mailpit até a mensagem chegar (timeout de 15s). */
+    /** Queries the Mailpit API until the message arrives (15s timeout). */
     private String waitForMailpitMessage(String email) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
         String searchUrl = MAILPIT_API + "/search?query="
                 + URLEncoder.encode("to:" + email, StandardCharsets.UTF_8);
-        // IDs do Mailpit são base62 (ex.: "6GiL3izbBwr4uYu9lBGKWq"), não hex
+        // Mailpit IDs are base62 (e.g. "6GiL3izbBwr4uYu9lBGKWq"), not hex
         Pattern idPattern = Pattern.compile("\"ID\":\"([A-Za-z0-9]+)\"");
 
         long deadline = System.currentTimeMillis() + 15_000;
@@ -80,7 +81,7 @@ class EmailConfirmationEndToEndTest {
             }
         }
         assertThat(messageId)
-                .as("o Mailpit deve receber o e-mail de confirmação em até 15s")
+                .as("Mailpit must receive the confirmation e-mail within 15s")
                 .isNotNull();
 
         return client.send(

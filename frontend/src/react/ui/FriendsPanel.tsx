@@ -33,6 +33,15 @@ export function FriendsPanel({ social, onJoin, onInvite }: FriendsPanelProps)
         (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name)
     );
 
+    /** Accept/decline/remove all hit the API now, so they can fail: show it instead of hiding it. */
+    const run = async (action: () => Promise<string | null>) =>
+    {
+        setMessage(null);
+        const problem = await action();
+        if (problem)
+            setMessage({ text: problem, isError: true });
+    };
+
     const submit = async (event: FormEvent) =>
     {
         event.preventDefault();
@@ -79,11 +88,11 @@ export function FriendsPanel({ social, onJoin, onInvite }: FriendsPanelProps)
                             <div style={{ flex: 1, minWidth: 0, fontWeight: 'bold' }}>{request.name}</div>
                             <button
                                 style={{ ...smallButtonStyle, background: ACCENT, borderColor: ACCENT, color: '#111' }}
-                                onClick={() => social.acceptRequest(request.id)}
+                                onClick={() => void run(() => social.acceptRequest(request.id))}
                             >
                                 Accept
                             </button>
-                            <button style={smallButtonStyle} onClick={() => social.declineRequest(request.id)}>Decline</button>
+                            <button style={smallButtonStyle} onClick={() => void run(() => social.declineRequest(request.id))}>Decline</button>
                         </div>
                     ))}
                 </div>
@@ -122,7 +131,7 @@ export function FriendsPanel({ social, onJoin, onInvite }: FriendsPanelProps)
                             <button
                                 title="Remove friend"
                                 style={{ ...smallButtonStyle, background: 'transparent', border: 'none', color: '#9a9aa6' }}
-                                onClick={() => social.removeFriend(friend.id)}
+                                onClick={() => void run(() => social.removeFriend(friend.id))}
                             >
                                 ✕
                             </button>

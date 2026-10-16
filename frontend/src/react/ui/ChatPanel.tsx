@@ -38,6 +38,8 @@ export function ChatPanel({ session }: ChatPanelProps)
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [online, setOnline] = useState(true);
     const [draft, setDraft] = useState('');
+    /** null until the backend sends the roster (which only happens with the server). */
+    const [players, setPlayers] = useState<number | null>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
     const partnerName = session.role === 'host' ? 'Guest' : 'Host';
@@ -51,6 +53,11 @@ export function ChatPanel({ session }: ChatPanelProps)
                     ...previous,
                     { author: partnerName, text: data.text.slice(0, MAX_MESSAGE_LENGTH) }
                 ]);
+
+            // The server keeps the roster; without it the count below would have to guess
+            // ("2 players" is only true for the direct peer-to-peer mode).
+            if (data?.type === 'session_roster' && Array.isArray(data.participants))
+                setPlayers(data.participants.filter((participant: any) => participant.active).length);
         };
 
         const onClose = () =>
@@ -101,7 +108,7 @@ export function ChatPanel({ session }: ChatPanelProps)
                         background: online ? ONLINE_COLOR : OFFLINE_COLOR
                     }}
                 />
-                <span>{online ? 'Players online: 2' : 'Players online: 1'}</span>
+                <span>{`Players online: ${players ?? (online ? 2 : 1)}`}</span>
             </div>
 
             <div

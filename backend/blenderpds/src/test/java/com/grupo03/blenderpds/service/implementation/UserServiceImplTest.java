@@ -42,7 +42,7 @@ class UserServiceImplTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // não queremos SMTP real em teste de serviço: o envio é verificado pelo mock
+    // we do not want real SMTP in a service test: the sending is checked through the mock
     @MockitoBean
     private EmailService emailService;
 
@@ -187,7 +187,7 @@ class UserServiceImplTest {
         em.flush();
         em.clear();
         assertThat(userRepository.findById(user.getId()).orElseThrow().isEmailVerified()).isTrue();
-        // token é de uso único
+        // the token is single use
         assertThat(tokenRepository.findByToken(token)).isEmpty();
         assertThat(userService.confirmEmailByToken(token)).isEmpty();
     }

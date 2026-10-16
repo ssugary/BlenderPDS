@@ -3,15 +3,15 @@ package com.grupo03.blenderpds.service;
 import com.grupo03.blenderpds.model.User;
 
 /**
- * Envio de e-mails transacionais do domínio. Hoje só o e-mail de confirmação de
- * cadastro; novos tipos (redefinição de senha, etc.) entram aqui.
+ * Sending of the domain's transactional e-mails. Today only the registration
+ * confirmation e-mail; new types (password reset, etc.) go here.
  */
 public interface EmailService {
 
     /**
-     * Envia para {@code user.getEmail()} o link de confirmação contendo {@code token}.
+     * Sends to {@code user.getEmail()} the confirmation link containing {@code token}.
      *
-     * @throws org.springframework.mail.MailException se o envio falhar
+     * @throws org.springframework.mail.MailException if the sending fails
      */
     void sendConfirmationEmail(User user, String token);
 }

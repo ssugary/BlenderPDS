@@ -3,12 +3,12 @@ package com.grupo03.blenderpds.service;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * Interface de autenticação do domínio. Estende a
- * {@link org.springframework.security.core.userdetails.UserDetailsService} do Spring Security
- * de propósito: sem isso o Spring não encontra um UserDetailsService no contexto e o login
- * por usuário/senha falha com "No AuthenticationProvider found".
+ * Domain authentication interface. It extends Spring Security's
+ * {@link org.springframework.security.core.userdetails.UserDetailsService} on purpose:
+ * without it Spring finds no UserDetailsService in the context and the user/password
+ * login fails with "No AuthenticationProvider found".
  *
- * <p>O username usado aqui é o e-mail do usuário.
+ * <p>The username used here is the user's e-mail.
  */
 public interface UserDetailsService
         extends org.springframework.security.core.userdetails.UserDetailsService {

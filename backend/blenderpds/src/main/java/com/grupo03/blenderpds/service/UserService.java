@@ -8,16 +8,16 @@ import java.util.Optional;
 public interface UserService {
 
     /**
-     * Cria o usuário (emailVerified=false), grava o token de confirmação e envia o
-     * e-mail com o link. Se o envio falhar, a transação é desfeita (não fica
-     * usuário sem e-mail pendente).
+     * Creates the user (emailVerified=false), stores the confirmation token and sends
+     * the e-mail with the link. If the sending fails, the transaction is rolled back
+     * (no user is left behind with a pending e-mail).
      */
     User register(String nickname, String email, String rawPassword);
 
     /**
-     * Consome o token e marca o e-mail como verificado.
+     * Consumes the token and marks the e-mail as verified.
      *
-     * @return o usuário confirmado, ou vazio se o token for desconhecido/expirado
+     * @return the confirmed user, or empty if the token is unknown/expired
      */
     Optional<User> confirmEmailByToken(String token);
 
@@ -38,50 +38,52 @@ public interface UserService {
     void delete(Long id);
 
     /**
-     * Envia pedido de amizade de senderId para receiverId.
+     * Sends a friend request from senderId to receiverId.
      *
-     * @throws EntityNotFoundException se algum dos dois usuários não existe
-     * @throws IllegalArgumentException se senderId == receiverId (pedido para si mesmo)
-     * @throws IllegalStateException se já são amigos, já existe pedido aberto
-     *                                 ou o outro lado já enviou um pedido
+     * @throws EntityNotFoundException if either of the two users does not exist
+     * @throws IllegalArgumentException if senderId == receiverId (a request to oneself)
+     * @throws IllegalStateException if they are already friends, a request is already
+     *                                 open, or the other side already sent one
      */
     FriendRequest sendFriendRequest(Long senderId, Long receiverId);
 
     /**
-     * Aceita o pedido: cria a amizade nos DOIS lados do friendList e apaga o pedido.
+     * Accepts the request: creates the friendship on BOTH friendList sides and deletes
+     * the request.
      *
-     * @throws EntityNotFoundException se o pedido não existe ou não foi recebido por receiverId
+     * @throws EntityNotFoundException if the request does not exist or was not received by receiverId
      */
     FriendRequest acceptFriendRequest(Long requestId, Long receiverId);
 
     /**
-     * Recusa o pedido (só quem recebeu pode). Amizade não é criada; a linha some.
+     * Rejects the request (only the receiver may). No friendship is created; the row
+     * goes away.
      *
-     * @throws EntityNotFoundException se o pedido não existe ou não foi recebido por receiverId
+     * @throws EntityNotFoundException if the request does not exist or was not received by receiverId
      */
     FriendRequest rejectFriendRequest(Long requestId, Long receiverId);
 
     /**
-     * Cancela um pedido enviado (só quem enviou pode).
+     * Cancels a sent request (only the sender may).
      *
-     * @throws EntityNotFoundException se o pedido não existe ou não foi enviado por senderId
+     * @throws EntityNotFoundException if the request does not exist or was not sent by senderId
      */
     FriendRequest cancelFriendRequest(Long requestId, Long senderId);
 
-    /** Pedidos pendentes RECEBIDOS por userId, mais recentes primeiro. */
+    /** Pending requests RECEIVED by userId, newest first. */
     List<FriendRequest> getPendingFriendRequests(Long userId);
 
-    /** Pedidos pendentes ENVIADOS por userId (para poder cancelar). */
+    /** Pending requests SENT by userId (so they can be cancelled). */
     List<FriendRequest> getSentFriendRequests(Long userId);
 
-    /** Lista de amigos confirmados de userId. */
+    /** Confirmed friend list of userId. */
     List<User> getFriendList(Long userId);
 
     /**
-     * Remove a amizade dos DOIS lados.
+     * Removes the friendship from BOTH sides.
      *
-     * @throws EntityNotFoundException se algum usuário não existe
-     * @throws IllegalStateException se eles não são amigos
+     * @throws EntityNotFoundException if either user does not exist
+     * @throws IllegalStateException if they are not friends
      */
     void removeFriend(Long userId, Long friendId);
 }

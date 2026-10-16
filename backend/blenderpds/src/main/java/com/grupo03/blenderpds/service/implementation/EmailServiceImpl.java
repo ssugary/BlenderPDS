@@ -12,22 +12,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * Envio via SMTP ({@link JavaMailSender}). Em dev o destinatário é o Mailpit do
- * compose.yaml — nada sai para a internet; a mensagem aparece em localhost:8025.
+ * Sending via SMTP ({@link JavaMailSender}). In dev the recipient is the Mailpit
+ * from compose.yaml — nothing goes out to the internet; the message shows up on
+ * localhost:8025.
  */
 @Service
 public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
-    /** Remetente (From) das mensagens. */
+    /** Sender (From) of the messages. */
     private final String from;
 
-    /** Base pública da aplicação — o link aponta para o backend em produção/dev. */
+    /** Public base of the application — the link points at the backend in prod/dev. */
     private final String baseUrl;
 
-    // construtor explícito (em vez de @RequiredArgsConstructor) para permitir
-    // instanciar a classe direto em teste de unidade, sem Spring.
+    // explicit constructor (instead of @RequiredArgsConstructor) so that unit tests
+    // can instantiate the class directly, without Spring.
     public EmailServiceImpl(JavaMailSender mailSender,
                             @Value("${app.mail.from}") String from,
                             @Value("${app.base-url}") String baseUrl) {
@@ -42,7 +43,7 @@ public class EmailServiceImpl implements EmailService {
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            // multipart=false: só HTML, sem anexo — deixa a mensagem fácil de ler em teste
+            // multipart=false: HTML only, no attachment — keeps the message easy to read in tests
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
             helper.setFrom(from);
             helper.setTo(user.getEmail());
@@ -50,15 +51,15 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(body(user.getNickname(), link), true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            // envolvente SMTP (MailException) já é unchecked e propaga direto;
-            // aqui só o erro de montagem da mensagem, que é checked.
+            // the SMTP wrapper (MailException) is already unchecked and propagates straight;
+            // here we only have the message-building error, which is checked.
             throw new MailSendException(
                     "Falha ao enviar e-mail de confirmação para " + user.getEmail(), e);
         }
     }
 
     private String body(String nickname, String link) {
-        // nickname é controle do usuário: escapar evita injeção HTML no e-mail
+        // the nickname is user input: escaping avoids HTML injection into the e-mail
         String safeNickname = HtmlUtils.htmlEscape(nickname == null ? "" : nickname);
         return """
                 <html><body style="font-family: sans-serif;">

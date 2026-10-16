@@ -44,7 +44,7 @@ class UserDetailsServiceImplTest {
     @PersistenceContext
     private EntityManager em;
 
-    // o register agora dispara e-mail real; aqui só interessa o login, então mocka
+    // register now fires a real e-mail; only the login matters here, so mock it
     @MockitoBean
     private EmailService emailService;
 
@@ -107,7 +107,7 @@ class UserDetailsServiceImplTest {
                 new UsernamePasswordAuthenticationToken("bia@example.com", "senha123"));
 
         assertThat(auth.isAuthenticated()).isTrue();
-        // o Spring Security 7 soma autoridades de fator (ex.: FACTOR_PASSWORD) ao papel do usuário
+        // Spring Security 7 adds factor authorities (e.g. FACTOR_PASSWORD) to the user's role
         assertThat(auth.getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
                 .contains("ROLE_USER");

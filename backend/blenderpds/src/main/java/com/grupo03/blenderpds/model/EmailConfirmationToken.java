@@ -17,9 +17,9 @@ import lombok.Setter;
 import lombok.ToString;
 
 /**
- * Token enviado por e-mail no cadastro. Válido por tempo limitado; enquanto não for
- * usado (consumido na confirmação), o usuário permanece com emailVerified=false e
- * não consegue logar.
+ * Token sent by e-mail on registration. Valid for a limited time; while it is not
+ * used (consumed on confirmation), the user stays with emailVerified=false and
+ * cannot log in.
  */
 @Entity
 @Table(name = "email_confirm_tokens")
@@ -34,7 +34,7 @@ public class EmailConfirmationToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** UUID em texto puro — único e inequívoco, exposto apenas no link enviado ao usuário. */
+    /** Plain-text UUID — unique and unambiguous, exposed only in the link sent to the user. */
     @Column(name = "token", nullable = false, unique = true, length = 64)
     private String token;
 

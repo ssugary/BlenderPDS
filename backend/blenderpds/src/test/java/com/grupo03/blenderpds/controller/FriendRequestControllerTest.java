@@ -21,9 +21,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Fluxo de pedidos de amizade na camada HTTP: registro → pedido → aceite/recusa →
- * listas → unfriend, incluindo as regras de erro (400/404/409). O envio de e-mail
- * é mockado: aqui só interessa o REST.
+ * Friend request flow on the HTTP layer: register → request → accept/reject →
+ * lists → unfriend, including the error rules (400/404/409). The e-mail sending is
+ * mocked: only the REST matters here.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -44,7 +44,7 @@ class FriendRequestControllerTest {
         return userService.register(nickname, nickname + "@example.com", "senha123").getId();
     }
 
-    /** Envia um pedido e devolve o id gerado (extraído do corpo da resposta). */
+    /** Sends a request and returns the generated id (read out of the response body). */
     private long sendRequest(Long senderId, Long receiverId) throws Exception {
         var result = mockMvc.perform(post("/users/" + senderId + "/friend-requests").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -68,19 +68,19 @@ class FriendRequestControllerTest {
                 .andExpect(jsonPath("$.senderNickname").value("ana"))
                 .andExpect(jsonPath("$.receiverNickname").value("bruno"));
 
-        // o destinatário vê o pedido pendente…
+        // the receiver sees the pending request…
         mockMvc.perform(get("/users/" + b + "/friend-requests"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].senderId").value(a.intValue()));
 
-        // …e o remetente vê o pedido enviado
+        // …and the sender sees the request they sent
         mockMvc.perform(get("/users/" + a + "/friend-requests/sent"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].receiverId").value(b.intValue()));
 
-        // ainda não são amigos
+        // they are not friends yet
         mockMvc.perform(get("/users/" + b + "/friends"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
@@ -129,7 +129,7 @@ class FriendRequestControllerTest {
         Long b = register("bruno");
         sendRequest(a, b);
 
-        // b já tem pedido de a pendente: não pode mandar outro para trás
+        // b already has a pending request from a: they cannot send another one back
         mockMvc.perform(post("/users/" + b + "/friend-requests").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"receiverId\":" + a + "}"))
@@ -147,7 +147,7 @@ class FriendRequestControllerTest {
                 .andExpect(jsonPath("$.id").value(a.intValue()))
                 .andExpect(jsonPath("$.nickname").value("ana"));
 
-        // amizade vale nos dois lados
+        // the friendship holds on both sides
         mockMvc.perform(get("/users/" + a + "/friends"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -158,11 +158,11 @@ class FriendRequestControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].nickname").value("ana"));
 
-        // o pedido foi consumido (nem recebido nem enviado resta)
+        // the request was consumed (neither the received nor the sent list has it)
         mockMvc.perform(get("/users/" + b + "/friend-requests")).andExpect(jsonPath("$").isEmpty());
         mockMvc.perform(get("/users/" + a + "/friend-requests/sent")).andExpect(jsonPath("$").isEmpty());
 
-        // já são amigos → novo pedido dá 409
+        // they are already friends → a new request gives 409
         mockMvc.perform(post("/users/" + a + "/friend-requests").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"receiverId\":" + b + "}"))
@@ -179,7 +179,7 @@ class FriendRequestControllerTest {
         mockMvc.perform(post("/users/" + c + "/friend-requests/" + requestId + "/accept").with(csrf()))
                 .andExpect(status().isNotFound());
 
-        // ninguém aceitou: segue pendente para b
+        // nobody accepted: it stays pending for b
         mockMvc.perform(get("/users/" + b + "/friend-requests"))
                 .andExpect(jsonPath("$.length()").value(1));
         mockMvc.perform(get("/users/" + b + "/friends")).andExpect(jsonPath("$").isEmpty());
@@ -207,7 +207,7 @@ class FriendRequestControllerTest {
         Long c = register("carla");
         long requestId = sendRequest(a, b);
 
-        // só o remetente pode cancelar
+        // only the sender may cancel
         mockMvc.perform(delete("/users/" + c + "/friend-requests/" + requestId).with(csrf()))
                 .andExpect(status().isNotFound());
 
@@ -232,7 +232,7 @@ class FriendRequestControllerTest {
         mockMvc.perform(get("/users/" + a + "/friends")).andExpect(jsonPath("$").isEmpty());
         mockMvc.perform(get("/users/" + b + "/friends")).andExpect(jsonPath("$").isEmpty());
 
-        // de novo agora que não são mais → 409
+        // doing it again now that they are not friends anymore → 409
         mockMvc.perform(delete("/users/" + a + "/friends/" + b).with(csrf()))
                 .andExpect(status().isConflict());
     }

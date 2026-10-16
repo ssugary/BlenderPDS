@@ -9,6 +9,6 @@ public interface EmailConfirmationTokenRepository extends JpaRepository<EmailCon
 
     Optional<EmailConfirmationToken> findByToken(String token);
 
-    /** Apaga os tokens pendentes do usuário (FK impede apagar o usuário com token). */
+    /** Deletes the user's pending tokens (the FK blocks deleting a user with a token). */
     void deleteByUser(User user);
 }

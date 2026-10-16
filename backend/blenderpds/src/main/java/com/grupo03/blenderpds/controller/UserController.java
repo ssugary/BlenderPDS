@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * API REST de usuários. Todo acesso passa pela segurança padrão do Spring Security
- * (exige autenticação), pois ainda não há regras de papel configuradas.
+ * User REST API. Every access goes through Spring Security's default protection
+ * (authentication required), since no role rules are configured yet.
  */
 @RestController
 @RequestMapping("/users")
@@ -35,12 +35,12 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserDto> register(@Valid @RequestBody UserDto body) {
-        // Regras do cadastro: senha 8–128 caracteres (o DTO também valida min 8)…
+        // Registration rules: password 8–128 characters (the DTO also enforces min 8)…
         if (body.getPassword() == null || body.getPassword().isBlank()
                 || body.getPassword().length() < 8 || body.getPassword().length() > 128) {
             return ResponseEntity.badRequest().build();
         }
-        // …e nickname 3–32 caracteres (regra só do registro; o PUT não a impõe).
+        // …and nickname 3–32 characters (a registration-only rule; PUT does not enforce it).
         if (body.getNickname() == null || body.getNickname().length() < 3
                 || body.getNickname().length() > 32) {
             return ResponseEntity.badRequest().build();
@@ -48,7 +48,7 @@ public class UserController {
         if (userService.getByEmail(body.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
-        // o papel é definido pelo serviço (USER): o cliente não escolhe o próprio papel.
+        // the role is set by the service (USER): the client does not pick its own role.
         UserDto created = UserDto.from(userService.register(body.getNickname(), body.getEmail(), body.getPassword()));
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -72,8 +72,8 @@ public class UserController {
         if (existing == null) {
             return ResponseEntity.notFound().build();
         }
-        // role e emailVerified não vêm do cliente: papel muda por regra de admin,
-        // verificação de e-mail só pelo fluxo de confirmação.
+        // role and emailVerified do not come from the client: the role changes by an admin
+        // rule, e-mail verification only through the confirmation flow.
         existing.setNickname(body.getNickname());
         existing.setEmail(body.getEmail());
         UserDto updated = UserDto.from(userService.update(existing));
@@ -93,16 +93,16 @@ public class UserController {
     }
 
     /**
-     * Confirmação pelo link enviado por e-mail (GET para funcionar como link
-     * clicável, sem CSRF). Não exige login — o usuário ainda nem consegue logar
-     * antes de confirmar.
+     * Confirmation through the link sent by e-mail (GET, so it works as a clickable
+     * link, with no CSRF). It requires no login — the user cannot even log in before
+     * confirming.
      */
     @GetMapping("/confirm-email")
     public ResponseEntity<UserDto> confirmEmailByToken(@RequestParam(required = false) String token) {
         return userService.confirmEmailByToken(token)
                 .map(UserDto::from)
                 .map(ResponseEntity::ok)
-                // token desconhecido ou expirado: 400 (não vaza qual dos dois)
+                // unknown or expired token: 400 (it does not leak which one)
                 .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
@@ -118,18 +118,18 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /** E-mail duplicado (corrida entre o pré-checagem e o insert) vira 409 em vez de 500. */
+    /** A duplicate e-mail (a race between the pre-check and the insert) becomes 409 instead of 500. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<Void> duplicateEmail(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 
-    // ---------------- Pedidos de amizade ----------------
+    // ---------------- Friend requests ----------------
 
     /**
-     * Envia pedido de amizade: {id} é o remetente, o corpo traz o destinatário.
-     * 400 = pedido para si mesmo · 404 = usuário/pedido inexistente ·
-     * 409 = já são amigos, pedido duplicado ou pedido inverso pendente.
+     * Sends a friend request: {id} is the sender, the body carries the receiver.
+     * 400 = request to oneself · 404 = unknown user/request ·
+     * 409 = already friends, duplicate request or a pending inverse request.
      */
     @PostMapping("/{id}/friend-requests")
     public ResponseEntity<FriendRequestDto> sendFriendRequest(
@@ -138,7 +138,7 @@ public class UserController {
                 .body(FriendRequestDto.from(userService.sendFriendRequest(id, body.receiverId())));
     }
 
-    /** Pedidos pendentes RECEBIDOS por {id} (para aceitar ou recusar). */
+    /** Pending requests RECEIVED by {id} (to accept or reject). */
     @GetMapping("/{id}/friend-requests")
     public List<FriendRequestDto> pendingFriendRequests(@PathVariable Long id) {
         return userService.getPendingFriendRequests(id).stream()
@@ -146,7 +146,7 @@ public class UserController {
                 .toList();
     }
 
-    /** Pedidos pendentes ENVIADOS por {id} (para acompanhar/cancelar). */
+    /** Pending requests SENT by {id} (to follow up on or cancel). */
     @GetMapping("/{id}/friend-requests/sent")
     public List<FriendRequestDto> sentFriendRequests(@PathVariable Long id) {
         return userService.getSentFriendRequests(id).stream()
@@ -155,8 +155,8 @@ public class UserController {
     }
 
     /**
-     * Aceita o pedido {requestId} em nome de {id} (só o destinatário pode).
-     * Devolve o UserDto do novo amigo.
+     * Accepts request {requestId} on behalf of {id} (only the receiver may).
+     * Returns the UserDto of the new friend.
      */
     @PostMapping("/{id}/friend-requests/{requestId}/accept")
     public ResponseEntity<UserDto> acceptFriendRequest(
@@ -165,7 +165,7 @@ public class UserController {
         return ResponseEntity.ok(UserDto.from(request.getSender()));
     }
 
-    /** Recusa o pedido {requestId} em nome de {id} (só o destinatário pode). */
+    /** Rejects request {requestId} on behalf of {id} (only the receiver may). */
     @PostMapping("/{id}/friend-requests/{requestId}/reject")
     public ResponseEntity<Void> rejectFriendRequest(
             @PathVariable Long id, @PathVariable Long requestId) {
@@ -173,7 +173,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Cancela o pedido enviado {requestId} em nome de {id} (só o remetente pode). */
+    /** Cancels the sent request {requestId} on behalf of {id} (only the sender may). */
     @DeleteMapping("/{id}/friend-requests/{requestId}")
     public ResponseEntity<Void> cancelFriendRequest(
             @PathVariable Long id, @PathVariable Long requestId) {
@@ -181,32 +181,32 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Lista de amigos confirmados de {id}. */
+    /** Confirmed friend list of {id}. */
     @GetMapping("/{id}/friends")
     public List<UserDto> friends(@PathVariable Long id) {
         return userService.getFriendList(id).stream().map(UserDto::from).toList();
     }
 
-    /** Remove a amizade dos dois lados. */
+    /** Removes the friendship from both sides. */
     @DeleteMapping("/{id}/friends/{friendId}")
     public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         userService.removeFriend(id, friendId);
         return ResponseEntity.noContent().build();
     }
 
-    /** Usuário ou pedido inexistente (vindo do serviço) → 404. */
+    /** Missing user or request (raised by the service) → 404. */
     @ExceptionHandler(EntityNotFoundException.class)
     ResponseEntity<Void> notFound(EntityNotFoundException ex) {
         return ResponseEntity.notFound().build();
     }
 
-    /** Regra inválida (ex.: pedido de amizade para si mesmo) → 400. */
+    /** Invalid rule (e.g. a friend request to oneself) → 400. */
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<Void> badRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().build();
     }
 
-    /** Conflito de amizade (já são amigos / pedido duplicado) → 409. */
+    /** Friendship conflict (already friends / duplicate request) → 409. */
     @ExceptionHandler(IllegalStateException.class)
     ResponseEntity<Void> friendshipConflict(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).build();

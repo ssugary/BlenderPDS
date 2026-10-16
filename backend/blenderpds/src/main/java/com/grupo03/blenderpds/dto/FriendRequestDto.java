@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Payload de pedido de amizade (saída). A entrada de criação usa
- * {@link FriendRequestCreateDto}; aqui só saem dados para o cliente
- * listar pendentes e decidir o que fazer.
+ * Friend request payload (output). The creation input uses
+ * {@link FriendRequestCreateDto}; here only data goes out so the client can list
+ * the pending ones and decide what to do.
  */
 @Getter
 @Setter

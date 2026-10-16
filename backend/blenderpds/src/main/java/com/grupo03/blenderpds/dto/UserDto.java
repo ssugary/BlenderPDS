@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Payload de usuário: entrada (registro/atualização) e saída (leitura).
- * A senha só é aceita na entrada e nunca devolvida na resposta.
+ * User payload: input (registration/update) and output (read).
+ * The password is only accepted on input and never returned in a response.
  */
 @Getter
 @Setter

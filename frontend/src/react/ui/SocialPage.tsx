@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { joinSession, listFriendsSessions } from '../../api/Backend';
+import { WebSocketTransport } from '../../network/WebSocketTransport';
 import { AuthPanel } from './AuthPanel';
+import { Friend } from './UseSocial';
 import { FriendsPanel } from './FriendsPanel';
 import { useSocialContext } from './SocialContext';
-import { headingStyle, textStyle } from './LobbyShared';
+import { headingStyle, textStyle, useLobbyContext } from './LobbyShared';
 
 export function AuthPage()
 {
@@ -27,7 +30,46 @@ export function FriendsPage()
 {
     const navigate = useNavigate();
     const social = useSocialContext();
+    const { onStart } = useLobbyContext();
     const [status, setStatus] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    /**
+     * Join a friend's room. The friends list already knows who is hosting, but the
+     * session id is fetched here again so a room that closed in between gives a clear
+     * message instead of a socket that never opens.
+     */
+    const join = useCallback(async (friend: Friend) =>
+    {
+        if (!social.user || busy)
+            return;
+
+        setBusy(true);
+        setStatus(`Asking to join ${friend.name}...`);
+
+        try
+        {
+            const open = await listFriendsSessions(social.user.id);
+            const target = open.find((session) => session.hostId === friend.id);
+            if (!target)
+            {
+                setStatus(`${friend.name} is not hosting right now.`);
+                return;
+            }
+
+            await joinSession(target.id, social.user.id);
+            const transport = new WebSocketTransport(WebSocketTransport.urlFor(target.id, social.user.id));
+            onStart({ role: 'guest', transport, sessionId: target.id, userId: social.user.id, hostId: target.id, code: target.code });
+        }
+        catch (problem)
+        {
+            setStatus(problem instanceof Error ? problem.message : 'Could not join that session.');
+        }
+        finally
+        {
+            setBusy(false);
+        }
+    }, [social.user, busy, onStart]);
 
     // Route guard: friends only make sense for a signed-in user.
     if (!social.user)
@@ -36,11 +78,7 @@ export function FriendsPage()
     return (
         <>
             <h2 style={headingStyle}>Friends</h2>
-            <FriendsPanel
-                social={social}
-                // No server yet: this only shows where the real "join a friend" call will go.
-                onJoin={(friend) => setStatus(`Asking to join ${friend.name}... (no server connected yet)`)}
-            />
+            <FriendsPanel social={social} onJoin={join} />
             {status !== '' && <p style={textStyle}>{status}</p>}
             <button onClick={() => navigate('/')}>Back</button>
         </>
