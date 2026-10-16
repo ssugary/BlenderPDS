@@ -5,8 +5,9 @@ import { GLOBAL_BUS } from './core/EventBus';
 import { InputManager } from './manager/InputManager';
 import { Session } from './network/Session';
 import { Viewport3D } from './react/Viewport3D';
+import { AppRoutes } from './react/ui/AppRoutes';
 import { ChatPanel } from './react/ui/ChatPanel';
-import { Lobby } from './react/ui/Lobby';
+import { EditorOverlay } from './react/ui/EditorOverlay';
 import { TimelinePanel } from './react/ui/TimelinePanel';
 import { Toast } from './react/ui/Toast';
 import { Toolbar } from './react/ui/Toolbar';
@@ -53,29 +54,32 @@ function App()
         return () => inputManager.destroy();
     }, [boot]);
 
-    if (!boot)
-    {
-        return (
-            <Lobby
-                onStart={(session) =>
-                {
-                    if (session)
-                        GLOBAL_BUS.emit('network:connected', session);
-
-                    setBoot({ replica: new ReplicaSession(), session });
-                }}
-            />
-        );
-    }
-
     return (
-        <>
-            <Viewport3D replica={boot.replica} session={boot.session} />
-            <Toolbar />
-            {boot.session && <ChatPanel session={boot.session} />}
-            <Toast />
-            <TimelinePanel log={boot.replica.log} />
-        </>
+        <AppRoutes
+            onStart={(session) =>
+            {
+                if (session)
+                    GLOBAL_BUS.emit('network:connected', session);
+
+                setBoot({ replica: new ReplicaSession(), session });
+            }}
+            onExit={() =>
+            {
+                // TODO: close the connection here (something like boot?.session?.transport.close()),
+                // otherwise the partner keeps seeing us as connected after we leave.
+                setBoot(null);
+            }}
+            renderEditor={({ leave }) => boot && (
+                <>
+                    <Viewport3D replica={boot.replica} session={boot.session} />
+                    <Toolbar />
+                    {boot.session && <ChatPanel session={boot.session} />}
+                    <Toast />
+                    <TimelinePanel log={boot.replica.log} />
+                    <EditorOverlay onLeave={leave} />
+                </>
+            )}
+        />
     );
 }
 

@@ -57,6 +57,9 @@ export class SceneProjector
                     if (record.id !== this.draggingId)
                         this.applyTransform(this.meshes.get(record.id), record);
                     break;
+                case 'color':
+                    this.applyColor(this.meshes.get(record.id), record);
+                    break;    
             }
         }
     }
@@ -109,7 +112,7 @@ export class SceneProjector
         if (!mesh)
             return;
 
-        (mesh.material as THREE.MeshStandardMaterial).color.setHex(record.color);
+        (mesh.material as THREE.MeshStandardMaterial).color.setHex(record.color.value);
     }
 
     /**

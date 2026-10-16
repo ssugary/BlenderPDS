@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GLOBAL_BUS } from '../../core/EventBus';
 import { useBusEvent } from '../useBusEvent';
+import { ColorPicker } from './ColorPicker';
 
 const GEOMETRY_OPTIONS = [
     { value: 'cube', label: 'Cube' },
@@ -46,6 +47,7 @@ export function Toolbar()
             <button onClick={() => GLOBAL_BUS.emit('tool:change', 'translate')}>Mover (G)</button>
             <button onClick={() => GLOBAL_BUS.emit('tool:change', 'rotate')}>Rotacionar (R)</button>
             <button onClick={() => GLOBAL_BUS.emit('tool:change', 'scale')}>Escalar (C)</button>
+            <ColorPicker />
             <button onClick={() => GLOBAL_BUS.emit('camera:change_mode', undefined)}> Andar </button>
             <button onClick={() => GLOBAL_BUS.emit('tool:change', 'vertex')}> Vertices </button>
             <button onClick={() => GLOBAL_BUS.emit('tool:change', 'face')}> Faces </button>

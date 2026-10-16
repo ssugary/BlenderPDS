@@ -15,7 +15,6 @@ export class CreateObjectTool extends Tool
     {
         if (object)
             this.sceneManager.addObject(object);
-                
     }
 
     public buildPrimitive(type:string):THREE.Mesh | null

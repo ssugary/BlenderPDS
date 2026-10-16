@@ -27,8 +27,8 @@ export class DeleteObjectCommand extends Command
             kind: 'add_object',
             objectId: this.objectId,
             geometry: record.geometry,
-            transform: record.transform.value,
-            color: record.color,
+            transform: record.transform.value, 
+            color: record.color.value,
         });
     }
 
