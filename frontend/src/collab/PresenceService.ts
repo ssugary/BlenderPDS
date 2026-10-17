@@ -21,17 +21,31 @@ export class PresenceService
     private changeListeners: Array<() => void> = [];
     private lockLostListeners: Array<(objectId: string) => void> = [];
 
+    private readonly onMessage = (data: any): void => this.handle(data);
+
+    private readonly onClose = (): void =>
+    {
+        this.remote.clear();
+        this.notifyChange();
+    };
+
     public constructor(
         private readonly siteId: string,
         private readonly transport: Transport,
     )
     {
-        this.transport.onMessage((data: any) => this.handle(data));
-        this.transport.onClose(() =>
-        {
-            this.remote.clear();
-            this.notifyChange();
-        });
+        this.transport.onMessage(this.onMessage);
+        this.transport.onClose(this.onClose);
+    }
+
+    /**
+     * Detaches from the transport: React's dev double mount builds two engines, and the
+     * disposed one must stop answering presence of a socket it no longer draws.
+     */
+    public stop(): void
+    {
+        this.transport.offMessage(this.onMessage);
+        this.transport.offClose(this.onClose);
     }
 
     /** Returns false if another peer holds the object (the click is refused, show a toast). */

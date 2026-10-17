@@ -241,6 +241,25 @@ export async function getSession(sessionId: number): Promise<ApiSession>
     return request<ApiSession>(`/sessions/${sessionId}`);
 }
 
+/**
+ * The room the host still has open, if any. A host may only have one open room, so the
+ * hosting screen resumes this one instead of creating a second (which the backend
+ * rejects with 409).
+ */
+export async function getOpenSession(userId: number): Promise<ApiSession | null>
+{
+    try
+    {
+        return await request<ApiSession>(`/sessions/open/${userId}`);
+    }
+    catch (error)
+    {
+        if (error instanceof ApiError && error.status === 404)
+            return null;
+        throw error;
+    }
+}
+
 export async function getSessionByCode(code: string): Promise<ApiSession>
 {
     return request<ApiSession>(`/sessions/code/${encodeURIComponent(code.trim())}`);

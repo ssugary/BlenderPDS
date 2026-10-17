@@ -106,6 +106,24 @@ class SessionServiceImplTest {
     }
 
     @Test
+    void openSessionOfTheHostIsTheRoomItHasNotEndedYet() {
+        Long host = register("host-retoma");
+        Long other = register("outro-host");
+
+        assertThat(sessionService.getOpenSessionFor(host)).isEmpty();
+
+        Session session = sessionService.createSession(host);
+        assertThat(sessionService.getOpenSessionFor(host))
+                .get()
+                .satisfies(open -> assertThat(open.getId()).isEqualTo(session.getId()));
+        assertThat(sessionService.getOpenSessionFor(other)).isEmpty();
+
+        // the host can host again only once the previous room is really over
+        sessionService.endSession(session.getId(), host);
+        assertThat(sessionService.getOpenSessionFor(host)).isEmpty();
+    }
+
+    @Test
     void createForUnknownHostIsNotFound() {
         assertThatThrownBy(() -> sessionService.createSession(999_999L))
                 .isInstanceOf(EntityNotFoundException.class);

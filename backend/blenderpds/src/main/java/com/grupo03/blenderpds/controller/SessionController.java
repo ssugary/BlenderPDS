@@ -63,6 +63,21 @@ public class SessionController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /**
+     * The room a host already has open ({@code WAITING} or {@code ACTIVE}), or 404.
+     *
+     * <p>The hosting screen asks this before creating: a host may only have one open
+     * room, so a screen that always created would get 409 on every revisit and leave
+     * the previous room orphaned.
+     */
+    @GetMapping("/open/{userId}")
+    public ResponseEntity<SessionDto> openSessionOf(@PathVariable Long userId) {
+        return sessionService.getOpenSessionFor(userId)
+                .map(this::toDto)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/{id}/participants")
     public List<SessionParticipantDto> participants(@PathVariable Long id) {
         return sessionService.getParticipants(id).stream().map(SessionParticipantDto::from).toList();

@@ -123,6 +123,27 @@ class SessionControllerTest {
     }
 
     @Test
+    void openSessionOfTheHostIsReturnedUntilItEnds() throws Exception {
+        Long host = register("olga");
+
+        mockMvc.perform(get("/sessions/open/" + host)).andExpect(status().isNotFound());
+
+        long sessionId = createSession(host);
+
+        mockMvc.perform(get("/sessions/open/" + host))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(sessionId))
+                .andExpect(jsonPath("$.status").value("WAITING"));
+
+        mockMvc.perform(post("/sessions/" + sessionId + "/end").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":" + host + "}"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/sessions/open/" + host)).andExpect(status().isNotFound());
+    }
+
+    @Test
     void participantsIncludeTheHost() throws Exception {
         Long host = register("helena");
         long sessionId = createSession(host);

@@ -55,6 +55,7 @@ export class Engine
     private network:Session | null;
     private projector!:SceneProjector;
     private presence:PresenceService | null;
+    private syncEngine:SyncEngine | null;
     private remoteSelection:RemoteSelectionView | null;
 
     constructor(domElement:HTMLElement, replica:ReplicaSession, network:Session | null = null) 
@@ -62,6 +63,7 @@ export class Engine
         this.replica = replica;
         this.network = network;
         this.presence = null;
+        this.syncEngine = null;
         this.remoteSelection = null;
         this.busSubscriptions = [];
 
@@ -157,7 +159,8 @@ export class Engine
         if (!this.network)
             return;
 
-        new SyncEngine(this.replica, this.network.transport).start();
+        this.syncEngine = new SyncEngine(this.replica, this.network.transport);
+        this.syncEngine.start();
 
         this.presence = new PresenceService(this.replica.clock.id, this.network.transport);
         this.presence.onLockLost(() =>
@@ -255,6 +258,10 @@ export class Engine
             GLOBAL_BUS.off(event, callback);
 
         this.busSubscriptions = [];
+
+        // Stops the network listeners this engine installed (StrictMode mounts twice in dev).
+        this.syncEngine?.stop();
+        this.presence?.stop();
 
         this.transformControls.dispose();
         this.cameraManager.dispose();

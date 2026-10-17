@@ -26,22 +26,41 @@ export class SyncEngine
 
     public start(): void
     {
-        this.transport.onMessage((data: any) =>
-        {
-            if (!data || typeof data !== 'object')
-                return;
-
-            if (data.type === 'sync_hello' && isVersionVector(data.vv))
-                this.onHello(data.vv);
-            else if (data.type === 'sync_ops' && Array.isArray(data.ops))
-                this.onOps(data.ops);
-        });
+        this.transport.onMessage(this.onMessage);
 
         // Remote ops never fire onLocalOp, so nothing we receive is echoed back.
-        this.session.onLocalOp((op) => this.send({ type: 'sync_ops', ops: [op] }));
+        this.session.onLocalOp(this.onLocalOp);
 
         this.sendHello();
     }
+
+    /**
+     * Detaches from the replica and the transport.
+     *
+     * React mounts the viewport inside an effect, which in development runs twice; the
+     * engine created by the first mount is disposed, and without this its SyncEngine
+     * would keep sending a duplicate copy of every local operation (and keep a
+     * `sync_hello` on every reconnect).
+     */
+    public stop(): void
+    {
+        this.transport.offMessage(this.onMessage);
+        this.session.offLocalOp(this.onLocalOp);
+    }
+
+    private readonly onMessage = (data: any): void =>
+    {
+        if (!data || typeof data !== 'object')
+            return;
+
+        if (data.type === 'sync_hello' && isVersionVector(data.vv))
+            this.onHello(data.vv);
+        else if (data.type === 'sync_ops' && Array.isArray(data.ops))
+            this.onOps(data.ops);
+    };
+
+    private readonly onLocalOp = (op: Operation): void =>
+        this.send({ type: 'sync_ops', ops: [op] });
 
     /** Tells the peer what we already have, so it can send what we are missing. */
     private sendHello(): void

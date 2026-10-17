@@ -89,6 +89,12 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<Session> getOpenSessionFor(Long hostId) {
+        return sessionRepository.findFirstByHostIdAndStatusNot(hostId, SessionStatus.ENDED);
+    }
+
+    @Override
     @Transactional
     public Session joinSession(Long sessionId, Long userId) {
         // Lock: two simultaneous joins cannot both see the room as having a free seat.
