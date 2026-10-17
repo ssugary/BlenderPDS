@@ -1,3 +1,4 @@
+import { uuid } from '../core/utils/Id';
 import { DocumentState, Change } from './DocumentState';
 import { LamportClock } from './LamportClock';
 import { NewOperation, Operation } from './Operation';
@@ -16,7 +17,7 @@ export class ReplicaSession
     private changeListeners: Array<(changes: Change[]) => void> = [];
     private localListeners: Array<(op: Operation) => void> = [];
 
-    public constructor(siteId: string = crypto.randomUUID())
+    public constructor(siteId: string = uuid())
     {
         this.clock = new LamportClock(siteId);
     }
@@ -65,5 +66,11 @@ export class ReplicaSession
     public onLocalOp(callback: (op: Operation) => void): void
     {
         this.localListeners.push(callback);
+    }
+
+    /** Undoes onLocalOp: a disposed engine must stop sending a copy of every operation. */
+    public offLocalOp(callback: (op: Operation) => void): void
+    {
+        this.localListeners = this.localListeners.filter((listener) => listener !== callback);
     }
 }

@@ -108,7 +108,8 @@ export function ChatPanel({ session }: ChatPanelProps)
                         background: online ? ONLINE_COLOR : OFFLINE_COLOR
                     }}
                 />
-                <span>{`Players online: ${players ?? (online ? 2 : 1)}`}</span>
+                {/* Without a roster (offline, or the socket still connecting) only this client is known to be here. */}
+                <span>{`Players online: ${players ?? 1}`}</span>
             </div>
 
             <div

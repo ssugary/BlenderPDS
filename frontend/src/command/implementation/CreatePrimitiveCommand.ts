@@ -1,6 +1,7 @@
 import { MeshStandardMaterial } from "three";
 
 import { CreateObjectTool } from "../../tool/implementation/CreateObjectTool";
+import { uuid } from "../../core/utils/Id";
 import { Command } from "../Command";
 import { ReplicaSession } from "../../collab/ReplicaSession";
 import { NewOperation } from "../../collab/Operation";
@@ -18,7 +19,7 @@ export class CreatePrimitiveCommand extends Command
     )
     {
         super();
-        this.objectId = crypto.randomUUID();
+        this.objectId = uuid();
         this.addOperation = null;
     }
 

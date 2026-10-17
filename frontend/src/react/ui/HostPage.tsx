@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ApiParticipant, ApiSession, createSession, joinSession, listParticipants } from '../../api/Backend';
+import { ApiError, ApiParticipant, ApiSession, createSession, getOpenSession, joinSession, listParticipants } from '../../api/Backend';
 import { WebSocketTransport } from '../../network/WebSocketTransport';
 import { useSocialContext } from './SocialContext';
 import { codeBoxStyle, copy, headingStyle, textStyle, useLobbyContext } from './LobbyShared';
@@ -8,6 +8,37 @@ import { mutedStyle } from './SocialUI';
 
 /** How often the page checks who has already walked in. */
 const POLL_MS = 3_000;
+
+/**
+ * Resumes the host's open room or creates one.
+ *
+ * A host may only have one open room (the backend answers 409 to a second one) and a
+ * room that was created and then abandoned is never ended by itself, so creating on
+ * every visit would leave the host locked out of hosting after the first time.
+ */
+async function openOrResumeSession(hostId: number): Promise<ApiSession>
+{
+    const open = await getOpenSession(hostId);
+    if (open)
+        return open;
+
+    try
+    {
+        return await createSession(hostId);
+    }
+    catch (problem)
+    {
+        // Lost a race with another tab (or with React's dev double mount): the room it
+        // created is the one to use.
+        if (problem instanceof ApiError && problem.status === 409)
+        {
+            const raced = await getOpenSession(hostId);
+            if (raced)
+                return raced;
+        }
+        throw problem;
+    }
+}
 
 /**
  * Hosting screen. The session now exists on the backend before anyone connects, so:
@@ -30,6 +61,8 @@ export function HostPage()
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const startingRef = useRef(false);
+    /** Kept across React's dev double mount so the second run does not create again. */
+    const loadingRef = useRef<{ userId: number; session: Promise<ApiSession> } | null>(null);
 
     useEffect(() =>
     {
@@ -37,20 +70,25 @@ export function HostPage()
             return;
 
         let cancelled = false;
-        (async () =>
-        {
-            try
-            {
-                const created = await createSession(user.id);
-                if (!cancelled)
-                    setSession(created);
-            }
-            catch (problem)
+
+        if (loadingRef.current?.userId !== user.id)
+            loadingRef.current = { userId: user.id, session: openOrResumeSession(user.id) };
+
+        loadingRef.current.session
+            .then((resumed) =>
             {
                 if (!cancelled)
-                    setError(problem instanceof Error ? problem.message : 'Could not open a session.');
-            }
-        })();
+                    setSession(resumed);
+            })
+            .catch((problem) =>
+            {
+                if (cancelled)
+                    return;
+
+                // A failed attempt must not be cached, or a retry would replay the error.
+                loadingRef.current = null;
+                setError(problem instanceof Error ? problem.message : 'Could not open a session.');
+            });
 
         return () => { cancelled = true; };
     }, [user]);

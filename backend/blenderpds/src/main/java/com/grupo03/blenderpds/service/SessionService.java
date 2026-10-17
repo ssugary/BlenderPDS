@@ -35,6 +35,16 @@ public interface SessionService {
     Optional<Session> getByCode(String code);
 
     /**
+     * The host's still-open room ({@code WAITING} or {@code ACTIVE}), if they have one.
+     *
+     * <p>It exists because {@link #createSession} refuses a second open room per host:
+     * a screen that only knew how to create would get 409 every time the host came back
+     * to it, and would also orphan the room (nobody ever ends a room that was only
+     * created and abandoned).
+     */
+    Optional<Session> getOpenSessionFor(Long hostId);
+
+    /**
      * REST entry point: checks the friendship with the host, the state and the capacity
      * and leaves the participant registered (presence is actually marked in
      * {@link #connectParticipant}).
