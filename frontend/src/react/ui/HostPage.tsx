@@ -133,7 +133,7 @@ export function HostPage()
             // shows up here as a message instead of as a socket that retries forever.
             await joinSession(session.id, user.id);
             const transport = new WebSocketTransport(WebSocketTransport.urlFor(session.id, user.id));
-            onStart({ role: 'host', transport, sessionId: session.id, userId: user.id, hostId: user.id, code: session.code });
+            onStart({ role: 'host', transport, sessionId: session.id, userId: user.id });
         }
         catch (problem)
         {

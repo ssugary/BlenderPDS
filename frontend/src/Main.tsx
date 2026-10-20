@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { endSession, leaveSession } from './api/Backend';
 import { ReplicaSession } from './collab/ReplicaSession';
 import { buildSceneSnapshot } from './collab/SceneSnapshot';
-import { GLOBAL_BUS } from './core/EventBus';
 import { InputManager } from './manager/InputManager';
 import { Session } from './network/Session';
 import { Viewport3D } from './react/Viewport3D';
@@ -126,13 +125,7 @@ function App()
 
     return (
         <AppRoutes
-            onStart={(session) =>
-            {
-                if (session)
-                    GLOBAL_BUS.emit('network:connected', session);
-
-                setBoot({ replica: new ReplicaSession(), session });
-            }}
+            onStart={(session) => setBoot({ replica: new ReplicaSession(), session })}
             onExit={onExit}
             renderEditor={({ leave }) => boot && (
                 <>

@@ -7,7 +7,7 @@ The core idea:
 - **Operation log** is the source of truth. Every edit is an immutable `Operation` with a unique id, appended to the log.
 - **DocumentState** is a CRDT built by folding the log. Two replicas that hold the same set of operations hold the same state, regardless of arrival order.
 - **Scene** (three.js) is only a view. `SceneProjector` turns state changes into `SceneManager` calls.
-- **Transport** only moves operations between replicas. No host is needed for correctness, so the lobby's host/guest roles only matter for connection setup. The transport is now the backend WebSocket (`session-backend.md`), which also sequences and stores the operations; WebRTC remains in the tree as the direct peer-to-peer option.
+- **Transport** only moves operations between replicas. No host is needed for correctness, so the lobby's host/guest roles only matter for connection setup. The transport is the backend WebSocket (`session-backend.md`), which also sequences and stores the operations; there is no peer-to-peer path.
 
 ## 1. Modules and responsibilities
 
@@ -102,7 +102,7 @@ class Transport {
     +send(data)
     +onMessage(callback)
 }
-class WebRTCConnection
+class WebSocketTransport
 class PresenceService {
     <<new>>
     +setCursor(objectId)
@@ -141,7 +141,7 @@ SceneProjector --> SelectionManager : drop stale selection
 SyncEngine --> ReplicaSession : receive(ops)
 SyncEngine --> OpLog : since(vv)
 SyncEngine --> Transport
-Transport <|.. WebRTCConnection
+Transport <|.. WebSocketTransport
 PresenceService --> Transport
 ChatPanel --> Transport
 TimelinePanel --> OpLog : reads

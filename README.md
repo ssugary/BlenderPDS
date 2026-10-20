@@ -60,7 +60,7 @@ PDS/
     ├── src/core/           # Engine (composition root), EventBus, controllers
     ├── src/entity/         # malha half-edge, modos e navegação
     ├── src/manager/        # cena, câmera, seleção, ferramentas, comandos, input
-    ├── src/network/        # Transport, WebSocketTransport e WebRTC
+    ├── src/network/        # contrato Transport e WebSocketTransport
     ├── src/tool/           # ferramentas
     ├── src/command/        # comandos com undo
     ├── src/react/          # viewport e UI (lobby, toolbar, chat, timeline)

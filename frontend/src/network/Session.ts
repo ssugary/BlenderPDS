@@ -7,13 +7,10 @@ export interface Session
     role: SessionRole;
     transport: Transport;
     /**
-     * Backend session this transport belongs to. Absent in the direct WebRTC mode,
-     * which is why everything below is optional: the editor only needs the transport.
+     * Backend session this transport belongs to. Optional because the editor also runs
+     * offline, where there is no session at all.
      */
     sessionId?: number;
     /** Who is on this end (the backend takes the actor from the request, as in the friends API). */
     userId?: number;
-    hostId?: number;
-    /** Short code the host may share so a friend can join without the friends list. */
-    code?: string;
 }

@@ -59,7 +59,7 @@ export function FriendsPage()
 
             await joinSession(target.id, social.user.id);
             const transport = new WebSocketTransport(WebSocketTransport.urlFor(target.id, social.user.id));
-            onStart({ role: 'guest', transport, sessionId: target.id, userId: social.user.id, hostId: target.id, code: target.code });
+            onStart({ role: 'guest', transport, sessionId: target.id, userId: social.user.id });
         }
         catch (problem)
         {

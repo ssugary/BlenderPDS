@@ -54,8 +54,8 @@ export function ChatPanel({ session }: ChatPanelProps)
                     { author: partnerName, text: data.text.slice(0, MAX_MESSAGE_LENGTH) }
                 ]);
 
-            // The server keeps the roster; without it the count below would have to guess
-            // ("2 players" is only true for the direct peer-to-peer mode).
+            // The server keeps the roster, so the count reflects who is really connected
+            // (a guest may leave while the host keeps editing).
             if (data?.type === 'session_roster' && Array.isArray(data.participants))
                 setPlayers(data.participants.filter((participant: any) => participant.active).length);
         };

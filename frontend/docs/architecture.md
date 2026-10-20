@@ -347,7 +347,17 @@ MeshEditTool ..> FaceExtrudeCommand : creates
 
 ## 5. UI, input and networking
 
-`Main.ts` runs the lobby first. When a session exists it creates the chat panel, then starts the engine. The UI talks to the engine only through `EventBus`.
+This view is React-first: there is no `UIManager` and no `Viewport` class. `Main.tsx` mounts
+`AppRoutes`, which shows the lobby (`/`, `/login`, `/friends`, `/host`, `/join`) until a page
+calls `onStart` with a `Session`; `/editor` then renders `Viewport3D`, the panels and the
+overlay. `Viewport3D` is the only place that builds `Engine`, inside an effect, and disposes
+it on unmount. The React UI and the engine talk to each other through `EventBus`.
+
+Collaboration has exactly one transport: `WebSocketTransport`, created by `HostPage` (role
+`host`) or `JoinPage`/`FriendsPage` (role `guest`). Its URL points at the backend socket
+(`/ws/sessions/{id}?userId=`), so the server sequences and stores operations and relays
+presence/chat. `Transport` stays as the interface because `SyncEngine`, `PresenceService`
+and `ChatPanel` depend on it rather than on the socket.
 
 ```mermaid
 classDiagram
@@ -356,19 +366,28 @@ direction LR
 class Main {
     <<entry point>>
 }
+class AppRoutes {
+    +renderEditor({ leave })
+}
 class Lobby {
-    +run() Session
-    -startHost()
-    -startGuest()
+    +onStart(session)
+}
+class HostPage {
+    -startHosting()
+}
+class JoinPage {
+    -join()
+}
+class FriendsPage {
+    -join(friend)
 }
 class ChatPanel {
     -session Session
     -sendMessage()
     -setOnline(bool)
 }
-class UIManager
 class Toolbar
-class Viewport {
+class Viewport3D {
     -pointerDownCoords
 }
 class InputManager {
@@ -383,9 +402,10 @@ class EventBus {
 class Engine
 
 class Session {
-    <<interface>>
     +role SessionRole
     +transport Transport
+    +sessionId number
+    +userId number
 }
 class Transport {
     <<interface>>
@@ -394,32 +414,33 @@ class Transport {
     +onClose(callback)
     +close()
 }
-class WebRTCConnection {
-    -peer RTCPeerConnection
-    -channel RTCDataChannel
-    +createOffer() string
-    +acceptOffer(code) string
-    +acceptAnswer(code)
-    +waitUntilOpen()
+class WebSocketTransport {
+    +urlFor(sessionId, userId) string
+    +send(data)
+    -open()
+    -notifyClose()
 }
 
-Main --> Lobby : 1. runs
-Main --> ChatPanel : 2. if connected
-Main --> Engine : 3. starts
-Main --> UIManager
-Main --> InputManager
+Main --> AppRoutes : mounts
+Main --> InputManager : keybindings
+AppRoutes --> Lobby : no session yet
+AppRoutes --> Viewport3D : /editor
 
-UIManager *-- Toolbar
-UIManager *-- Viewport
-Toolbar ..> EventBus : add, delete, tool/change
-Viewport ..> EventBus : ui/canvas_clicked
-InputManager ..> EventBus : input/action
-Engine ..> EventBus : subscribes
+HostPage ..> WebSocketTransport : creates
+JoinPage ..> WebSocketTransport : creates
+FriendsPage ..> WebSocketTransport : creates
+HostPage ..> Session : host
+JoinPage ..> Session : guest
+FriendsPage ..> Session : guest
 
-Lobby --> WebRTCConnection : creates
-Lobby ..> Session : resolves
+Viewport3D --> Engine : creates / disposes
+Engine --> Session
 ChatPanel --> Session
 Session o-- Transport
-Transport <|.. WebRTCConnection
-Main ..> EventBus : network/connected
+Transport <|.. WebSocketTransport
+
+Toolbar ..> EventBus : action:add_object, tool:change
+Viewport3D ..> EventBus : ui:canvas_clicked
+InputManager ..> EventBus : input:action
+Engine ..> EventBus : subscribes
 ```

@@ -28,7 +28,7 @@ Requer Node.js `^20.19` ou `>=22.12`.
 | `src/manager/` | Cena, câmera, input, seleção, ferramentas e pilha de comandos |
 | `src/entity/` | Malha half-edge, modos do editor, navegação e estratégias de seleção |
 | `src/tool/`, `src/command/` | Ferramentas e comandos com undo/redo |
-| `src/network/` | Contrato `Transport`, WebSocket e WebRTC |
+| `src/network/` | Contrato `Transport`, `WebSocketTransport` e a sessão do editor |
 | `src/react/` | Viewport 3D e UI (lobby, toolbar, chat, timeline) |
 | `docs/` | Diagramas de arquitetura e protocolo colaborativo |
 

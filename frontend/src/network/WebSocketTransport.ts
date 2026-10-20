@@ -7,11 +7,11 @@ const BASE_RECONNECT_DELAY_MS = 500;
 const MAX_RECONNECT_DELAY_MS = 5_000;
 
 /**
- * Collaboration transport against the backend, the counterpart of WebRTCConnection.
+ * Collaboration transport against the backend — the only Transport implementation.
  *
- * It implements the same Transport interface, so Engine, SyncEngine, PresenceService
- * and ChatPanel did not change: the only difference is that messages now go through a
- * server that sequences the operations instead of straight to the other peer.
+ * It implements the Transport interface, so SyncEngine, PresenceService and ChatPanel
+ * depend on the abstraction rather than on the socket: messages go through a server that
+ * sequences the operations instead of straight to another peer.
  *
  * Two details worth knowing:
  *
@@ -138,7 +138,7 @@ export class WebSocketTransport implements Transport
             }
             catch
             {
-                return; // anything unparseable is ignored, like the old data channel did
+                return; // anything unparseable is ignored
             }
 
             for (const listener of [...this.messageListeners])
