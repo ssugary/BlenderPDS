@@ -2,6 +2,10 @@ import { SceneManager } from '../../manager/SceneManager';
 import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import * as THREE from 'three';
 
+/**
+ * Exports every renderable mesh (editor helpers excluded) to an .obj download, cloning each
+ * material so the live scene is left untouched.
+ */
 export class FileExporter {
     public static exportSceneAsOBJ(sceneManager: SceneManager, filename: string = 'scene.obj'): void {
         const exporter = new OBJExporter();

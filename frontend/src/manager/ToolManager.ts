@@ -1,6 +1,10 @@
 import { Object3D } from "three";
 import { Tool } from "../tool/Tool";
 
+/**
+ * Registry of tools by name plus the one that is active. Switching delegates the
+ * deactivate/activate pair, so a tool never needs to know which tool came before it.
+ */
 export class ToolManager 
 {
     public activeTool: Tool | null;

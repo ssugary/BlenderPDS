@@ -13,6 +13,7 @@
 
 const API_BASE = '/api';
 
+/** A failed backend call: `status` is the HTTP code and the message is already human-readable. */
 export class ApiError extends Error
 {
     public constructor(public readonly status: number, message: string)

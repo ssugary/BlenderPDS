@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { SceneManager } from './SceneManager';
 import { GLOBAL_BUS } from '../core/EventBus';
 
+/**
+ * Holds the single selected mesh and the box drawn around it. Every change is announced on
+ * `selection:changed`, which the UI and the selection controller listen to.
+ */
 export class SelectionManager 
 {
     public sceneManager:SceneManager;

@@ -1,6 +1,7 @@
 // showOpenFilePicker is part of the File System Access API and not yet in the standard TypeScript DOM lib
 declare function showOpenFilePicker(): Promise<FileSystemFileHandle[]>;
 
+/** Thin wrapper over the File System Access API for picking one text file. */
 export class FileLoader
 {
     // Prompts a browser window and opens a file

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SceneManager } from './SceneManager';
 
+/** Turns normalized pointer coordinates into the first scene object under the cursor. */
 export class RaycasterManager 
 {
 

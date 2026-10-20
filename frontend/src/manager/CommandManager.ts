@@ -1,5 +1,9 @@
 import { Command } from "../command/Command";
 
+/**
+ * Undo/redo history of the editor. Commands are opaque here: executing one clears the redo
+ * stack, and undo/redo only move it between the two stacks.
+ */
 export class CommandManager
 {
     private undoStack:Array<Command>;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+/** One vertex. `halfEdge` points at an outgoing edge, which is how the mesh is walked. */
 export class HEVertex 
 {
     public position?:THREE.Vector3;
@@ -32,6 +33,7 @@ export class HEVertex
     }
 }
 
+/** One face. `halfEdge` is the first edge of its loop, and next/prev chain the loop. */
 export class HEFace 
 {
     public halfEdge?:HEEdge;
@@ -51,6 +53,10 @@ export class HEFace
     }
 }
 
+/**
+ * One directed edge: origin vertex, twin, next/prev inside the face loop, and the incident face.
+ * A missing twin or face means border, so the getters throw instead of returning undefined.
+ */
 export class HEEdge {
     public vertex?: HEVertex;
     public twin?: HEEdge;
@@ -114,6 +120,11 @@ export class HEEdge {
     }
 }
 
+/**
+ * Half-edge view of a BufferGeometry, kept in `mesh.userData.heMesh`. It is what makes
+ * vertex/edge/face selection and extrude possible: fromBufferGeometry converts to it and
+ * toBufferGeometry converts back after an edit.
+ */
 export class HEMesh 
 {
     public vertices:Array<HEVertex>;

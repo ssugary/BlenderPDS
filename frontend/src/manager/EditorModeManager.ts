@@ -2,6 +2,10 @@ import { Object3D } from 'three';
 import { GLOBAL_BUS } from '../core/EventBus';
 import { EditMode, EditorMode, ObjectMode } from '../entity/EditorMode';
 
+/**
+ * Holds the object and edit modes and swaps them, telling each one to enter/exit so it can
+ * install or remove its tools. Announces the new mode on `editor:mode_changed`.
+ */
 export class EditorModeManager 
 {
     private modes:Map<string,EditorMode>;

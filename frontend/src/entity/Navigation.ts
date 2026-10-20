@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLOBAL_BUS } from '../core/EventBus';
 
+/** Base navigation strategy. CameraManager keeps one instance per mode and enables only the active one. */
 export class Navigation 
 {
     enable() {}
@@ -11,6 +12,10 @@ export class Navigation
     dispose() {}
 }
 
+/**
+ * Orbit around a target (middle-drag rotates, right-drag pans). `syncTarget` re-centres it on
+ * the way back from walk mode, so the camera does not jump.
+ */
 export class OrbitNavigation extends Navigation 
 {
     private camera:THREE.PerspectiveCamera;
@@ -61,6 +66,10 @@ export class OrbitNavigation extends Navigation
     }
 }
 
+/**
+ * First-person camera: WASD/space moves and middle-drag looks. Movement arrives as `input:action`
+ * events on the bus, and dispose() drops that subscription plus the window listeners.
+ */
 export class WalkNavigation extends Navigation 
 {
     private camera:THREE.PerspectiveCamera;

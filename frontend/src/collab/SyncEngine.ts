@@ -15,6 +15,11 @@ export type SyncMessage =
 const CHUNK_SIZE = 200;
 const MAX_OPS_PER_MESSAGE = 1000;
 
+/**
+ * Exchanges the operations two peers are missing: each side announces its version vector
+ * (`sync_hello`) and answers the peer's with the ops it lacks (`sync_ops`). Duplicates are
+ * dropped by the replica, so a reconnect may replay the last hello safely.
+ */
 export class SyncEngine
 {
     public constructor(

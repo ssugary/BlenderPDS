@@ -1,6 +1,10 @@
 import { PerspectiveCamera } from 'three';
 import { OrbitNavigation, WalkNavigation } from '../entity/Navigation';
 
+/**
+ * Owns the camera and the navigation strategies (orbit and walk). Switching modes disables the
+ * old strategy first, and the transform gizmo can freeze navigation while it is being dragged.
+ */
 export class CameraManager 
 {
     public camera:PerspectiveCamera;

@@ -5,6 +5,11 @@ import { Tool } from '../../tool/Tool';
 import { HEVertex } from '../../entity/HalfEdge';
 import { MeshEditTool } from '../../tool/implementation/MeshEditTool';
 
+/**
+ * Moves the selected half-edge vertices and rebuilds the mesh geometry, refreshing the gizmo and
+ * the pick helper. execute() applies the stored new positions and undo() the old ones, so one
+ * gesture is one undo step.
+ */
 export class MeshEditCommand extends Command
 {
     public tool:Tool;
@@ -56,6 +61,10 @@ export class MeshEditCommand extends Command
     }
 }
 
+/**
+ * Swaps a whole geometry snapshot (positions and indices) for a mesh through the tool's rebuild
+ * callback. Extrude and edge split both use it, and undo restores the snapshot taken before.
+ */
 export class FaceExtrudeCommand extends Command 
 {
     public mesh:Mesh;

@@ -3,6 +3,10 @@ import { Transport } from './Transport';
 const RTC_CONFIG: RTCConfiguration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 const ICE_GATHER_TIMEOUT_MS = 3000;
 
+/**
+ * Manual WebRTC transport. Host and guest exchange one code each (base64 SDP) and then talk over
+ * a data channel; it implements the same Transport contract as the WebSocket variant.
+ */
 export class WebRTCConnection implements Transport
 {
     private peer: RTCPeerConnection;

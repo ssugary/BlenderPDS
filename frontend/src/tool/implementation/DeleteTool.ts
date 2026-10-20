@@ -5,6 +5,10 @@ import { Tool } from "../Tool";
 import { Object3D } from "three";
 
 
+/**
+ * Removes an object locally: detaches the gizmo, clears the selection and takes it out of the
+ * scene. Shared objects are deleted by DeleteObjectCommand instead.
+ */
 export class DeleteTool extends Tool
 {
     private sceneManager:SceneManager;

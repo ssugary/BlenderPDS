@@ -4,6 +4,10 @@ import { CreateObjectTool } from "../../tool/implementation/CreateObjectTool";
 import { Command } from "../Command";
 import { DeleteTool } from "../../tool/implementation/DeleteTool";
 
+/**
+ * Adds an already-built object to the scene and removes it on undo. This is the local path (no
+ * operation, no sync); shared primitives are created by CreatePrimitiveCommand instead.
+ */
 export class AddObjectCommand extends Command
 {
     constructor(

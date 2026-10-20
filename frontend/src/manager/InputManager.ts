@@ -2,6 +2,10 @@ import { GLOBAL_BUS } from '../core/EventBus';
 
 type KeybindingsConfig = Record<string, string>;
 
+/**
+ * Maps physical keys to named actions (`action:delete_object`, `tool:translate`...) and emits
+ * them on the bus. Keys typed into a form field are ignored.
+ */
 export class InputManager 
 {
     private keybindings: KeybindingsConfig;

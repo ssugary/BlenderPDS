@@ -1,5 +1,9 @@
 import { OpId } from './OpId';
 
+/**
+ * Logical clock of one replica: every local op gets the next stamp, and observing a remote op
+ * keeps the counter at least as high as its stamp, so causal order holds without wall clocks.
+ */
 export class LamportClock
 {
     private counter = 0;

@@ -7,6 +7,10 @@ import { SelectionStrategy, VertexSelectionStrategy } from '../../entity/Selecti
 import { CommandManager } from '../../manager/CommandManager';
 import { FaceExtrudeCommand, MeshEditCommand } from '../../command/implementation/MeshEditCommand';
 
+/**
+ * Vertex/edge/face editing of one mesh: it converts the geometry to a half-edge mesh, draws the
+ * pick helper and the highlight, and turns gizmo drags, extrudes and edge splits into commands.
+ */
 export class MeshEditTool extends Tool 
 {
     private controls:TransformControls;

@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { SceneManager } from '../manager/SceneManager';
 
+/**
+ * Owns the WebGLRenderer: appends the canvas to the viewport, renders one frame from the camera
+ * and keeps it sized to the window. dispose() drops the listener and the GL context.
+ */
 export class RenderEngine
 {
     private sceneManager:SceneManager;

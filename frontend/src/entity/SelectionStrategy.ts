@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { HEEdge, HEFace, HEMesh, HEVertex } from './HalfEdge';
 
+/**
+ * One strategy per selectable element (vertex, edge, face). It owns the pick helper geometry,
+ * the highlight and the capabilities (extrude, edge split), so MeshEditTool can switch modes
+ * without knowing the element type.
+ */
 export abstract class SelectionStrategy<T extends THREE.Object3D = THREE.Object3D>
 {
     abstract usesMeshAsPickTarget():boolean;          
@@ -20,6 +25,7 @@ export abstract class SelectionStrategy<T extends THREE.Object3D = THREE.Object3
     abstract supportsEdgeSplit():boolean;
 }
 
+/** Selects exactly the vertex under the pointer and highlights it as a point. */
 export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points> 
 {
 
@@ -84,6 +90,10 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
     }
 }
 
+/**
+ * Selects the face under the pointer together with its coplanar neighbours, so an extrude moves
+ * a whole flat region instead of a single triangle.
+ */
 export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
 {
     constructor()
@@ -154,6 +164,10 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
 
 }
 
+/**
+ * Selects unique edges (pairs of vertices) and is the only strategy that supports edge split.
+ * Its pick helper is a line geometry, because edges are not mesh faces.
+ */
 export class EdgeSelectionStrategy extends SelectionStrategy<THREE.LineSegments>
 {
     public uniqueEdges:any;

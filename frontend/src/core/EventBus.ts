@@ -2,6 +2,10 @@
 //gambiarra doida pra ListenerFunction receber any
 export type ListenerFunction<T = any> = (data: T) => void;
 
+/**
+ * Minimal publish/subscribe bus: listeners are keyed by event name, and emit() calls them in
+ * registration order. GLOBAL_BUS below is the instance shared by the editor and the React UI.
+ */
 export class EventBus 
 {
     private listeners: Map<string, Array<ListenerFunction>> ;

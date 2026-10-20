@@ -3,6 +3,10 @@ import { SelectionManager } from '../manager/SelectionManager';
 import { ToolManager } from '../manager/ToolManager';
 import { MeshEditTool } from '../tool/implementation/MeshEditTool';
 
+/**
+ * Base editor mode. enter/exit install and remove the mode's tools, and onCanvasClick decides
+ * what a click means while the mode is active.
+ */
 export class EditorMode 
 {
     public enter(_payload?: any): void {}
@@ -10,6 +14,7 @@ export class EditorMode
     public onCanvasClick(_intersect: THREE.Intersection | null): void {}
 }
 
+/** Default mode: a click selects the object under the cursor (or clears the selection). */
 export class ObjectMode extends EditorMode 
 {
     private selectionManager: SelectionManager;
@@ -32,6 +37,10 @@ export class ObjectMode extends EditorMode
     }
 }
 
+/**
+ * Mesh-editing mode: it turns the selected mesh into a half-edge mesh, and clicks pick vertices,
+ * edges or faces through the MeshEditTool strategy instead of whole objects.
+ */
 export class EditMode extends EditorMode 
 {
     private meshEditTool: MeshEditTool;

@@ -1,6 +1,10 @@
 import { Command } from "../Command";
 import { ReplicaSession } from "../../collab/ReplicaSession";
 
+/**
+ * Changes one object's colour as an operation. Undo commits the previous colour back, so both
+ * peers converge instead of one silently restoring a local value.
+ */
 export class ColorEditCommand extends Command
 {
     private postColor:number;

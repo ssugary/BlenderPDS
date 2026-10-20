@@ -2,6 +2,10 @@ import { Tool } from "../Tool";
 import { Matrix4, Object3D } from "three";
 import { TransformControls } from "three/examples/jsm/Addons.js";
 
+/**
+ * Attaches the shared TransformControls in one mode (translate, rotate or scale) and captures the
+ * matrix a gesture started from, which is what the command needs to undo it.
+ */
 export class TransformTool extends Tool 
 {
     private controls:TransformControls;

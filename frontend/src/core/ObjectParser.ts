@@ -4,6 +4,10 @@ import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 import { SceneManager } from '../manager/SceneManager';
 
+/**
+ * Loads an OBJ file chosen by the user, normalises each mesh (merged vertices, standard material)
+ * and adds it to the scene. Only the 'model' type is handled today.
+ */
 export class ObjectParser
 {
     /**  Parses the type of the object and inserts it into the scene*/

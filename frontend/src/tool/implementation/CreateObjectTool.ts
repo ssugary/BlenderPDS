@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { Tool } from "../Tool";
 import { SceneManager } from '../../manager/SceneManager';
+
+/**
+ * Builds primitive meshes from a type string and inserts objects into the scene.
+ * SceneProjector calls buildPrimitive to recreate each object from the document.
+ */
 export class CreateObjectTool extends Tool
 {
 
