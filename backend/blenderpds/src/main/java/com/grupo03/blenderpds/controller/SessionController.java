@@ -7,15 +7,12 @@ import com.grupo03.blenderpds.dto.SessionParticipantDto;
 import com.grupo03.blenderpds.model.Session;
 import com.grupo03.blenderpds.service.SessionService;
 import com.grupo03.blenderpds.service.implementation.SessionServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -132,26 +129,5 @@ public class SessionController {
     private SessionDto toDto(Session session) {
         return SessionDto.from(session, sessionService.countParticipants(session.getId()),
                 SessionServiceImpl.MAX_PARTICIPANTS);
-    }
-
-    @ExceptionHandler(EntityNotFoundException.class)
-    ResponseEntity<Void> notFound(EntityNotFoundException ex) {
-        return ResponseEntity.notFound().build();
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    ResponseEntity<Void> badRequest(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().build();
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    ResponseEntity<Void> sessionConflict(IllegalStateException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).build();
-    }
-
-    /** Domain access rule: not a friend of the host / not the host → 403. */
-    @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<Void> forbidden(AccessDeniedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 }

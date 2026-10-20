@@ -4,15 +4,12 @@ import com.grupo03.blenderpds.dto.FriendRequestCreateDto;
 import com.grupo03.blenderpds.dto.FriendRequestDto;
 import com.grupo03.blenderpds.dto.UserDto;
 import com.grupo03.blenderpds.service.UserService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -118,12 +115,6 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /** A duplicate e-mail (a race between the pre-check and the insert) becomes 409 instead of 500. */
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    ResponseEntity<Void> duplicateEmail(DataIntegrityViolationException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).build();
-    }
-
     // ---------------- Friend requests ----------------
 
     /**
@@ -192,23 +183,5 @@ public class UserController {
     public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         userService.removeFriend(id, friendId);
         return ResponseEntity.noContent().build();
-    }
-
-    /** Missing user or request (raised by the service) → 404. */
-    @ExceptionHandler(EntityNotFoundException.class)
-    ResponseEntity<Void> notFound(EntityNotFoundException ex) {
-        return ResponseEntity.notFound().build();
-    }
-
-    /** Invalid rule (e.g. a friend request to oneself) → 400. */
-    @ExceptionHandler(IllegalArgumentException.class)
-    ResponseEntity<Void> badRequest(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().build();
-    }
-
-    /** Friendship conflict (already friends / duplicate request) → 409. */
-    @ExceptionHandler(IllegalStateException.class)
-    ResponseEntity<Void> friendshipConflict(IllegalStateException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 }
