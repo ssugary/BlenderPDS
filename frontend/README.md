@@ -1,18 +1,40 @@
-# Projeto Modelagem 3d com edição colaborativa - Projeto Detalhado de Software
+# Frontend — BlenderPDS
+
+SPA em React + TypeScript + three.js que renderiza o editor, o lobby e os painéis da sessão.
+Instruções completas (backend, banco, contas e testes) estão no [README da raiz](../README.md).
 
 ## Como rodar
-- Tendo o node instalado no computador, use o comando ```npx serve src/``` e acesse o renderizador no navegador
 
-Casos de Uso e Funcionalidades 
-##  Modelagem 3D
-1. Renderizar objetos em tempo real.  
-2. Realizar distorções e transformações no modelo 3D em tempo real.  
-3. Importar e exportar arquivos nos formatos .obj e .usd.  
-## Edição Colaborativa
-4. Permitir mudanças no modelo por múltiplos usuários em tempo real.  
-5. Visualizar a perspectiva/visão do parceiro em tempo real.  
-6. Versionamento e integração com plataformas externas (ex: GitHub).  
-## Aspectos Sociais
-7. Compartilhamento de modelos em uma página inicial ou em grupos.  
-8. Chat em tempo real para o projeto e para os grupos.  
-9. Criação e gestão de perfis de usuários.  
+```bash
+npm install
+npm run dev      # http://localhost:5173
+```
+
+O Vite faz proxy de `/api` e `/ws` para `http://localhost:8080` (ou para `BACKEND_URL`, se definido).
+
+```bash
+npm run build    # typecheck (tsc strict) + build de produção
+npm run preview  # serve o build
+```
+
+Requer Node.js `^20.19` ou `>=22.12`.
+
+## Estrutura
+
+| Pasta | Conteúdo |
+|---|---|
+| `src/core/` | `Engine` (composition root), `EventBus`, `RenderEngine` e controllers de gesto, seleção e ações |
+| `src/collab/` | Operações, `OpLog`, `DocumentState`, projeção para a cena, sync e presença |
+| `src/manager/` | Cena, câmera, input, seleção, ferramentas e pilha de comandos |
+| `src/entity/` | Malha half-edge, modos do editor, navegação e estratégias de seleção |
+| `src/tool/`, `src/command/` | Ferramentas e comandos com undo/redo |
+| `src/network/` | Contrato `Transport`, WebSocket e WebRTC |
+| `src/react/` | Viewport 3D e UI (lobby, toolbar, chat, timeline) |
+| `docs/` | Diagramas de arquitetura e protocolo colaborativo |
+
+## Documentação
+
+- [Architecture](docs/architecture.md)
+- [CRDT](docs/crdt-architecture.md)
+- [Sessões no backend](docs/session-backend.md)
+- [Backlog](backlog.md)
