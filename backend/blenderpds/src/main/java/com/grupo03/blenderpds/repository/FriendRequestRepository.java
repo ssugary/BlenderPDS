@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * Persistence of pending friend requests: at most one open row per ordered pair,
+ * deleted as soon as it is accepted, rejected or cancelled.
+ */
 public interface FriendRequestRepository extends JpaRepository<FriendRequest, Long> {
 
     /** The exact pending request between a pair (used to block duplicates). */

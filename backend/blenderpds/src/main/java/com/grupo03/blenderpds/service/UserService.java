@@ -5,6 +5,15 @@ import com.grupo03.blenderpds.model.User;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Accounts and friendships: registration with e-mail confirmation, profile reads and
+ * the request → accept/reject → unfriend flow.
+ *
+ * <p>Errors keep the meaning the HTTP layer maps: {@code EntityNotFoundException}
+ * (404), {@code IllegalArgumentException} (400) and {@code IllegalStateException}
+ * (409). A friendship only exists after the receiver accepts, and is written to both
+ * sides — {@link User#getFriendList()} is the single source of that list.
+ */
 public interface UserService {
 
     /**

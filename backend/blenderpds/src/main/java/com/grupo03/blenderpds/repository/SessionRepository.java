@@ -11,6 +11,10 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Persistence of rooms: lookup by code, the host's open room, the friends' live
+ * rooms and the locked read used while appending operations.
+ */
 public interface SessionRepository extends JpaRepository<Session, Long> {
 
     Optional<Session> findByCode(String code);

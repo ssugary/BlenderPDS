@@ -22,6 +22,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * {@link UserService} on top of JPA.
+ *
+ * <p>Registration generates the confirmation token and sends the e-mail inside the
+ * same transaction: if the SMTP call fails, the user is rolled back with it, so no
+ * account is left waiting for a link that was never sent. The token is valid for 24
+ * hours.
+ *
+ * <p>Deleting an account also removes what points at it — tokens, friend requests,
+ * mutual friendships and the rooms it hosted — because those foreign keys do not
+ * cascade. The operation log survives; only the author reference is dropped.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {

@@ -27,6 +27,18 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * {@link SessionService} on top of JPA: room lifecycle, presence and the operation
+ * log.
+ *
+ * <p>Two rules shape this class. Every state change that can race takes the session
+ * row with a pessimistic write lock ({@code findByIdForUpdate}): without it two joins
+ * could both see a free seat, and two appends could compute the same
+ * {@code MAX(seq)+1}. And the server never interprets the CRDT — it checks the shape
+ * at the edge, orders, deduplicates by {@code (siteId, lamport)} and persists. The
+ * scene belongs to the client; the snapshot stored here is only its materialisation,
+ * kept for fast reads.
+ */
 @Service
 @RequiredArgsConstructor
 public class SessionServiceImpl implements SessionService {

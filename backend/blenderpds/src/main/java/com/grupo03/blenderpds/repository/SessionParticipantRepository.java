@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Persistence of membership and presence: who belongs to a room, who is connected
+ * right now and how many seats are taken.
+ */
 public interface SessionParticipantRepository extends JpaRepository<SessionParticipant, Long> {
 
     Optional<SessionParticipant> findBySessionIdAndUserId(Long sessionId, Long userId);

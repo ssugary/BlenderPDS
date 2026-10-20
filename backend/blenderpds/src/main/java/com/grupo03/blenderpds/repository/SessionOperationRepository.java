@@ -8,6 +8,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Persistence of the per-session operation log: the total order by {@code seq}, the
+ * deduplication key and the current tail read on append.
+ */
 public interface SessionOperationRepository extends JpaRepository<SessionOperation, Long> {
 
     /** The session log in the server's total order — the order the client replicates. */

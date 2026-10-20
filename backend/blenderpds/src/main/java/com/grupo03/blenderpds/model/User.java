@@ -26,6 +26,17 @@ import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+/**
+ * A system account. The e-mail is unique and doubles as the login username.
+ *
+ * <p>Only the password hash is stored ({@code password_hash}); the plain text never
+ * reaches the entity. {@code emailVerified} starts as false and blocks the login
+ * until the confirmation link is used — that is what makes the address trustworthy.
+ *
+ * <p>The confirmed friendship lives in {@code friendList} (N:N through
+ * {@code user_friends}, written on both sides when a request is accepted). Pending
+ * requests are the {@code friend_requests} table, never this list.
+ */
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
