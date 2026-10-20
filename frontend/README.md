@@ -31,11 +31,9 @@ Requires Node.js `^20.19` or `>=22.12`.
 | `src/tool/`, `src/command/` | Tools and commands with undo/redo |
 | `src/network/` | `Transport` contract, `WebSocketTransport` and the editor session |
 | `src/react/` | 3D viewport and UI (lobby, toolbar, chat, timeline) |
-| `docs/` | Architecture and collaboration protocol diagrams |
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [CRDT](docs/crdt-architecture.md)
-- [Backend sessions](docs/session-backend.md)
+- [Frontend architecture](../docs/frontend-architecture.md) — editor core, CRDT and collaboration data flow
+- [Backend architecture](../docs/backend-architecture.md) — REST surface, WebSocket protocol and data model
 - [Backlog](backlog.md)

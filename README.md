@@ -48,6 +48,7 @@ Course project for **Projeto Detalhado de Software — Grupo 03**.
 
 ```
 PDS/
+├── docs/                    # architecture documents (backend and frontend)
 ├── backend/blenderpds/
 │   ├── src/main/java/com/grupo03/blenderpds/
 │   │   ├── config/         # security, WebSocket, auditing
@@ -57,7 +58,6 @@ PDS/
 │   │   ├── model/          # JPA entities
 │   │   └── repository/     # Spring Data
 │   ├── src/test/java/      # controller, service, model and WebSocket tests
-│   ├── docs/               # layered architecture
 │   └── compose.yaml        # Postgres 16 + Mailpit
 └── frontend/
     ├── src/api/            # REST client (session + CSRF)
@@ -68,8 +68,7 @@ PDS/
     ├── src/network/        # Transport contract and WebSocketTransport
     ├── src/tool/           # tools
     ├── src/command/        # commands with undo
-    ├── src/react/          # viewport and UI (lobby, toolbar, chat, timeline)
-    └── docs/               # architecture and protocol
+    └── src/react/          # viewport and UI (lobby, toolbar, chat, timeline)
 ```
 
 ## Running locally (development)
@@ -142,7 +141,7 @@ over `ws://<origin>/ws/sessions/{id}` (in dev Vite forwards `/ws` to the backend
 server only validates the format, orders (`seq`) and stores them — merging is the client's job.
 
 Protocol details, the data model and the join rules are in
-[`frontend/docs/session-backend.md`](frontend/docs/session-backend.md).
+[`docs/backend-architecture.md`](docs/backend-architecture.md).
 
 ## Build and tests
 
@@ -168,10 +167,8 @@ Docker must be running.
 
 ## Documentation
 
-- [`backend/blenderpds/docs/architecture.md`](backend/blenderpds/docs/architecture.md) — backend layers and the path of one operation.
-- [`frontend/docs/architecture.md`](frontend/docs/architecture.md) — class diagrams of the engine, tools, commands, modes and networking.
-- [`frontend/docs/crdt-architecture.md`](frontend/docs/crdt-architecture.md) — operation model, conflict rules and CRDT implementation order.
-- [`frontend/docs/session-backend.md`](frontend/docs/session-backend.md) — sessions on the server, WebSocket protocol, authentication and limits.
+- [`docs/backend-architecture.md`](docs/backend-architecture.md) — backend layers, REST surface, WebSocket protocol, data model, security and limits.
+- [`docs/frontend-architecture.md`](docs/frontend-architecture.md) — editor core, commands, the CRDT stack, the collaboration data flow and the UI layers.
 - [`frontend/backlog.md`](frontend/backlog.md) — what remains for the next sprints.
 
 ## Known limitations
