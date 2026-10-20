@@ -4,7 +4,7 @@ Five views of the current code. Modules talk to each other in two ways: direct c
 
 ## 1. Engine and managers
 
-`Engine` owns and wires everything. `SceneManager` is the single holder of scene objects, and the other managers read from it.
+`Engine` is the composition root: it builds and wires the subsystems, runs the render loop and disposes everything. It does not decide what an input means anymore; the controllers under `core/controllers/` do (`TransformGestureController`, `SelectionController`, `ActionRouter`). `SceneManager` is the single holder of scene objects, and the other managers read from it.
 
 ```mermaid
 classDiagram
@@ -12,12 +12,24 @@ direction TB
 
 class Engine {
     -clock
-    -gestureStart
     +renderEngine RenderEngine
     +start()
     +stop()
-    +setupTools()
-    +bindEvents()
+    +dispose()
+}
+class TransformGestureController {
+    +install()
+    +dispose()
+}
+class SelectionController {
+    +clickAt(coords)
+    +syncPresence()
+    +dropSelection()
+    +announce()
+}
+class ActionRouter {
+    +install()
+    +dispose()
 }
 class SceneManager {
     -scene Scene
@@ -86,9 +98,14 @@ Engine *-- RaycasterManager
 Engine *-- ToolManager
 Engine *-- CommandManager
 Engine *-- EditorModeManager
-Engine ..> ObjectParser : imports models
-Engine ..> FileExporter : exports OBJ
-Engine ..> EventBus : subscribes
+Engine *-- TransformGestureController
+Engine *-- SelectionController
+Engine *-- ActionRouter
+TransformGestureController ..> CommandManager : execute
+ActionRouter ..> CommandManager : execute
+ActionRouter ..> ObjectParser : imports models
+ActionRouter ..> FileExporter : exports OBJ
+ActionRouter ..> EventBus : subscribes
 ObjectParser ..> FileLoader
 ObjectParser ..> SceneManager
 FileExporter ..> SceneManager

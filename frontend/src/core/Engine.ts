@@ -9,82 +9,77 @@ import { ToolManager } from '../manager/ToolManager';
 import { TransformTool } from '../tool/implementation/TransformTool';
 import { CreateObjectTool } from '../tool/implementation/CreateObjectTool';
 import { DeleteTool } from '../tool/implementation/DeleteTool';
-import { GLOBAL_BUS } from './EventBus';
 import { MeshEditTool } from '../tool/implementation/MeshEditTool';
-import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy } from '../entity/SelectionStrategy';
+import { VertexSelectionStrategy, FaceSelectionStrategy, EdgeSelectionStrategy, SelectionStrategy } from '../entity/SelectionStrategy';
 import { EditMode, ObjectMode } from '../entity/EditorMode';
 import { EditorModeManager } from '../manager/EditorModeManager';
-import { FileExporter } from './utils/FileExporter';
-import { ObjectParser } from './ObjectParser';
 import { CommandManager } from '../manager/CommandManager';
-import { CreatePrimitiveCommand } from '../command/implementation/CreatePrimitiveCommand';
-import { DeleteObjectCommand } from '../command/implementation/DeleteObjectCommand';
-import { TransformCommand } from '../command/implementation/TransformCommand';
 import { ReplicaSession } from '../collab/ReplicaSession';
 import { SceneProjector } from '../collab/SceneProjector';
 import { SyncEngine } from '../collab/SyncEngine';
 import { PresenceService } from '../collab/PresenceService';
 import { RemoteSelectionView } from '../collab/RemoteSelectionView';
 import { Session } from '../network/Session';
-import { ColorEditCommand } from '../command/implementation/ColorEditCommand';
-export class Engine 
+import { GLOBAL_BUS } from './EventBus';
+import { TransformGestureController } from './controllers/TransformGestureController';
+import { SelectionController } from './controllers/SelectionController';
+import { ActionRouter } from './controllers/ActionRouter';
+
+interface SessionLink
 {
+    syncEngine:SyncEngine;
+    presence:PresenceService;
+    remoteSelection:RemoteSelectionView;
+}
 
-    private clock:THREE.Clock;
+/**
+ * Composition root of the editor: it builds the subsystems, hands them to the controllers and
+ * runs the render loop. It does not decide what a click, a shortcut or a drag means anymore:
+ * that lives in the controllers under `controllers/`.
+ */
+export class Engine
+{
+    private readonly clock:THREE.Clock;
     private animationFrameId:any;
-    private sceneManager:SceneManager;
-    public renderEngine:RenderEngine;
-    private cameraManager:CameraManager;
-    private selectionManager:SelectionManager;
-    private raycasterManager:RaycasterManager;
-    private commandManager:CommandManager;
-    private toolManager:ToolManager;
-    private transformControls:TransformControls;
-    private meshEditTool:MeshEditTool;
-    private editStrategies:any;
-    private editorModeManager:EditorModeManager;
-    private gestureStart:any;
+    private readonly sceneManager:SceneManager;
+    public readonly renderEngine:RenderEngine;
+    private readonly cameraManager:CameraManager;
+    private readonly selectionManager:SelectionManager;
+    private readonly raycasterManager:RaycasterManager;
+    private readonly commandManager:CommandManager;
+    private readonly toolManager:ToolManager;
+    private readonly transformControls:TransformControls;
+    private readonly meshEditTool:MeshEditTool;
+    private readonly editorModeManager:EditorModeManager;
+    private readonly replica:ReplicaSession;
+    private readonly network:Session | null;
+    private readonly projector:SceneProjector;
+    private readonly syncEngine:SyncEngine | null;
+    private readonly presence:PresenceService | null;
+    private readonly remoteSelection:RemoteSelectionView | null;
+    private readonly selection:SelectionController;
+    private readonly controllers:Array<{ dispose():void }>;
 
-    /** Every bus listener this engine installed, so dispose() can remove exactly those. */
-    private busSubscriptions:Array<{ event:string, callback:(data:any) => void }>;
-
-    private createObjectTool:any;
-    private deleteTool:any;
-
-    private replica:ReplicaSession;
-    private network:Session | null;
-    private projector!:SceneProjector;
-    private presence:PresenceService | null;
-    private syncEngine:SyncEngine | null;
-    private remoteSelection:RemoteSelectionView | null;
-
-    constructor(domElement:HTMLElement, replica:ReplicaSession, network:Session | null = null) 
+    constructor(domElement:HTMLElement, replica:ReplicaSession, network:Session | null = null)
     {
         this.replica = replica;
         this.network = network;
-        this.presence = null;
-        this.syncEngine = null;
-        this.remoteSelection = null;
-        this.busSubscriptions = [];
-
         this.clock = new THREE.Clock();
         this.animationFrameId = null;
 
         this.sceneManager = new SceneManager();
-        
         this.renderEngine = new RenderEngine(this.sceneManager, domElement);
-        
+
         this.cameraManager = new CameraManager(
-            new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000), 
+            new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000),
             this.renderEngine.renderer.domElement
         );
-        this.renderEngine.bindEvents(this.cameraManager.camera);    
+        this.renderEngine.bindEvents(this.cameraManager.camera);
         this.cameraManager.camera.position.set(5, 5, 5);
         this.cameraManager.camera.lookAt(0, 0, 0);
 
         this.selectionManager = new SelectionManager(this.sceneManager);
         this.raycasterManager = new RaycasterManager(this.cameraManager.camera, this.sceneManager);
-
         this.commandManager = new CommandManager();
         this.toolManager = new ToolManager();
 
@@ -92,339 +87,158 @@ export class Engine
         this.sceneManager.getNativeScene().add(this.transformControls);
 
         this.meshEditTool = new MeshEditTool(this.transformControls, this.commandManager, this.sceneManager, new FaceSelectionStrategy());
-        this.editStrategies = {vertex: new VertexSelectionStrategy(), edge: new EdgeSelectionStrategy(), face: new FaceSelectionStrategy()};
-        this.editorModeManager = new EditorModeManager(new ObjectMode(this.selectionManager, this.toolManager), new EditMode(this.meshEditTool));
+        this.editorModeManager = new EditorModeManager(
+            new ObjectMode(this.selectionManager, this.toolManager),
+            new EditMode(this.meshEditTool)
+        );
 
-        this.gestureStart
-        this.transformControls.addEventListener('dragging-changed', (event:any) => 
-        {
-            this.cameraManager.setGizmoDragging(event.value);
+        const createObjectTool = new CreateObjectTool(this.sceneManager);
+        const deleteTool = new DeleteTool(this.sceneManager, this.selectionManager, this.transformControls);
 
-            const tool = this.editorModeManager.current === 'edit' ? this.meshEditTool : this.toolManager.activeTool;
-            const object = this.transformControls.object;
+        // The projection has to exist before the controllers and the network link: both read it.
+        this.projector = this.setupProjection(createObjectTool);
 
-            if (!tool || !object) 
-                return;
+        const link = this.connectSession();
+        this.syncEngine = link?.syncEngine ?? null;
+        this.presence = link?.presence ?? null;
+        this.remoteSelection = link?.remoteSelection ?? null;
 
-            const objectId = this.projector.objectIdFor(object);
+        this.registerTransformTools();
 
-            if (event.value) 
-            {
-                this.gestureStart = tool.captureState(object);
-                this.projector.holdTransform(objectId);
-            }
-            else 
-            {
-                if(tool instanceof TransformTool && objectId)
-                {
-                    const command = new TransformCommand(this.replica, objectId, this.gestureStart, tool.captureState(object))
-                    this.commandManager.execute(command);
-                }
-                this.projector.holdTransform(null);
-            }
-        });
-        this.transformControls.addEventListener('objectChange', () => 
-        {
-            this.selectionManager.update();
+        const editStrategies:Record<string, SelectionStrategy> = {
+            vertex: new VertexSelectionStrategy(),
+            edge: new EdgeSelectionStrategy(),
+            face: new FaceSelectionStrategy()
+        };
+
+        this.selection = new SelectionController({
+            transformControls: this.transformControls,
+            raycasterManager: this.raycasterManager,
+            selectionManager: this.selectionManager,
+            editorModeManager: this.editorModeManager,
+            projector: this.projector,
+            replica: this.replica,
+            presence: this.presence
         });
 
-        this.setupTools();
-        this.bindEvents();
+        const gesture = new TransformGestureController({
+            transformControls: this.transformControls,
+            cameraManager: this.cameraManager,
+            commandManager: this.commandManager,
+            selectionManager: this.selectionManager,
+            toolManager: this.toolManager,
+            editorModeManager: this.editorModeManager,
+            meshEditTool: this.meshEditTool,
+            projector: this.projector,
+            replica: this.replica
+        });
+
+        const actions = new ActionRouter({
+            replica: this.replica,
+            commandManager: this.commandManager,
+            sceneManager: this.sceneManager,
+            selectionManager: this.selectionManager,
+            editorModeManager: this.editorModeManager,
+            toolManager: this.toolManager,
+            meshEditTool: this.meshEditTool,
+            createObjectTool,
+            deleteTool,
+            projector: this.projector,
+            cameraManager: this.cameraManager,
+            selection: this.selection,
+            editStrategies
+        });
+
+        gesture.install();
+        actions.install();
+
+        this.controllers = [gesture, actions];
+
+        // Registered after the controllers so the callback can drop a selection they own.
+        this.presence?.onLockLost(() =>
+        {
+            this.selection.dropSelection();
+            GLOBAL_BUS.emit('ui:toast', 'The other player selected that object first.');
+        });
     }
 
-    setupTools() 
+    /** The only bridge between DocumentState and three.js. Everything the peers share is drawn here. */
+    private setupProjection(createObjectTool:CreateObjectTool):SceneProjector
     {
-        const controls = this.transformControls;
+        const projector = new SceneProjector(this.replica, this.sceneManager, this.selectionManager, createObjectTool);
 
-        this.createObjectTool = new CreateObjectTool(this.sceneManager);
-        this.deleteTool = new DeleteTool(this.sceneManager, this.selectionManager, controls);
-
-        this.setupCollab();
-
-        this.toolManager.registerTool('translate', new TransformTool(controls,  'translate'));
-        this.toolManager.registerTool('rotate',    new TransformTool(controls,  'rotate'));
-        this.toolManager.registerTool('scale',     new TransformTool(controls,  'scale'));
-    }
-
-    /** Scene projection always runs. Sync, presence and remote selection boxes only exist when connected. */
-    private setupCollab()
-    {
-        this.projector = new SceneProjector(this.replica, this.sceneManager, this.selectionManager, this.createObjectTool);
-        this.projector.onMeshRemoved = (mesh) =>
+        projector.onMeshRemoved = (mesh) =>
         {
             if (this.transformControls.object === mesh)
                 this.transformControls.detach();
         };
 
+        return projector;
+    }
+
+    /** Sync, presence and remote selection only exist when the editor was opened inside a session. */
+    private connectSession():SessionLink | null
+    {
         if (!this.network)
-            return;
+            return null;
 
-        this.syncEngine = new SyncEngine(this.replica, this.network.transport);
-        this.syncEngine.start();
+        const syncEngine = new SyncEngine(this.replica, this.network.transport);
+        syncEngine.start();
 
-        this.presence = new PresenceService(this.replica.clock.id, this.network.transport);
-        this.presence.onLockLost(() =>
-        {
-            this.dropSelection();
-            GLOBAL_BUS.emit('ui:toast', 'The other player selected that object first.');
-        });
-        this.remoteSelection = new RemoteSelectionView(this.sceneManager.getNativeScene(), this.presence, this.projector);
+        const presence = new PresenceService(this.replica.clock.id, this.network.transport);
+        const remoteSelection = new RemoteSelectionView(this.sceneManager.getNativeScene(), presence, this.projector);
+
+        return { syncEngine, presence, remoteSelection };
     }
 
-    /** True when another player holds the clicked object (and tells the user why nothing happened). */
-    private isLockedByOther(intersect:THREE.Intersection | null):boolean
+    private registerTransformTools():void
     {
-        const objectId = this.projector.objectIdFor(intersect ? intersect.object : null);
-        if (!objectId || !this.presence || !this.presence.lockedBy(objectId))
-            return false;
+        const controls = this.transformControls;
 
-        GLOBAL_BUS.emit('ui:toast', 'That object is being edited by the other player.');
-        return true;
+        this.toolManager.registerTool('translate', new TransformTool(controls, 'translate'));
+        this.toolManager.registerTool('rotate', new TransformTool(controls, 'rotate'));
+        this.toolManager.registerTool('scale', new TransformTool(controls, 'scale'));
     }
 
-    /** Makes our published selection (the lock) match what is actually selected. */
-    private syncPresence()
+    public start():void
     {
-        if (!this.presence)
-            return;
-
-        const objectId = this.projector.objectIdFor(this.selectionManager.getSelected());
-        if (!objectId)
-            this.presence.release();
-        else if (!this.presence.claim(objectId))
-            this.dropSelection();
-    }
-
-    private dropSelection()
-    {
-        this.transformControls.detach();
-        this.selectionManager.deselectAll();
-    }
-
-    private deleteSelected()
-    {
-        const selected = this.selectionManager.getSelected();
-        if (!selected)
-            return;
-
-        const objectId = this.projector.objectIdFor(selected);
-        if (objectId)
-            this.commandManager.execute(new DeleteObjectCommand(this.replica, objectId));
-        else
-            this.deleteTool.deleteObject(selected); // local-only object (imported model): not shared, no undo
-
-        this.syncPresence();
-    }
-
-    start() 
-    {
-        const loop = () => 
+        const loop = () =>
         {
             const delta = this.clock.getDelta();
-            
+
             this.cameraManager.update(delta);
             this.remoteSelection?.update();
             this.renderEngine.render(this.cameraManager.camera);
-            this.animationFrameId = requestAnimationFrame(loop); 
+            this.animationFrameId = requestAnimationFrame(loop);
         };
         loop();
     }
 
-    stop() 
+    public stop():void
     {
-        if (this.animationFrameId) 
+        if (this.animationFrameId)
             cancelAnimationFrame(this.animationFrameId);
 
         this.animationFrameId = null;
     }
 
-    /** Subscribes to the bus and keeps the reference, so the listener can be removed later. */
-    private subscribe(event:string, callback:(data:any) => void):void
-    {
-        GLOBAL_BUS.on(event, callback);
-        this.busSubscriptions.push({ event, callback });
-    }
-
     /**
-     * Tears the engine down: stops the loop and detaches every listener it installed.
-     * React mounts the viewport inside an effect, which in dev runs twice, so without this
-     * the second mount would leave a duplicate set of handlers reacting to every bus event.
+     * Tears the engine down: stops the loop, detaches every listener the controllers installed and
+     * releases the GPU context. React mounts the viewport inside an effect, which in dev runs twice,
+     * so without this the second mount would leave a duplicate set of handlers behind.
      */
-    dispose()
+    public dispose():void
     {
         this.stop();
 
-        for (const { event, callback } of this.busSubscriptions)
-            GLOBAL_BUS.off(event, callback);
+        for (const controller of this.controllers)
+            controller.dispose();
 
-        this.busSubscriptions = [];
-
-        // Stops the network listeners this engine installed (StrictMode mounts twice in dev).
         this.syncEngine?.stop();
         this.presence?.stop();
 
         this.transformControls.dispose();
         this.cameraManager.dispose();
         this.renderEngine.dispose();
-    }
-
-    bindEvents() 
-    {
-        this.subscribe('action:add_object', ({ type }) => 
-        {
-            ObjectParser.parseObject(type, this.sceneManager);
-        });
-        this.subscribe('ui:canvas_clicked', (coords) => 
-        {
-            if (this.transformControls.axis !== null) 
-                return;
-
-            const intersect = this.raycasterManager.pick(coords);
-            if (this.editorModeManager.current === 'object' && this.isLockedByOther(intersect))
-                return;
-
-            this.editorModeManager.active.onCanvasClick(intersect);
-            this.syncPresence();
-            this.notifySelectionChange();
-        });
-
-        this.subscribe('action:preview_color', ({ color }) => 
-        {
-            const selected = this.selectionManager.getSelected();
-            if(!selected) 
-                return;
-
-            const material = selected.material as THREE.MeshStandardMaterial;
-            if (color instanceof THREE.Color)
-                material.color.copy(color); 
-            else 
-            {
-                const objectId = this.projector.objectIdFor(selected);
-                const record = objectId ? this.replica.state.get(objectId) : undefined;
-                
-                if(record) 
-                    material.color.setHex(record.color.value);
-                
-            }
-        });
-
-        this.subscribe('tool:change', (toolName) => 
-        {
-            if (this.editorModeManager.current === 'edit' && this.editStrategies[toolName]) 
-            {
-                this.meshEditTool.setStrategy(this.editStrategies[toolName]);
-                return;
-            }
-            const selection = this.selectionManager.getSelected()
-            if(selection )
-                this.toolManager.setTool(toolName, selection);
-        });
-
-        this.subscribe('editor:toggle_mode', () => 
-        {
-            const selection = this.selectionManager.getSelected()
-            if(selection)
-                this.editorModeManager.toggle(selection);
-        });
-
-        this.subscribe('input:action', ({ action, state }) => 
-        {
-            if (state !== 'down') 
-                return; 
-
-            if (action === 'action:extrude' && this.editorModeManager.current === 'edit') 
-                this.meshEditTool.extrudeSelected();
-
-            if (action === 'action:split_edge' && this.editorModeManager.current === 'edit') 
-                this.meshEditTool.splitSelectedEdges();
-                
-            if (action.split(':')[0] == 'tool') 
-                GLOBAL_BUS.emit('tool:change', action.split(':')[1]);
-
-            if (action === 'editor:toggle') 
-            {
-                const selection = this.selectionManager.getSelected();
-                if(selection)
-                    this.editorModeManager.toggle(selection);
-            }
-
-            if (action === 'action:delete_object' && this.editorModeManager.current === 'object')
-                this.deleteSelected();
-
-            if (action === 'system:undo') 
-            {
-                this.commandManager.undo();
-                this.selectionManager.update();
-                this.syncPresence();
-            }
-            if (action === 'system:redo') 
-            {
-                this.commandManager.redo();
-                this.selectionManager.update();
-                this.syncPresence();
-            }
-        });
-
-        this.subscribe('action:add_object', ({ type }) => 
-        {
-            this.commandManager.execute(new CreatePrimitiveCommand(this.replica, this.createObjectTool, type));
-            
-        });
-
-        this.subscribe('action:delete_object', ({}) => 
-        {
-            if (this.editorModeManager.current !== 'object')
-                return;
-
-            this.deleteSelected();
-        });
-
-        this.subscribe('action:change_color', ({ color }) =>
-        {
-            if(this.editorModeManager.current !== 'object')
-                return;
-
-            const objectId = this.projector.objectIdFor(this.selectionManager.getSelected());
-            const record = objectId ? this.replica.state.get(objectId) : undefined;
-            const hex = color.getHex();
-
-            if(!objectId || !record || record.color.value === hex)
-                return;
-
-            this.commandManager.execute(
-                new ColorEditCommand(this.replica, objectId, hex, record.color.value)
-            );
-        });
-
-    
-        this.subscribe('camera:change_mode', () => 
-        {
-            this.cameraManager.changeMode();
-        });
-        this.subscribe('action:export_model', () => {
-            FileExporter.exportSceneAsOBJ(this.sceneManager, 'scene.obj');
-        });
-    }
-
-    private notifySelectionChange() 
-    {
-        const selectedMesh = this.selectionManager.getSelected();
-        
-        if (!selectedMesh)
-        {
-            GLOBAL_BUS.emit('selection:changed', { objectId: null, color: null });
-            return;
-        }
-
-        const objectId = this.projector.objectIdFor(selectedMesh);
-        
-        const record = objectId ? this.replica.state.get(objectId) : undefined;
-        const colorHex = record ? record.color.value : (selectedMesh.material as THREE.MeshStandardMaterial).color.getHex();
-
-        GLOBAL_BUS.emit('selection:changed', 
-        {
-            objectId: objectId,
-            color: colorHex
-        });
     }
 }
