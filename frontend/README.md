@@ -1,40 +1,41 @@
 # Frontend — BlenderPDS
 
-SPA em React + TypeScript + three.js que renderiza o editor, o lobby e os painéis da sessão.
-Instruções completas (backend, banco, contas e testes) estão no [README da raiz](../README.md).
+React + TypeScript + three.js SPA that renders the editor, the lobby and the session panels.
+Full instructions (backend, database, accounts and tests) are in the
+[root README](../README.md).
 
-## Como rodar
+## Running
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173
 ```
 
-O Vite faz proxy de `/api` e `/ws` para `http://localhost:8080` (ou para `BACKEND_URL`, se definido).
+Vite proxies `/api` and `/ws` to `http://localhost:8080` (or to `BACKEND_URL`, when set).
 
 ```bash
-npm run build    # typecheck (tsc strict) + build de produção
-npm run preview  # serve o build
+npm run build    # typecheck (tsc strict) + production build
+npm run preview  # serves the build
 ```
 
-Requer Node.js `^20.19` ou `>=22.12`.
+Requires Node.js `^20.19` or `>=22.12`.
 
-## Estrutura
+## Structure
 
-| Pasta | Conteúdo |
+| Folder | Contents |
 |---|---|
-| `src/core/` | `Engine` (composition root), `EventBus`, `RenderEngine` e controllers de gesto, seleção e ações |
-| `src/collab/` | Operações, `OpLog`, `DocumentState`, projeção para a cena, sync e presença |
-| `src/manager/` | Cena, câmera, input, seleção, ferramentas e pilha de comandos |
-| `src/entity/` | Malha half-edge, modos do editor, navegação e estratégias de seleção |
-| `src/tool/`, `src/command/` | Ferramentas e comandos com undo/redo |
-| `src/network/` | Contrato `Transport`, `WebSocketTransport` e a sessão do editor |
-| `src/react/` | Viewport 3D e UI (lobby, toolbar, chat, timeline) |
-| `docs/` | Diagramas de arquitetura e protocolo colaborativo |
+| `src/core/` | `Engine` (composition root), `EventBus`, `RenderEngine` and the gesture, selection and action controllers |
+| `src/collab/` | Operations, `OpLog`, `DocumentState`, scene projection, sync and presence |
+| `src/manager/` | Scene, camera, input, selection, tools and the command stack |
+| `src/entity/` | Half-edge mesh, editor modes, navigation and selection strategies |
+| `src/tool/`, `src/command/` | Tools and commands with undo/redo |
+| `src/network/` | `Transport` contract, `WebSocketTransport` and the editor session |
+| `src/react/` | 3D viewport and UI (lobby, toolbar, chat, timeline) |
+| `docs/` | Architecture and collaboration protocol diagrams |
 
-## Documentação
+## Documentation
 
 - [Architecture](docs/architecture.md)
 - [CRDT](docs/crdt-architecture.md)
-- [Sessões no backend](docs/session-backend.md)
+- [Backend sessions](docs/session-backend.md)
 - [Backlog](backlog.md)

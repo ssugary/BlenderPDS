@@ -54,7 +54,7 @@ export class VertexSelectionStrategy extends SelectionStrategy<THREE.Points>
         pickHelper.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     }
 
-    public pick(heMesh:HEMesh, intersect:any) // não sei que tipo de dado entra em intersect :(
+    public pick(heMesh:HEMesh, intersect:any) // not sure what kind of data intersect holds :(
     { 
         if(intersect.index === undefined) 
             return {elements: [], vertices: []};
@@ -134,7 +134,7 @@ export class FaceSelectionStrategy extends SelectionStrategy<THREE.Mesh>
         return new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0.5, transparent: true, side: THREE.DoubleSide}));
     }
 
-    public updateHighlightObject(highlightObject:THREE.Mesh, heMesh:HEMesh, elements:any) // não sei oq é element, e acho q isso aq nunca é chamado
+    public updateHighlightObject(highlightObject:THREE.Mesh, heMesh:HEMesh, elements:any) // not sure what elements is, and I think this is never called
     {
         const positions = new Array<number>;
         elements.forEach((face:HEFace) => 

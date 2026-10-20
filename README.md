@@ -1,79 +1,84 @@
 # BlenderPDS
 
-Editor de modelagem 3D no navegador com edição colaborativa em tempo real. O front é uma SPA em React + three.js; o backend em Spring Boot guarda usuários, amigos e sessões, sequencia as operações e retransmite o que cada participante ainda não tem.
+Browser-based 3D modeling editor with real-time collaborative editing. The front end is a
+React + three.js SPA; the Spring Boot backend stores users, friends and sessions, sequences
+the operations and relays whatever each participant is still missing.
 
-Projeto da disciplina **Projeto Detalhado de Software — Grupo 03**.
+Course project for **Projeto Detalhado de Software — Grupo 03**.
 
-## Funcionalidades
+## Features
 
-**Modelagem**
+**Modeling**
 
-- Primitivas: cubo, cilindro, toro, esfera e cápsula.
-- Gizmo de transformação: mover (`G`), rotacionar (`R`) e escalar (`C`).
-- Modo de edição de malha (`Tab`): seleção de vértices, arestas e faces; faces coplanares são selecionadas em conjunto.
-- Extrude (`E`) e divisão de aresta (`P`).
-- Cor do objeto pelo seletor de cores.
-- Importação de `.obj` e exportação da cena em `.obj`.
-- Desfazer/refazer (`Z`/`Y`) por comando.
+- Primitives: cube, cylinder, torus, sphere and capsule.
+- Transform gizmo: move (`G`), rotate (`R`) and scale (`C`).
+- Mesh edit mode (`Tab`): vertex, edge and face selection; coplanar faces are selected together.
+- Extrude (`E`) and edge split (`P`).
+- Object color through the color picker.
+- `.obj` import and scene export to `.obj`.
+- Undo/redo (`Z`/`Y`) through the command stack.
 
-**Colaboração**
+**Collaboration**
 
-- Sessão hospedada com código compartilhável; entrada por código ou pela lista de amigos.
-- Operações replicadas em CRDT (relógio de Lamport + registradores LWW): a ordem de chegada não muda o resultado.
-- Reconexão com troca de version vectors: cada lado envia só o que falta.
-- Presença e trava de seleção (avisa quando outro jogador já selecionou o objeto).
-- Chat da sessão e timeline das edições com scrubber.
-- Snapshot periódico da cena para inspecionar a sessão; o log continua sendo a fonte de verdade e a reabertura ainda o replica.
+- Hosted session with a shareable code; join by code or from the friends list.
+- Operations replicated as a CRDT (Lamport clock + LWW registers): arrival order does not
+  change the result.
+- Reconnection with version-vector exchange: each side sends only what the other lacks.
+- Presence and selection lock (warns when another player already selected the object).
+- Session chat and an edit timeline with a scrubber.
+- Periodic scene snapshot for inspecting the session; the log remains the source of truth and
+  reopening still replays it.
 
-**Contas e amigos**
+**Accounts and friends**
 
-- Cadastro com confirmação por e-mail e login por sessão (cookie `JSESSIONID`).
-- Pedidos de amizade; só amigos do host entram na sessão.
+- Sign-up with e-mail confirmation and session login (cookie `JSESSIONID`).
+- Friend requests; only the host's friends may join the session.
 
 ## Stack
 
-| Camada | Tecnologias |
+| Layer | Technologies |
 |---|---|
 | Frontend | React 19, TypeScript 7, Vite 8, three.js 0.161, React Router 7 |
 | Backend | Java 21, Spring Boot 4.1.1 (Web MVC, Security, Data JPA, WebSocket, Mail), Maven |
-| Dados | PostgreSQL 16 (Docker Compose) |
-| E-mail (dev) | Mailpit — interface em `http://localhost:8025` |
-| Testes | JUnit + Spring Boot Test no backend |
+| Data | PostgreSQL 16 (Docker Compose) |
+| E-mail (dev) | Mailpit — UI at `http://localhost:8025` |
+| Tests | JUnit + Spring Boot Test on the backend |
 
-## Estrutura do repositório
+## Repository layout
 
 ```
 PDS/
 ├── backend/blenderpds/
 │   ├── src/main/java/com/grupo03/blenderpds/
-│   │   ├── config/         # segurança, WebSocket, auditoria
+│   │   ├── config/         # security, WebSocket, auditing
 │   │   ├── controller/     # REST: auth, users, friends, sessions
-│   │   ├── service/        # regras de negócio
-│   │   ├── websocket/      # handshake, conexões, validação e relay de operações
-│   │   ├── model/          # entidades JPA
+│   │   ├── service/        # business rules
+│   │   ├── websocket/      # handshake, connections, validation and operation relay
+│   │   ├── model/          # JPA entities
 │   │   └── repository/     # Spring Data
-│   ├── src/test/java/      # testes de controller, service, modelo e WebSocket
+│   ├── src/test/java/      # controller, service, model and WebSocket tests
+│   ├── docs/               # layered architecture
 │   └── compose.yaml        # Postgres 16 + Mailpit
 └── frontend/
-    ├── src/api/            # cliente REST (sessão + CSRF)
-    ├── src/collab/         # CRDT: operações, log, estado, sync, presença
+    ├── src/api/            # REST client (session + CSRF)
+    ├── src/collab/         # CRDT: operations, log, state, sync, presence
     ├── src/core/           # Engine (composition root), EventBus, controllers
-    ├── src/entity/         # malha half-edge, modos e navegação
-    ├── src/manager/        # cena, câmera, seleção, ferramentas, comandos, input
-    ├── src/network/        # contrato Transport e WebSocketTransport
-    ├── src/tool/           # ferramentas
-    ├── src/command/        # comandos com undo
-    ├── src/react/          # viewport e UI (lobby, toolbar, chat, timeline)
-    └── docs/               # arquitetura e protocolo
+    ├── src/entity/         # half-edge mesh, modes and navigation
+    ├── src/manager/        # scene, camera, selection, tools, commands, input
+    ├── src/network/        # Transport contract and WebSocketTransport
+    ├── src/tool/           # tools
+    ├── src/command/        # commands with undo
+    ├── src/react/          # viewport and UI (lobby, toolbar, chat, timeline)
+    └── docs/               # architecture and protocol
 ```
 
-## Como rodar (desenvolvimento)
+## Running locally (development)
 
-Pré-requisitos:
+Prerequisites:
 
-- Node.js `^20.19` ou `>=22.12` (o projeto foi desenvolvido com Node 22).
-- JDK 21 no `PATH` (ou `JAVA_HOME` apontando para ele — o `./mvnw` exige um dos dois).
-- Docker em execução (o backend sobe Postgres e Mailpit pelo `compose.yaml`).
+- Node.js `^20.19` or `>=22.12` (the project was developed with Node 22).
+- JDK 21 on the `PATH` (or `JAVA_HOME` pointing at it — `./mvnw` needs one of the two).
+- Docker running (the backend starts Postgres and Mailpit through `compose.yaml`).
 
 **1. Backend**
 
@@ -82,7 +87,8 @@ cd backend/blenderpds
 ./mvnw spring-boot:run
 ```
 
-O Spring Boot Docker Compose inicia o Postgres e o Mailpit automaticamente. A API fica em `http://localhost:8080` e o painel de e-mails em `http://localhost:8025`.
+Spring Boot Docker Compose starts Postgres and Mailpit automatically. The API listens on
+`http://localhost:8080` and the mail UI on `http://localhost:8025`.
 
 **2. Frontend**
 
@@ -92,52 +98,63 @@ npm install
 npm run dev
 ```
 
-Abra `http://localhost:5173`. O Vite faz proxy de `/api` e `/ws` para o backend, então o navegador enxerga uma única origem — é isso que mantém o cookie de sessão válido também no handshake do WebSocket.
+Open `http://localhost:5173`. Vite proxies `/api` and `/ws` to the backend, so the browser sees
+a single origin — that is what keeps the session cookie valid during the WebSocket handshake
+as well.
 
-**3. Primeiro acesso**
+**3. First access**
 
-Crie uma conta na tela de registro. O login só é liberado depois de confirmar o e-mail: abra o Mailpit em `http://localhost:8025`, clique no link de confirmação e volte ao app.
+Create an account on the sign-up screen. Login is only enabled after confirming the e-mail:
+open Mailpit at `http://localhost:8025`, click the confirmation link and come back to the app.
 
-O modo **Offline** do lobby abre o editor sem sessão; as edições ficam só naquele navegador.
+The lobby's **Offline** mode opens the editor without a session; edits stay in that browser only.
 
-## Variáveis de ambiente
+## Environment variables
 
-Backend (todas opcionais em desenvolvimento, com os padrões abaixo):
+Backend (all optional in development, with the defaults below):
 
-| Variável | Padrão | Para que serve |
+| Variable | Default | Purpose |
 |---|---|---|
-| `MAIL_HOST` / `MAIL_PORT` | `localhost` / `1025` | Servidor SMTP (Mailpit no dev) |
-| `MAIL_USERNAME` / `MAIL_PASSWORD` | vazio | Credenciais SMTP, se houver |
-| `MAIL_SMTP_AUTH` / `MAIL_SMTP_STARTTLS` | `false` | Ajustes de TLS/autenticação do SMTP |
-| `MAIL_FROM` | `no-reply@blenderpds.local` | Remetente dos e-mails |
-| `APP_BASE_URL` | `http://localhost:8080` | Base do link de confirmação |
-| `WS_ALLOWED_ORIGINS` | `http://localhost:5173`, `http://127.0.0.1:5173`, `http://*:5173` | Origens aceitas no handshake do WebSocket |
+| `MAIL_HOST` / `MAIL_PORT` | `localhost` / `1025` | SMTP server (Mailpit in dev) |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | empty | SMTP credentials, if any |
+| `MAIL_SMTP_AUTH` / `MAIL_SMTP_STARTTLS` | `false` | SMTP TLS/authentication switches |
+| `MAIL_FROM` | `no-reply@blenderpds.local` | Sender of the e-mails |
+| `APP_BASE_URL` | `http://localhost:8080` | Base of the confirmation link |
+| `WS_ALLOWED_ORIGINS` | `http://localhost:5173`, `http://127.0.0.1:5173`, `http://*:5173` | Origins accepted in the WebSocket handshake |
 
 Frontend:
 
-| Variável | Padrão | Para que serve |
+| Variable | Default | Purpose |
 |---|---|---|
-| `BACKEND_URL` | `http://localhost:8080` | Destino do proxy do Vite; em produção o app chama a mesma origem |
+| `BACKEND_URL` | `http://localhost:8080` | Vite proxy target; in production the app calls the same origin |
 
-## API e protocolo
+## API and protocol
 
-O REST cobre o que acontece antes e depois da sessão: autenticação (`/auth/login`, `/auth/logout`, `/auth/csrf`), usuários (`/users`, confirmação de e-mail), amigos (`/users/{id}/friends` e os pedidos em `/users/{id}/friend-requests`) e salas (`/sessions`, `/sessions/{id}/join`, `/sessions/{id}/leave`, `/sessions/{id}/end`, `/sessions/{id}/participants`, `/sessions/friends/{userId}`).
+The REST API covers what happens before and after a session: authentication (`/auth/login`,
+`/auth/logout`, `/auth/csrf`), users (`/users`, e-mail confirmation), friends
+(`/users/{id}/friends` and the requests under `/users/{id}/friend-requests`) and rooms
+(`/sessions`, `/sessions/{id}/join`, `/sessions/{id}/leave`, `/sessions/{id}/end`,
+`/sessions/{id}/participants`, `/sessions/friends/{userId}`).
 
-As mutações exigem o token CSRF entregue por `GET /auth/csrf`, ecoado no header que o próprio endpoint informa. As operações colaborativas **não** passam pelo REST: elas viajam como JSON por `ws://<origem>/ws/sessions/{id}` (em dev o Vite encaminha `/ws` para o backend), e o servidor apenas valida o formato, ordena (`seq`) e guarda — o merge é do cliente.
+Mutations require the CSRF token served by `GET /auth/csrf`, echoed in the header the endpoint
+itself advertises. Collaborative operations do **not** go through REST: they travel as JSON
+over `ws://<origin>/ws/sessions/{id}` (in dev Vite forwards `/ws` to the backend), and the
+server only validates the format, orders (`seq`) and stores them — merging is the client's job.
 
-Detalhes do protocolo, do modelo de dados e das regras de entrada em [`frontend/docs/session-backend.md`](frontend/docs/session-backend.md).
+Protocol details, the data model and the join rules are in
+[`frontend/docs/session-backend.md`](frontend/docs/session-backend.md).
 
-## Build e testes
+## Build and tests
 
 Frontend:
 
 ```bash
 cd frontend
 npm run build     # tsc (strict) + vite build
-npm run preview   # serve o build de produção
+npm run preview   # serves the production build
 ```
 
-O front ainda não tem runner de testes configurado; a verificação automática é o typecheck do `build`.
+The front end has no test runner configured yet; the automated check is the typecheck in `build`.
 
 Backend:
 
@@ -146,20 +163,24 @@ cd backend/blenderpds
 ./mvnw test
 ```
 
-Os testes usam o Postgres do `compose.yaml` (e o Mailpit no teste de confirmação), então o Docker precisa estar rodando.
+The tests use the Postgres from `compose.yaml` (and Mailpit for the confirmation test), so
+Docker must be running.
 
-## Documentação
+## Documentation
 
-- [`frontend/docs/architecture.md`](frontend/docs/architecture.md) — diagramas de classe do engine, ferramentas, comandos, modos e rede.
-- [`frontend/docs/crdt-architecture.md`](frontend/docs/crdt-architecture.md) — modelo de operações, regras de conflito e ordem de implementação do CRDT.
-- [`frontend/docs/session-backend.md`](frontend/docs/session-backend.md) — sessões no servidor, protocolo WebSocket, autenticação e limites.
-- [`frontend/backlog.md`](frontend/backlog.md) — o que falta para as próximas sprints.
+- [`backend/blenderpds/docs/architecture.md`](backend/blenderpds/docs/architecture.md) — backend layers and the path of one operation.
+- [`frontend/docs/architecture.md`](frontend/docs/architecture.md) — class diagrams of the engine, tools, commands, modes and networking.
+- [`frontend/docs/crdt-architecture.md`](frontend/docs/crdt-architecture.md) — operation model, conflict rules and CRDT implementation order.
+- [`frontend/docs/session-backend.md`](frontend/docs/session-backend.md) — sessions on the server, WebSocket protocol, authentication and limits.
+- [`frontend/backlog.md`](frontend/backlog.md) — what remains for the next sprints.
 
-## Limitações conhecidas
+## Known limitations
 
-- O registro de conexões WebSocket vive na memória: uma instância do backend. Escalar horizontalmente exige um broker.
-- `scene_snapshot` é uma desnormalização; reabrir uma sessão ainda replica o log (não há `fromSnapshot`).
-- Amigos aparecem como “hospedando” ou offline — não existe presença de “online” sem sessão.
-- Modelos `.obj` importados são locais: não entram no log, não sincronizam e não têm undo.
-- Extrude/split concorrentes na mesma malha não têm merge de topologia; a trava de seleção é consultiva.
-- O front não tem testes automatizados.
+- The WebSocket connection registry lives in memory: one backend instance. Horizontal scaling
+  requires a broker.
+- `scene_snapshot` is a denormalisation; reopening a session still replays the log (there is no
+  `fromSnapshot`).
+- Friends appear as "hosting" or offline — there is no "online" presence outside a session.
+- Imported `.obj` models are local: they do not enter the log, do not sync and have no undo.
+- Concurrent extrude/split on the same mesh has no topology merge; the selection lock is advisory.
+- The front end has no automated tests.

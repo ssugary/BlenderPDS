@@ -1,14 +1,14 @@
-# Coisas que precisam ser melhoradas dos requisitos atuais para próxima sprint
+# Improvements to the current requirements for the next sprint
 
-1. Uma forma de editar o material dos objetos
-2. Interface gráfica com feedback (resolvido?)
-3. Mais formas geométricas básicas (Exemplo: esfera, pirámide, etc) (resolvido)
-4. Formas mais avançadas de distorcer os modelos (Subtração de interseção, multiplos vértices simultaneamente)
-5. Consertar os comandos de teclado (resolvido)
-6. consertar exportação de cenas
+1. A way to edit object materials
+2. Graphical interface with feedback (done?)
+3. More basic geometric shapes (e.g. sphere, pyramid, etc.) (done)
+4. More advanced ways to distort models (boolean subtraction/intersection, multiple vertices at once)
+5. Fix the keyboard shortcuts (done)
+6. Fix scene export
 
-# Mais coisas que precisam ser ajeitadas para a proxima sprint
+# More things to tidy up for the next sprint
 
-1. forma de editar as meshes com crdt
-2. forma de importar modelos .obj pelo crdt
-3. criar um arquivo de cena baseado no crdt
+1. A way to edit meshes with CRDT
+2. A way to import `.obj` models through CRDT
+3. Create a scene file based on CRDT
