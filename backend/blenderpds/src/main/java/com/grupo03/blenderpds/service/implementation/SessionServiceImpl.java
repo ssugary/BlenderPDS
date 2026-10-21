@@ -106,6 +106,7 @@ public class SessionServiceImpl implements SessionService {
         return sessionRepository.findFirstByHostIdAndStatusNot(hostId, SessionStatus.ENDED);
     }
 
+    // saves the session on the database
     @Override
     @Transactional
     public Session joinSession(Long sessionId, Long userId) {
@@ -127,6 +128,7 @@ public class SessionServiceImpl implements SessionService {
         return session;
     }
 
+    // connects the participants socket to the server
     @Override
     @Transactional
     public SessionParticipant connectParticipant(Long sessionId, Long userId) {

@@ -106,6 +106,7 @@ export class WebSocketTransport implements Transport
         this.socket = null;
     }
 
+    // opens the socket
     private open(): void
     {
         const socket = new WebSocket(this.url);

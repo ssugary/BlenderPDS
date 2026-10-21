@@ -14,9 +14,6 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
  * types, so a text handler is the most direct fit and adds no new front-end
  * dependency.
  *
- * <p>The route lives under {@code /ws/**} because the Vite proxy is already set up to
- * upgrade {@code /ws} to the backend in development.
- *
  * <p>It stays under Spring Security's protection (the default is
  * {@code anyRequest().authenticated()}) and the interceptor performs the friendship
  * check.
