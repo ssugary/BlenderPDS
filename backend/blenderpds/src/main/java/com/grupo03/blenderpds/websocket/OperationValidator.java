@@ -56,6 +56,7 @@ public class OperationValidator {
         return valid;
     }
 
+    /** checks the json format */
     public Optional<SessionOperationInput> validate(JsonNode node) {
         if (node == null || !node.isObject()) {
             return Optional.empty();

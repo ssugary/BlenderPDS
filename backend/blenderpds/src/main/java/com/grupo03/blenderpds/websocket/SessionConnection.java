@@ -23,7 +23,7 @@ import org.springframework.web.socket.WebSocketSession;
  * {@link WebSocketSession} is not thread-safe and several threads (one per received
  * message) may want to write at the same time.
  */
-@Slf4j
+@Slf4j // logger
 public class SessionConnection {
 
     private static final int MAX_PENDING_FRAMES = 1_000;
@@ -36,7 +36,7 @@ public class SessionConnection {
     @Getter
     private final Long userId;
 
-    private final Deque<String> pending = new ArrayDeque<>();
+    private final Deque<String> pending = new ArrayDeque<>(); // pending operations done offline
     private boolean catchingUp = true;
 
     public SessionConnection(WebSocketSession socket, Long sessionId, Long userId) {

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 
 /**
- * Who is connected to each session, in the process's memory.
+ * stores who is connected to each session.
  *
  * <p>Two roles:
  * <ol>
@@ -18,19 +18,16 @@ import org.springframework.web.socket.CloseStatus;
  *       (moving an object created by another participant) could arrive before it and
  *       would be discarded by the client.</li>
  * </ol>
- *
- * <p>Known limitation: in-memory state means a single instance. Scaling horizontally
- * would need a broker/pub-sub in place of this registry.
  */
 @Component
 public class SessionConnectionRegistry {
 
-    private final Map<Long, Map<String, SessionConnection>> bySession = new ConcurrentHashMap<>();
-    private final Map<Long, Object> sessionLocks = new ConcurrentHashMap<>();
+    private final Map<Long, Map<String, SessionConnection>> bySession = new ConcurrentHashMap<>(); // what socket is connected to each session
+    private final Map<Long, Object> sessionLocks = new ConcurrentHashMap<>(); // thread safe map, lock per session
 
     /** Runs the action with the session lock, serialising seq and send. */
     public void runLocked(Long sessionId, Runnable action) {
-        Object lock = sessionLocks.computeIfAbsent(sessionId, key -> new Object());
+        Object lock = sessionLocks.computeIfAbsent(sessionId, key -> new Object()); // creates object if absent, reads if present
         synchronized (lock) {
             action.run();
         }

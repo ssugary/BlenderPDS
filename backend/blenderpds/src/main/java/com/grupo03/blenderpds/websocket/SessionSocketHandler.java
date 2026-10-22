@@ -78,6 +78,9 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         broadcastRoster(connection.getSessionId());
     }
 
+    /**
+     * Receives the message from a client and handles
+     */
     @Override
     protected void handleTextMessage(WebSocketSession socket, TextMessage message) {
         SessionConnection connection = connectionFor(socket);
@@ -128,14 +131,14 @@ public class SessionSocketHandler extends TextWebSocketHandler {
      * arrive meanwhile wait in the connection queue (see SessionConnection).
      */
     private void handleHello(SessionConnection connection, JsonNode root) {
-        Map<String, Integer> versionVector = readVersionVector(root.get("vv"));
+        Map<String, Integer> versionVector = readVersionVector(root.get("vv")); // last operation number per connection
 
         registry.runLocked(connection.getSessionId(), () -> {
             try {
-                List<SessionOperation> missing = sessionService.syncSince(connection.getSessionId(), versionVector);
+                List<SessionOperation> missing = sessionService.syncSince(connection.getSessionId(), versionVector); // lists the clients missing ops
                 for (int i = 0; i < missing.size(); i += CHUNK_SIZE) {
                     connection.sendNow(syncOpsFrame(
-                            missing.subList(i, Math.min(missing.size(), i + CHUNK_SIZE))));
+                            missing.subList(i, Math.min(missing.size(), i + CHUNK_SIZE)))); //sends in chunks
                 }
             } catch (RuntimeException ex) {
                 log.warn("Catch-up falhou na sessão {}: {}", connection.getSessionId(), ex.toString());
@@ -183,7 +186,9 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         });
     }
 
-    /** Presence is ephemeral: it never reaches the database, only the other connected clients. */
+    /** Presence is ephemeral: it never reaches the database, only the other connected clients.
+     * returns if the object is selected by another user
+     * */
     private void relayPresence(SessionConnection connection, JsonNode root) {
         String siteId = shortString(root.get("siteId"));
         if (siteId == null) {
@@ -201,7 +206,9 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         registry.broadcast(connection.getSessionId(), root.toString(), connection.getSocketId());
     }
 
-    /** Chat is ephemeral too (the service keeps no history for now). */
+    /** Chat is ephemeral too (the service keeps no history for now).
+     * broadcasts chat messages
+     * */
     private void relayChat(SessionConnection connection, JsonNode root) {
         JsonNode text = root.get("text");
         if (text == null || !text.isTextual()) {
@@ -237,7 +244,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /** Who is in the room right now (connected or not) and what state it is in. */
+    /** Broadcasts who is in the room right now (connected or not) and what state it is in. */
     private void broadcastRoster(Long sessionId) {
         String frame;
         try {
@@ -248,6 +255,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         registry.broadcast(sessionId, frame, null);
     }
 
+    /** builds the message frame */
     private String rosterFrame(Long sessionId) {
         ObjectNode root = objectMapper.createObjectNode();
         root.put("type", "session_roster");
@@ -266,6 +274,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         return root.toString();
     }
 
+    /** builds the message frame */
     private String syncOpsFrame(List<SessionOperation> operations) {
         ObjectNode root = objectMapper.createObjectNode();
         root.put("type", "sync_ops");
@@ -295,6 +304,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         return frame.toString();
     }
 
+    /** sends an error message to the client */
     private void sendError(SessionConnection connection, String code) {
         ObjectNode frame = objectMapper.createObjectNode();
         frame.put("type", "error");
@@ -302,6 +312,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         connection.sendNow(frame.toString());
     }
 
+    /** Validates a version vector */
     private Map<String, Integer> readVersionVector(JsonNode node) {
         if (node == null || !node.isObject() || node.size() > MAX_VERSION_ENTRIES) {
             return Map.of();
