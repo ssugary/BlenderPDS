@@ -19,6 +19,20 @@ O repositório é um monorepo com dois lados:
 
 ## Rodando localmente
 
+### Configuração (obrigatória)
+
+O Postgres do `compose.yaml` não tem senha embutida: ela vem de `POSTGRES_PASSWORD`.
+Copie o exemplo e escolha uma senha antes de subir qualquer coisa (o `spring-boot-docker-compose`
+e o CI usam a mesma variável):
+
+```bash
+cp .env.example .env
+# edite .env e defina POSTGRES_PASSWORD=...
+```
+
+O `.env` é ignorado pelo git; o `.env.example` é versionado. Sem a variável, o Compose
+recusa subir (`POSTGRES_PASSWORD is required`) — isso é intencional.
+
 ### Backend
 
 O backend é multi-módulo: o app depende do `collab3d-spring-boot-starter`. Há dois caminhos:

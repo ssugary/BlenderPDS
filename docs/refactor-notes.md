@@ -554,7 +554,7 @@ Decisões que mudaram contrato ou arquitetura:
   compensatório nos `Command.undo()`. `set_mesh` é LWW do buffer de geometria, limitado
   por `design.max-mesh-bytes` (property no backend, constante espelhada no cliente).
   O contrato compartilhado são os `contracts/design-editor/*.cases.json` executados nos
-  dois lados — mais forte que um JSON Schema textual, que não foi adotado.
+  dois lados.
 - **Snapshots**: envelope com `baseSeq`, `versionVector` e checksum SHA-256 do estado
   canônico (chaves ordenadas). `baseSeq` é monótono e ≤ head do log; só o host grava.
   O log não é podado.
@@ -564,6 +564,31 @@ Decisões que mudaram contrato ou arquitetura:
 - **Configuração**: `POSTGRES_PASSWORD` é obrigatória no `compose.yaml` e vem do `.env`
   (`.env.example` versionado). CI em `.github/workflows/ci.yml` cobre backend e frontend.
 
+### 16.1 Desvio registrado: JSON Schema não adotado
+
+O plano pedia JSON Schema nos dois lados para os kinds. A implementação usa os
+`contracts/design-editor/*.cases.json`: a mesma tabela de casos é executada pelo JUnit
+(`EditorKindContractsTest`) e pelo Vitest (`twoReplicas.test.ts`/testes de kind), cobrindo
+aceitos e rejeitados com os mesmos payloads. Não existe um `.schema.json` formal nem
+validação por biblioteca de schema.
+
+Motivo: os validadores já são código (não há geração de schema a partir do DTO) e um schema
+separado seria uma terceira fonte de verdade, sujeita a divergir dos dois validadores. Os
+casos compartilhados provam o comportamento observável, que é o que o contrato promete.
+
+Consequência: consumidores externos não têm um descritor formal para gerar clientes. Se isso
+for necessário na Fase 4, o caminho é gerar o JSON Schema a partir dos casos ou dos
+validadores e continuar rodando os casos como teste de conformidade.
+
+### 16.2 Tamanho do pool nos testes
+
+O `maximum-pool-size=2` não esconde vazamento: a suíte completa cria **13 contextos Spring
+distintos** (13 `HikariPool-N` no log), mantidos no cache do Spring Test até o fim da JVM.
+Com o pool padrão (10), seriam 130 conexões — acima do `max_connections` padrão do Postgres
+(100), que era o "too many clients already". Cada contexto é fechado no shutdown; nenhum
+teste deixa conexão aberta depois de terminar. O valor 2 apenas mantém 13 pools abaixo do
+limite.
+
 Dívidas novas registradas nesta fase:
 
 1. **TTL de presença sem heartbeat**: `last_seen_at` só é atualizado em
@@ -572,9 +597,11 @@ Dívidas novas registradas nesta fase:
    de presença.
 2. **`SessionBroadcaster` em memória**: uma segunda instância do backend não vê as
    conexões da primeira; um broker (Redis) fica fora do escopo desta fase.
-3. **Sem envio periódico de snapshot pelo cliente**: o servidor aceita e usa o snapshot,
-   mas o editor ainda não o envia em intervalo; a reidratação funciona quando o
-   snapshot é gravado (teste E2E cobre o caminho de leitura).
+3. ~~Sem envio periódico de snapshot pelo cliente~~ — **resolvido** em `6d8955c`:
+   `SyncPolicy.snapshotIntervalMs` (30 s no host, 0 no convidado) publica o envelope com
+   checksum canônico; sobra apenas o snapshot por `baseSeq` depender dos `seq` observados
+   (um host que ficou offline publica `baseSeq` antigo e o servidor reenvia o trecho, que o
+   CRDT deduplica).
 4. **`SnapshotCodec.migrate` não é chamado no caminho de leitura**: snapshots com
    `schemaVersion` menor que o atual são enviados como estão; a migração é o próximo
    passo quando houver a primeira mudança de formato.
