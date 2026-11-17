@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import * as THREE from 'three';
 import { GLOBAL_BUS } from '@collab3d/core';
-import { useBusEvent } from '../useBusEvent';
+import { useBusEvent } from '@collab3d/react-kit';
 
 const WHEEL_SIZE = 160;
 const RADIUS = WHEEL_SIZE / 2;

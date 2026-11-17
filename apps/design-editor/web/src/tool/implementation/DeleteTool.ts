@@ -1,5 +1,5 @@
 import { TransformControls } from "three/examples/jsm/Addons.js";
-import { SceneManager } from "../../manager/SceneManager";
+import { SceneManager } from "@collab3d/core";
 import { SelectionManager } from "../../manager/SelectionManager";
 import { Tool } from "../Tool";
 import { Object3D } from "three";

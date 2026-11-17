@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Tool } from "../Tool";
-import { SceneManager } from '../../manager/SceneManager';
+import { SceneManager } from '@collab3d/core';
 
 /**
  * Builds primitive meshes from a type string and inserts objects into the scene.

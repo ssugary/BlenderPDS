@@ -11,7 +11,8 @@
     /* Bundler mode (matches Vite) */
     "moduleResolution": "bundler",
     "paths": {
-      "@collab3d/core": ["../../../framework/core/src/index.ts"]
+      "@collab3d/core": ["../../../framework/core/src/index.ts"],
+      "@collab3d/react-kit": ["../../../framework/react-kit/src/index.ts"]
     },
     "allowImportingTsExtensions": false,
     "resolveJsonModule": true,

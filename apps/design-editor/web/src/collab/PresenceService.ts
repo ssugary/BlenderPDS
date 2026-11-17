@@ -1,4 +1,4 @@
-import { Transport } from '@collab3d/core';
+import { PresenceChannel, Transport } from '@collab3d/core';
 
 export interface PeerPresence
 {
@@ -7,45 +7,57 @@ export interface PeerPresence
     selectedObjectId: string | null;
 }
 
+interface Claim
+{
+    selectedObjectId: string | null;
+}
+
 const MAX_ID_LENGTH = 100;
 
 /**
  * Ephemeral state: who has what selected. NOT part of the OpLog, so it never shows in the timeline
- * and a disconnect clears it (onClose drops every remote entry, which releases their locks).
- * The lock is advisory: it keeps well-behaved clients from colliding, the CRDT still converges if two edits land.
+ * and a disconnect clears it (the channel drops every remote entry on close, releasing their locks).
+ *
+ * The protocol lives in the core's `PresenceChannel`; this class only gives the generic claim a
+ * meaning (an object id) and keeps the editor's `claim` / `lockedBy` / `onLockLost` vocabulary.
+ * The lock is advisory: it keeps well-behaved clients from colliding, the CRDT still converges.
  */
 export class PresenceService
 {
-    private selected: string | null = null;
-    private remote = new Map<string, string | null>();
-    private changeListeners: Array<() => void> = [];
-    private lockLostListeners: Array<(objectId: string) => void> = [];
+    private readonly channel: PresenceChannel<Claim>;
+    private readonly lockLostListeners: Array<(objectId: string) => void> = [];
 
-    private readonly onMessage = (data: any): void => this.handle(data);
-
-    private readonly onClose = (): void =>
+    public constructor(siteId: string, transport: Transport)
     {
-        this.remote.clear();
-        this.notifyChange();
-    };
+        this.channel = new PresenceChannel<Claim>({
+            siteId,
+            transport,
+            // The editor's payload is one optional object id; nothing else crosses the wire.
+            encode: (claim) => ({ selectedObjectId: claim.selectedObjectId }),
+            decode: (payload) =>
+            {
+                const selected = (payload as { selectedObjectId?: unknown }).selectedObjectId;
 
-    public constructor(
-        private readonly siteId: string,
-        private readonly transport: Transport,
-    )
-    {
-        this.transport.onMessage(this.onMessage);
-        this.transport.onClose(this.onClose);
+                if (selected === null)
+                    return { selectedObjectId: null };
+                if (typeof selected !== 'string' || selected.length === 0 || selected.length > MAX_ID_LENGTH)
+                    return null;
+
+                return { selectedObjectId: selected };
+            }
+        });
+
+        this.channel.onConflict((claim) =>
+        {
+            if (claim.selectedObjectId !== null)
+                this.lockLostListeners.forEach((callback) => callback(claim.selectedObjectId!));
+        });
     }
 
-    /**
-     * Detaches from the transport: React's dev double mount builds two engines, and the
-     * disposed one must stop answering presence of a socket it no longer draws.
-     */
+    /** Detaches from the transport; a disposed engine must stop answering for a dead socket. */
     public stop(): void
     {
-        this.transport.offMessage(this.onMessage);
-        this.transport.offClose(this.onClose);
+        this.channel.stop();
     }
 
     /** Returns false if another peer holds the object (the click is refused, show a toast). */
@@ -54,43 +66,43 @@ export class PresenceService
         if (this.lockedBy(objectId) !== null)
             return false;
 
-        if (this.selected !== objectId)
-        {
-            this.selected = objectId;
-            this.broadcast();
-        }
+        if (this.selectedObjectId !== objectId)
+            this.channel.publish({ selectedObjectId: objectId });
+
         return true;
     }
 
     public release(): void
     {
-        if (this.selected === null)
+        if (this.selectedObjectId === null)
             return;
 
-        this.selected = null;
-        this.broadcast();
+        this.channel.publish({ selectedObjectId: null });
     }
 
     /** The siteId holding the lock on this object, or null when it is free (or held by us). */
     public lockedBy(objectId: string): string | null
     {
-        for (const [site, selected] of this.remote)
+        for (const peer of this.channel.peers())
         {
-            if (selected === objectId)
-                return site;
+            if (peer.state.selectedObjectId === objectId)
+                return peer.siteId;
         }
         return null;
     }
 
     public peers(): PeerPresence[]
     {
-        return [...this.remote].map(([siteId, selectedObjectId]) => ({ siteId, selectedObjectId }));
+        return this.channel.peers().map((peer) => ({
+            siteId: peer.siteId,
+            selectedObjectId: peer.state.selectedObjectId
+        }));
     }
 
     /** Fires when a remote peer's selection changes or it disconnects. */
     public onChange(callback: () => void): void
     {
-        this.changeListeners.push(callback);
+        this.channel.onChange(callback);
     }
 
     /** Fires when we lose a simultaneous claim: the engine should drop its selection of that object. */
@@ -99,37 +111,8 @@ export class PresenceService
         this.lockLostListeners.push(callback);
     }
 
-    private broadcast(): void
+    private get selectedObjectId(): string | null
     {
-        this.transport.send({ type: 'presence', siteId: this.siteId, selectedObjectId: this.selected });
-    }
-
-    private handle(data: any): void
-    {
-        if (!data || data.type !== 'presence')
-            return;
-        if (typeof data.siteId !== 'string' || data.siteId.length === 0 || data.siteId.length > MAX_ID_LENGTH)
-            return;
-
-        const selected = data.selectedObjectId;
-        if (selected !== null && (typeof selected !== 'string' || selected.length === 0 || selected.length > MAX_ID_LENGTH))
-            return;
-
-        this.remote.set(data.siteId, selected);
-
-        // Two claims crossed on the wire: the lower siteId keeps the object, the other side lets go.
-        if (selected !== null && selected === this.selected && data.siteId < this.siteId)
-        {
-            this.selected = null;
-            this.broadcast();
-            this.lockLostListeners.forEach((callback) => callback(selected));
-        }
-
-        this.notifyChange();
-    }
-
-    private notifyChange(): void
-    {
-        this.changeListeners.forEach((callback) => callback());
+        return this.channel.state?.selectedObjectId ?? null;
     }
 }

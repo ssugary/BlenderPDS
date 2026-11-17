@@ -9,7 +9,7 @@ function add(siteId: string, lamport: number, objectId: string): Operation {
         id: { siteId, lamport },
         author: siteId,
         deps: [],
-        kind: 'add_object',
+        kind: 'test_kind',
         objectId,
         geometry: 'cube',
         transform: MATRIX,

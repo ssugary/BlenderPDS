@@ -3,7 +3,7 @@ import { ReplicaSession } from './ReplicaSession';
 import { DocumentRecord } from '@collab3d/core';
 import { Change } from './DocumentState';
 import { colorOf, geometryOf, transformOf } from './objectState';
-import { SceneManager } from '../manager/SceneManager';
+import { SceneManager } from '@collab3d/core';
 import { SelectionManager } from '../manager/SelectionManager';
 import { CreateObjectTool } from '../tool/implementation/CreateObjectTool';
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
-import { FriendsPanel } from './FriendsPanel';
-import { useSocialContext } from './SocialContext';
-import { ACCENT, mutedStyle } from './SocialUI';
+import { FriendsPanel } from '@collab3d/react-kit';
+import { useSocialContext } from '@collab3d/react-kit';
+import { ACCENT, mutedStyle } from '@collab3d/react-kit';
 
 /** Colour the lobby ends on, so the hand-off to the editor has no flash. Keep in sync with Lobby.tsx. */
 const CURTAIN_COLOR = '#1f1f24';

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { EditorModeManager } from '../../manager/EditorModeManager';
-import { RaycasterManager } from '../../manager/RaycasterManager';
+import { RaycasterManager } from '@collab3d/core';
 import { SelectionManager } from '../../manager/SelectionManager';
 import { PresenceService } from '../../collab/PresenceService';
 import { colorOf } from '../../collab/objectState';

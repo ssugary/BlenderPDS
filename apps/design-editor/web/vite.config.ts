@@ -11,7 +11,8 @@ export default defineConfig({
         alias: {
             // Source alias + workspace link: the editor always compiles the same core source the
             // core package builds on its own, so a change never needs a dist rebuild to show up.
-            '@collab3d/core': new URL('../../../framework/core/src/index.ts', import.meta.url).pathname
+            '@collab3d/core': new URL('../../../framework/core/src/index.ts', import.meta.url).pathname,
+            '@collab3d/react-kit': new URL('../../../framework/react-kit/src/index.ts', import.meta.url).pathname
         }
     },
     optimizeDeps: {

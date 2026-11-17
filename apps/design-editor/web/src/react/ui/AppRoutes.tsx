@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Session } from '@collab3d/core';
-import { Lobby } from './Lobby';
-import { MenuPage } from './MenuPage';
-import { HostPage } from './HostPage';
-import { JoinPage } from './JoinPage';
-import { AuthPage, FriendsPage } from './SocialPage';
-import { SocialProvider } from './SocialContext';
+import { Lobby } from '@collab3d/react-kit';
+import { MenuPage } from '@collab3d/react-kit';
+import { HostPage } from '@collab3d/react-kit';
+import { JoinPage } from '@collab3d/react-kit';
+import { AuthPage, FriendsPage } from '@collab3d/react-kit';
+import { SocialProvider } from '@collab3d/react-kit';
 
 /** How long the lobby fades out before the editor route opens. Keep in sync with the 0.3s in Lobby.tsx. */
 const LEAVE_MS = 300;

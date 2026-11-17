@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SceneManager } from './SceneManager';
+import { SceneManager } from '@collab3d/core';
 import { GLOBAL_BUS } from '@collab3d/core';
 
 /**

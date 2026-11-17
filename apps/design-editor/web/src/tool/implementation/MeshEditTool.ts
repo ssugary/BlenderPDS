@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Tool } from '../Tool';
 import { HEEdge, HEMesh, HEVertex } from '../../entity/HalfEdge';
 import { TransformControls } from 'three/examples/jsm/Addons.js';
-import { SceneManager } from '../../manager/SceneManager';
+import { SceneManager } from '@collab3d/core';
 import { SelectionStrategy, VertexSelectionStrategy } from '../../entity/SelectionStrategy';
 import { CommandManager } from '../../manager/CommandManager';
 import { FaceExtrudeCommand, MeshEditCommand } from '../../command/implementation/MeshEditCommand';

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CameraManager } from '../../manager/CameraManager';
+import { CameraManager } from '@collab3d/core';
 import { CommandManager } from '../../manager/CommandManager';
 import { EditorModeManager } from '../../manager/EditorModeManager';
-import { SceneManager } from '../../manager/SceneManager';
+import { SceneManager } from '@collab3d/core';
 import { SelectionManager } from '../../manager/SelectionManager';
 import { ToolManager } from '../../manager/ToolManager';
 import { SelectionStrategy } from '../../entity/SelectionStrategy';
@@ -15,8 +15,8 @@ import { ColorEditCommand } from '../../command/implementation/ColorEditCommand'
 import { ReplicaSession } from '../../collab/ReplicaSession';
 import { SceneProjector } from '../../collab/SceneProjector';
 import { colorOf } from '../../collab/objectState';
-import { ObjectParser } from '../ObjectParser';
-import { FileExporter } from '../utils/FileExporter';
+import { ObjImporter } from '../../format/ObjImporter';
+import { ObjExporter } from '../../format/ObjExporter';
 import { BusSubscriptions } from '../BusSubscriptions';
 import { GLOBAL_BUS } from '@collab3d/core';
 import { SelectionController } from './SelectionController';
@@ -76,7 +76,7 @@ export class ActionRouter
     {
         if (type === 'model')
         {
-            ObjectParser.parseObject(type, this.deps.sceneManager);
+            ObjImporter.parseObject(type, this.deps.sceneManager);
             return;
         }
 
@@ -172,7 +172,7 @@ export class ActionRouter
 
     private exportModel():void
     {
-        FileExporter.exportSceneAsOBJ(this.deps.sceneManager, 'scene.obj');
+        ObjExporter.exportSceneAsOBJ(this.deps.sceneManager, 'scene.obj');
     }
 
     /** Keyboard actions: single-shot commands, plus the tool/mode shortcuts that mirror the toolbar. */

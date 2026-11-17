@@ -27,3 +27,26 @@ export { WebSocketTransport } from './transport/WebSocketTransport';
 export type { Session, SessionRole } from './session/Session';
 
 export * from './api/BackendClient';
+
+export { SceneManager } from './scene/SceneManager';
+export { RaycasterManager } from './scene/RaycasterManager';
+export { RenderEngine } from './render/RenderEngine';
+export { SceneHost } from './render/SceneHost';
+export type { Projector } from './render/Projector';
+export { CameraManager } from './camera/CameraManager';
+export { Navigation, OrbitNavigation, WalkNavigation } from './camera/Navigation';
+export { InputManager } from './input/InputManager';
+
+export { PresenceChannel } from './presence/PresenceChannel';
+export type { PresenceEntry, PresenceChannelOptions } from './presence/PresenceChannel';
+
+export { MessageRegistry } from './sync/MessageRegistry';
+export { SyncEngine } from './sync/SyncEngine';
+export { DEFAULT_SYNC_POLICY } from './sync/MessageRegistry';
+export type { MessageDefinition, MessageContext, SyncPolicy, SyncReplica } from './sync/MessageRegistry';
+
+export { SceneFormatRegistry } from './format/SceneFormat';
+export type { SceneFormat, ImportedObject } from './format/SceneFormat';
+
+export { CollabApp, createCollabApp } from './app/CollabApp';
+export type { CollabAppConfig, CollabAppContext, CollabAppMount } from './app/CollabApp';

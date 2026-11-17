@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GLOBAL_BUS } from '@collab3d/core';
-import { useBusEvent } from '../useBusEvent';
+import { useBusEvent } from '@collab3d/react-kit';
 import { ColorPicker } from './ColorPicker';
 
 const GEOMETRY_OPTIONS = [

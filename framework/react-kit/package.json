@@ -1,0 +1,39 @@
+{
+  "name": "@collab3d/react-kit",
+  "version": "0.2.0",
+  "description": "Componentes React reutilizáveis do collab3d: lobby, social, chat e toasts, sobre @collab3d/core.",
+  "type": "module",
+  "main": "./dist/collab3d-react-kit.js",
+  "module": "./dist/collab3d-react-kit.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/collab3d-react-kit.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "dependencies": {
+    "@collab3d/core": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

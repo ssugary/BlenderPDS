@@ -1,5 +1,5 @@
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { CameraManager } from '../../manager/CameraManager';
+import { CameraManager } from '@collab3d/core';
 import { CommandManager } from '../../manager/CommandManager';
 import { EditorModeManager } from '../../manager/EditorModeManager';
 import { SelectionManager } from '../../manager/SelectionManager';

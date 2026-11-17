@@ -3,14 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { endSession, leaveSession } from '@collab3d/core';
 import { ReplicaSession } from './collab/ReplicaSession';
 import { buildSceneSnapshot } from './collab/SceneSnapshot';
-import { InputManager } from './manager/InputManager';
+import { InputManager } from '@collab3d/core';
 import { Session } from '@collab3d/core';
 import { Viewport3D } from './react/Viewport3D';
 import { AppRoutes } from './react/ui/AppRoutes';
-import { ChatPanel } from './react/ui/ChatPanel';
+import { ChatPanel } from '@collab3d/react-kit';
 import { EditorOverlay } from './react/ui/EditorOverlay';
 import { TimelinePanel } from './react/ui/TimelinePanel';
-import { Toast } from './react/ui/Toast';
+import { Toast } from '@collab3d/react-kit';
 import { Toolbar } from './react/ui/Toolbar';
 
 const KEYBINDINGS: Record<string, string> = {
