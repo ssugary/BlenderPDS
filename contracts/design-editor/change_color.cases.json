@@ -1,0 +1,62 @@
+{
+  "app": "design-editor",
+  "kind": "change_color",
+  "valid": [
+    {
+      "description": "preto",
+      "operation": {
+        "id": { "lamport": 1, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "change_color",
+        "objectId": "obj-1",
+        "color": 0
+      }
+    },
+    {
+      "description": "branco",
+      "operation": {
+        "id": { "lamport": 2, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "change_color",
+        "objectId": "obj-1",
+        "color": 16777215
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "reason": "cor negativa",
+      "operation": {
+        "id": { "lamport": 3, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "change_color",
+        "objectId": "obj-1",
+        "color": -1
+      }
+    },
+    {
+      "reason": "cor como string hexadecimal",
+      "operation": {
+        "id": { "lamport": 4, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "change_color",
+        "objectId": "obj-1",
+        "color": "#ff0000"
+      }
+    },
+    {
+      "reason": "sem objectId",
+      "operation": {
+        "id": { "lamport": 5, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "change_color",
+        "color": 255
+      }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "app": "design-editor",
+  "kind": "add_object",
+  "valid": [
+    {
+      "description": "primitivo com matriz identidade e branco",
+      "operation": {
+        "id": { "lamport": 1, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "obj-1",
+        "geometry": "cube",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "color": 16777215
+      }
+    },
+    {
+      "description": "cor zero é válida",
+      "operation": {
+        "id": { "lamport": 2, "siteId": "site-b" },
+        "author": "site-b",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "obj-2",
+        "geometry": "sphere",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "color": 0
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "reason": "sem geometry",
+      "operation": {
+        "id": { "lamport": 3, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "obj-1",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "color": 16711680
+      }
+    },
+    {
+      "reason": "matriz com dois números",
+      "operation": {
+        "id": { "lamport": 4, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "obj-1",
+        "geometry": "cube",
+        "transform": [1, 2],
+        "color": 1
+      }
+    },
+    {
+      "reason": "cor acima de 0xFFFFFF",
+      "operation": {
+        "id": { "lamport": 5, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "obj-1",
+        "geometry": "cube",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "color": 16777216
+      }
+    },
+    {
+      "reason": "cor não numérica",
+      "operation": {
+        "id": { "lamport": 6, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "obj-1",
+        "geometry": "cube",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "color": "#ff0000"
+      }
+    },
+    {
+      "reason": "objectId com mais de 100 caracteres",
+      "operation": {
+        "id": { "lamport": 7, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "add_object",
+        "objectId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "geometry": "cube",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "color": 0
+      }
+    }
+  ]
+}

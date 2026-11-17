@@ -1,0 +1,47 @@
+{
+  "app": "design-editor",
+  "kind": "remove_object",
+  "valid": [
+    {
+      "description": "só o id do alvo",
+      "operation": {
+        "id": { "lamport": 1, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "remove_object",
+        "objectId": "obj-1"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "reason": "sem objectId",
+      "operation": {
+        "id": { "lamport": 2, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "remove_object"
+      }
+    },
+    {
+      "reason": "objectId não é string",
+      "operation": {
+        "id": { "lamport": 3, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "remove_object",
+        "objectId": 42
+      }
+    },
+    {
+      "reason": "objectId com mais de 100 caracteres",
+      "operation": {
+        "id": { "lamport": 4, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "remove_object",
+        "objectId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  ]
+}

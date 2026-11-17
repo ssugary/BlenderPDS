@@ -6,6 +6,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "skipLibCheck": true,
+    "types": ["node"],
 
     /* Bundler mode (matches Vite) */
     "moduleResolution": "bundler",

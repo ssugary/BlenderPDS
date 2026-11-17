@@ -26,9 +26,11 @@ export function isOperationBase(value: unknown): value is Record<string, unknown
         && value.deps.every((dep) => isRecord(dep) && typeof dep.lamport === 'number' && typeof dep.siteId === 'string');
 }
 
-export function isString(value: unknown): value is string
+export function isString(value: unknown, maxLength = 100): value is string
 {
-    return typeof value === 'string' && value.length > 0;
+    // 100 is the server's limit for a short string field; keeping the same number here is what
+    // lets the shared contracts file mean the same thing on both sides.
+    return typeof value === 'string' && value.length > 0 && value.length <= maxLength;
 }
 
 export function isFiniteNumber(value: unknown): value is number

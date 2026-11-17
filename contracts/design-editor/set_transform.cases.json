@@ -1,0 +1,61 @@
+{
+  "app": "design-editor",
+  "kind": "set_transform",
+  "valid": [
+    {
+      "description": "matriz identidade",
+      "operation": {
+        "id": { "lamport": 1, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_transform",
+        "objectId": "obj-1",
+        "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      }
+    },
+    {
+      "description": "translação em x",
+      "operation": {
+        "id": { "lamport": 2, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_transform",
+        "objectId": "obj-1",
+        "matrix": [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "reason": "sem matrix",
+      "operation": {
+        "id": { "lamport": 3, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_transform",
+        "objectId": "obj-1"
+      }
+    },
+    {
+      "reason": "matriz com três números",
+      "operation": {
+        "id": { "lamport": 4, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_transform",
+        "objectId": "obj-1",
+        "matrix": [1, 2, 3]
+      }
+    },
+    {
+      "reason": "sem objectId",
+      "operation": {
+        "id": { "lamport": 5, "siteId": "site-a" },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_transform",
+        "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      }
+    }
+  ]
+}
