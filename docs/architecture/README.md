@@ -17,7 +17,8 @@ renomeado ou apagado; este índice é o único arquivo deste diretório que pode
 
 | Versão | Arquivo | Fase | Commit | Data | Resumo |
 |---|---|---|---|---|---|
-| **v0.0** (VIGENTE) | [architecture-v0.0-baseline.md](architecture-v0.0-baseline.md) | baseline | `90b48ff` | 2026-11-17 | Estado ANTES da refatoração: editor BlenderPDS único (Spring Boot 4.1.1 + SPA React/three.js), CRDT no cliente, WebSocket sequenciado, sem Flyway e sem testes de frontend. |
+| v0.0 | [architecture-v0.0-baseline.md](architecture-v0.0-baseline.md) | baseline | `90b48ff` | 2026-11-17 | Estado ANTES da refatoração: editor BlenderPDS único (Spring Boot 4.1.1 + SPA React/three.js), CRDT no cliente, WebSocket sequenciado, sem Flyway e sem testes de frontend. |
+| **v0.1** (VIGENTE) | [architecture-v0.1-fase0-preparacao.md](architecture-v0.1-fase0-preparacao.md) | Fase 0 (P0.0–P0.7) | `a8e0244` | 2026-11-17 | Mesmo produto, com rede de segurança: arquitetura versionada, premissas verificadas, caracterização do WS, ArchUnit, Vitest, Flyway + `validate` e npm workspaces com o SPA em `apps/design-editor/web`. Nenhum contrato alterado. |
 
 ## Documentos legados (v0.0)
 
@@ -33,7 +34,6 @@ e foram removidos do repositório em `9fbbf44`. Ficam aqui como referência hist
 
 | Versão | Arquivo previsto | Fase |
 |---|---|---|
-| v0.1 | `architecture-v0.1-fase0-preparacao.md` | fim da Fase 0 |
 | v0.2 | `architecture-v0.2-fase1-core-backend.md` | fim da Fase 1 |
 | v0.3 | `architecture-v0.3-fase2-core-frontend.md` | fim da Fase 2 |
 | v0.4 | `architecture-v0.4-fase3-seguranca-debitos.md` | fim da Fase 3 |
