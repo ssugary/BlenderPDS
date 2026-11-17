@@ -31,6 +31,8 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * End-to-end collaboration with a real server: two WebSocket clients authenticated
@@ -58,6 +60,9 @@ class SessionWebSocketTest {
 
     @Autowired
     private SessionOperationRepository operationRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private EmailService emailService;
@@ -222,7 +227,168 @@ class SessionWebSocketTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
+    /**
+     * Characterisation of the protocol the current client already speaks (P0.2):
+     * {@code sync_hello} -> {@code sync_ops} -> {@code sync_ack} plus the roster, with the
+     * frames' fields pinned. It exists so the framework refactor (dispatcher + message
+     * catalog + generic validators) cannot change the wire contract by accident.
+     */
+    @Test
+    void currentProtocolRoundTripIsFrozen() throws Exception {
+        Long host = user("ws-host-protocolo");
+        Long guest = user("ws-guest-protocolo");
+        befriend(host, guest);
+        Session session = sessionService.createSession(host);
+        sessionService.joinSession(session.getId(), guest);
+
+        Client hostClient = connect(session.getId(), host);
+
+        // 1) the roster only reaches the client after its first sync_hello: the connection is
+        // born "catching up" and every frame is queued until the hello flushes the queue.
+        hostClient.send(hello("{}"));
+        JsonNode roster = frame(hostClient.next("session_roster"));
+        assertThat(roster.path("type").asString("")).isEqualTo("session_roster");
+        assertThat(roster.path("sessionId").asLong()).isEqualTo(session.getId());
+        // the handshake already ran connectParticipant, which moves WAITING -> ACTIVE
+        assertThat(roster.path("status").asString("")).isEqualTo("ACTIVE");
+        assertThat(roster.path("participants").isArray()).isTrue();
+        // the roster lists every participant row, not only the connected ones: the guest was
+        // added by joinSession and is inactive until its own socket connects.
+        assertThat(roster.path("participants").size()).isEqualTo(2);
+        JsonNode hostEntry = participant(roster, host);
+        assertThat(hostEntry.path("nickname").asString("")).isEqualTo("ws-host-protocolo");
+        assertThat(hostEntry.path("active").booleanValue()).isTrue();
+        assertThat(participant(roster, guest).path("active").booleanValue()).isFalse();
+
+        // 2) sync_ops -> sync_ack {siteId, lamport, seq}, never echoed back to the sender
+        hostClient.send(ops(operation("site-a", 1, "obj-1")));
+        JsonNode ack = frame(hostClient.next("sync_ack"));
+        assertThat(ack.path("type").asString("")).isEqualTo("sync_ack");
+        assertThat(ack.path("siteId").asString("")).isEqualTo("site-a");
+        assertThat(ack.path("lamport").asLong()).isEqualTo(1);
+        assertThat(ack.path("seq").asLong()).isEqualTo(1);
+
+        // 3) sync_hello -> sync_ops: the persisted envelope comes back plus the server seq
+        hostClient.send(hello("{}"));
+        JsonNode catchUp = frame(hostClient.next("sync_ops"));
+        assertThat(catchUp.path("type").asString("")).isEqualTo("sync_ops");
+        assertThat(catchUp.path("ops").isArray()).isTrue();
+        assertThat(catchUp.path("ops").size()).isEqualTo(1);
+        JsonNode op = catchUp.path("ops").get(0);
+        assertThat(op.path("id").path("siteId").asString("")).isEqualTo("site-a");
+        assertThat(op.path("id").path("lamport").asLong()).isEqualTo(1);
+        assertThat(op.path("author").asString("")).isEqualTo("site-a");
+        assertThat(op.path("deps").isArray()).isTrue();
+        assertThat(op.path("kind").asString("")).isEqualTo("add_object");
+        assertThat(op.path("objectId").asString("")).isEqualTo("obj-1");
+        assertThat(op.path("seq").asLong()).isEqualTo(1);
+
+        // 4) the roster follows the presence: the guest is marked active once its socket opens
+        Client guestClient = connect(session.getId(), guest);
+        guestClient.send(hello("{}"));
+        JsonNode secondRoster = frame(guestClient.next("session_roster"));
+        assertThat(secondRoster.path("participants").size()).isEqualTo(2);
+        assertThat(secondRoster.path("sessionId").asLong()).isEqualTo(session.getId());
+        assertThat(participant(secondRoster, guest).path("active").booleanValue()).isTrue();
+    }
+
+    /**
+     * Characterisation of the error frames that must survive the refactor: an unknown type and
+     * a frame that is not JSON are answered with an {@code error} frame, and the connection is
+     * never taken down by either.
+     */
+    @Test
+    void unknownTypeAndMalformedFrameAreAnsweredWithErrorsAndTheConnectionSurvives() throws Exception {
+        Long host = user("ws-host-erros");
+        Session session = sessionService.createSession(host);
+        Client hostClient = connect(session.getId(), host);
+
+        hostClient.send(new TextMessage("{\"type\":\"tipo_inexistente\"}"));
+        assertThat(hostClient.next("error")).contains("UNKNOWN_TYPE");
+
+        hostClient.send(new TextMessage("{isto nao e json"));
+        assertThat(hostClient.next("error")).contains("INVALID_MESSAGE");
+
+        // both errors are non fatal: the next valid batch is still sequenced
+        hostClient.send(ops(operation("site-a", 1, "obj-1")));
+        assertThat(hostClient.next("sync_ack")).contains("\"seq\":1");
+    }
+
+    /**
+     * Characterisation of the snapshot frames: a valid one is stored and a missing one is
+     * INVALID_SNAPSHOT. The 1 MB guard ({@code SNAPSHOT_TOO_LARGE}) cannot be reached over the
+     * socket today — see {@link #textFrameAboveTheContainerBufferClosesTheConnection()}.
+     */
+    @Test
+    void snapshotFrameIsStoredAndAMissingOneIsRejected() throws Exception {
+        Long host = user("ws-host-snapshot");
+        Session session = sessionService.createSession(host);
+        Client hostClient = connect(session.getId(), host);
+
+        hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\",\"snapshot\":{\"blob\":\"ok\"}}"));
+        assertThat(snapshotOf(session.getId())).contains("ok");
+
+        hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\"}"));
+        assertThat(hostClient.next("error")).contains("INVALID_SNAPSHOT");
+
+        // nothing above corrupted the connection
+        hostClient.send(ops(operation("site-a", 1, "obj-1")));
+        assertThat(hostClient.next("sync_ack")).contains("\"seq\":1");
+    }
+
+    /**
+     * Characterisation of a limit the manifesto does not mention: the container only accepts text
+     * frames up to ~8 KB (Tomcat's default <em>max text message buffer</em>, nothing in the project
+     * configures it). A bigger frame — e.g. the periodic {@code scene_snapshot} of a real scene —
+     * closes the connection with 1009 (TOO_BIG) before the handler sees it, so the 1 MB
+     * {@code SNAPSHOT_TOO_LARGE} guard of {@code SessionServiceImpl} is unreachable over the wire
+     * (it is covered at service level in {@code SessionServiceImplTest}).
+     */
+    @Test
+    void textFrameAboveTheContainerBufferClosesTheConnection() throws Exception {
+        Long host = user("ws-host-buffer");
+        Session session = sessionService.createSession(host);
+        Client hostClient = connect(session.getId(), host);
+
+        String blob = "x".repeat(9_000);
+        hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\",\"snapshot\":{\"blob\":\"" + blob + "\"}}"));
+
+        CloseStatus status = hostClient.awaitClose();
+        // 1009 = message too big (RFC 6455); Spring's CloseStatus has no constant for it
+        assertThat(status.getCode()).isEqualTo(1009);
+        // and it was never stored: the handler did not run
+        assertThat(sessionService.getSnapshot(session.getId())).isEmpty();
+    }
+
     // ---------------- support ----------------
+
+    /** The participant entry of a roster frame. */
+    private static JsonNode participant(JsonNode roster, Long userId) {
+        for (JsonNode entry : roster.path("participants")) {
+            if (entry.path("userId").asLong() == userId) {
+                return entry;
+            }
+        }
+        throw new AssertionError("participant " + userId + " is not in the roster: " + roster);
+    }
+
+    /** Parses a frame; failing with a null payload instead of a NullPointerException. */
+    private JsonNode frame(String raw) throws Exception {
+        assertThat(raw).as("frame received").isNotNull();
+        return objectMapper.readTree(raw);
+    }
+
+    /** The snapshot is stored without a reply frame, so the test waits for the row. */
+    private String snapshotOf(Long sessionId) throws InterruptedException {
+        for (int i = 0; i < 50; i++) {
+            java.util.Optional<String> snapshot = sessionService.getSnapshot(sessionId);
+            if (snapshot.isPresent()) {
+                return snapshot.get();
+            }
+            Thread.sleep(100);
+        }
+        return "";
+    }
 
     private Long user(String nickname) {
         Long id = userService.register(nickname, nickname + "@example.com", PASSWORD).getId();
@@ -272,6 +438,7 @@ class SessionWebSocketTest {
 
         private final BlockingQueue<String> received = new LinkedBlockingQueue<>();
         private final CompletableFuture<Void> opened = new CompletableFuture<>();
+        private final CompletableFuture<CloseStatus> closed = new CompletableFuture<>();
         private WebSocketSession socket;
 
         @Override
@@ -281,12 +448,22 @@ class SessionWebSocketTest {
         }
 
         @Override
+        public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+            closed.complete(status);
+        }
+
+        @Override
         protected void handleTextMessage(WebSocketSession session, TextMessage message) {
             received.add(message.getPayload());
         }
 
         void awaitOpen() throws Exception {
             opened.get(5, TimeUnit.SECONDS);
+        }
+
+        /** The close status the server picked (1009 when a frame broke the buffer limit). */
+        CloseStatus awaitClose() throws Exception {
+            return closed.get(5, TimeUnit.SECONDS);
         }
 
         void send(TextMessage message) throws IOException {

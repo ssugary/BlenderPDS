@@ -129,7 +129,35 @@ como possível mistura de pacotes. **Não é débito:** em Jackson 3 a API de *d
 `tools.jackson.core:jackson-databind:3.1.5 → com.fasterxml.jackson.core:jackson-annotations:2.21`
 (§3.2). O import está correto.
 
-### 2.5 Arquivos citados no plano que ainda não existem
+### 2.5 Limite de ~8 KB por frame de texto no WebSocket (não documentado no manifesto)
+
+O manifesto declara `MAX_SNAPSHOT_BYTES = 1_000_000` e um erro `SNAPSHOT_TOO_LARGE`, mas o
+**transporte** corta antes: o container aceita frames de texto só até ~8 KB e fecha a conexão com
+**1009 (message too big)** quando o frame passa disso. Nada no projeto configura esse limite
+(não há `ServletServerContainerFactoryBean` nem `setMaxTextMessageBufferSize` em `backend/`).
+
+Medido em P0.2 (teste `SessionWebSocketTest#textFrameAboveTheContainerBufferClosesTheConnection`
+e no experimento que o originou, com frames de `scene_snapshot`):
+
+| Bytes do frame | Resultado observado |
+|---|---|
+| 1.048 / 7.048 / 8.048 / 8.148 | gravado em `sessions.scene_snapshot`, sem frame de erro |
+| 9.048 | conexão fechada (1009), snapshot **não** gravado, nenhum `error` |
+| 20.048 / 200.048 / 1.000.048 | o envio seguinte já falha: a sessão está fechada |
+
+Consequências:
+
+- `SNAPSHOT_TOO_LARGE` é **inalcançável pela rede** hoje; o guarda de 1 MB só é exercitável na
+  camada de serviço (`SessionServiceImplTest.java:357-358` já o cobre).
+- O `scene_snapshot` periódico do cliente (`SNAPSHOT_INTERVAL_MS = 15000`, `frontend/src/Main.tsx:37`)
+  **derruba o socket** quando a cena serializada passa de ~8 KB — risco concreto para cenas reais.
+- O `sync_snapshot` da Fase 3 (P3.3) herda o mesmo teto: um snapshot de reidratação não caberia.
+
+**Decisão (Fase 0):** apenas caracterizar, não corrigir — mudar o buffer é mudança de
+comportamento e não está no plano desta fase. Fica registrado como pendência para **P1.3**
+(`Collab3dProperties`, provável `collab3d.ws.max-message-bytes`) e como pré-requisito de P3.3.
+
+### 2.6 Arquivos citados no plano que ainda não existem
 
 `docs/refactor-notes.md` (este arquivo), `docs/ws-protocol.md`, `docs/new-app-guide.md` e
 `CHANGELOG.md` são entregas de fases posteriores; não existiam no início da Fase 0.
@@ -284,3 +312,7 @@ contrato" continua aberta.
 - A suíte de backend depende de Docker ativo (Postgres do `compose.yaml`, usado também pelos
   testes: `spring.docker.compose.skip.in-tests=false`) e a base do compose é **persistente** —
   relevante para a estratégia de baseline do Flyway em P0.5.
+- `SessionSocketHandler` só entrega o `session_roster` inicial **depois** do primeiro `sync_hello`
+  do cliente: a conexão nasce em `catchingUp` e `SessionConnection.send` enfileira tudo até
+  `finishCatchUp()`. Não é bug (é a proteção contra perder ops durante o catch-up), mas é
+  comportamento de protocolo que não estava no manifesto; ficou congelado em P0.2.
