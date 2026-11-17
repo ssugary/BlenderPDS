@@ -45,8 +45,13 @@ public class SyncOpsHandler extends AbstractMessageTypeHandler {
     protected void execute(WsMessageContext ctx, JsonNode root) {
         AppendResult result = ctx.appender().append(collectOps(root.get("ops")));
 
+        // Admission is per operation: what the room refused is answered with its code
+        // (OP_REJECTED by default) and never enters the log.
+        result.rejected().forEach(rejected ->
+                ctx.broadcaster().reply(frames.error(rejected.reason().code())));
+
         if (result.accepted().isEmpty()) {
-            // Everything was already in the log (a reconnect redelivery): nothing to spread.
+            // Everything was refused or already in the log (a reconnect redelivery): nothing to spread.
             return;
         }
 

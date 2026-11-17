@@ -5,6 +5,7 @@ import dev.collab3d.sequencer.OperationAppender;
 import dev.collab3d.session.SessionContextFactory;
 import dev.collab3d.session.SessionEndedEvent;
 import dev.collab3d.session.SessionService;
+import dev.collab3d.session.SessionStateStore;
 import dev.collab3d.spi.Actor;
 import dev.collab3d.spi.Delivery;
 import dev.collab3d.spi.InvalidMessageException;
@@ -52,6 +53,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
     private final MessageCatalog catalog;
     private final SessionContextFactory contextFactory;
     private final OperationAppender operationAppender;
+    private final SessionStateStore stateStore;
     private final WsFrames frames;
     private final ObjectMapper objectMapper;
 
@@ -126,6 +128,8 @@ public class SessionSocketHandler extends TextWebSocketHandler {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionEnded(SessionEndedEvent event) {
         registry.closeAll(event.sessionId(), CloseStatus.NORMAL);
+        // The reduced state of a room that ended is rebuilt from the log if it ever reopens.
+        stateStore.evict(event.sessionId());
     }
 
     /** Everything one frame may need, resolved once and bound to its connection. */
