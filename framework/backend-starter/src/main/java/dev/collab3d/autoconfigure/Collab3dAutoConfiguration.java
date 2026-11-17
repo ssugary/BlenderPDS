@@ -4,8 +4,10 @@ import dev.collab3d.repository.UserRepository;
 import dev.collab3d.spi.OperationAdmissionPolicy;
 import dev.collab3d.spi.SessionCapacityPolicy;
 import dev.collab3d.spi.SessionJoinPolicy;
+import dev.collab3d.spi.SessionVisibilityPolicy;
 import dev.collab3d.spi.SnapshotPolicy;
 import dev.collab3d.spi.defaults.AdmitAllPolicy;
+import dev.collab3d.spi.defaults.AlwaysVisiblePolicy;
 import dev.collab3d.spi.defaults.FixedCapacityPolicy;
 import dev.collab3d.spi.defaults.HostFriendJoinPolicy;
 import dev.collab3d.spi.defaults.HostOnlySnapshotPolicy;
@@ -73,5 +75,11 @@ public class Collab3dAutoConfiguration {
     @ConditionalOnMissingBean(SessionJoinPolicy.class)
     SessionJoinPolicy sessionJoinPolicy(UserRepository userRepository) {
         return new HostFriendJoinPolicy(userRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    SessionVisibilityPolicy sessionVisibilityPolicy() {
+        return new AlwaysVisiblePolicy();
     }
 }

@@ -6,12 +6,8 @@ import dev.collab3d.mail.EmailService;
 import dev.collab3d.model.Session;
 import dev.collab3d.repository.SessionOperationRepository;
 import dev.collab3d.session.SessionService;
-import dev.collab3d.spi.Actor;
-import dev.collab3d.spi.OperationAdmissionPolicy;
-import dev.collab3d.spi.RejectReason;
-import dev.collab3d.spi.SessionContext;
-import dev.collab3d.spi.SessionStateView;
 import dev.collab3d.user.UserService;
+import dev.support.RejectColorPolicyConfiguration;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -24,9 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.socket.CloseStatus;
@@ -44,31 +38,11 @@ import tools.jackson.databind.JsonNode;
  * {@link SessionStateView}, exactly as an application's would.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(AdmissionPolicyTest.RejectColorPolicy.class)
+@Import(RejectColorPolicyConfiguration.class)
 class AdmissionPolicyTest {
 
     private static final String MATRIX = "[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]";
     private static final String PASSWORD = "senha12345";
-
-    @TestConfiguration
-    static class RejectColorPolicy {
-
-        @Bean
-        OperationAdmissionPolicy rejectColors() {
-            return new OperationAdmissionPolicy() {
-                @Override
-                public Optional<RejectReason> admit(SessionContext ctx, Actor actor, JsonNode operation,
-                        SessionStateView state) {
-                    String kind = operation.path("kind").isTextual()
-                            ? operation.path("kind").asString()
-                            : "";
-                    return "change_color".equals(kind)
-                            ? Optional.of(RejectReason.of("OP_REJECTED", "cor bloqueada pela política"))
-                            : Optional.empty();
-                }
-            };
-        }
-    }
 
     @LocalServerPort
     private int port;

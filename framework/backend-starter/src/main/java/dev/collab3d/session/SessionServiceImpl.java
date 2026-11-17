@@ -10,6 +10,13 @@ import dev.collab3d.repository.SessionParticipantRepository;
 import dev.collab3d.repository.SessionRepository;
 import dev.collab3d.repository.UserRepository;
 import dev.collab3d.sequencer.OperationSequencer;
+import dev.collab3d.spi.Actor;
+import dev.collab3d.spi.JoinDecision;
+import dev.collab3d.spi.JoinRequest;
+import dev.collab3d.spi.SessionCapacityPolicy;
+import dev.collab3d.spi.SessionContext;
+import dev.collab3d.spi.SessionJoinPolicy;
+import dev.collab3d.spi.SessionVisibilityPolicy;
 import dev.collab3d.session.SessionEndedEvent;
 import dev.collab3d.session.SessionOperationInput;
 import dev.collab3d.session.SessionService;
@@ -24,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +66,10 @@ public class SessionServiceImpl implements SessionService {
     private final SessionOperationRepository operationRepository;
     private final UserRepository userRepository;
     private final OperationSequencer sequencer;
+    private final SessionContextFactory contextFactory;
+    private final List<SessionJoinPolicy> joinPolicies;
+    private final List<SessionCapacityPolicy> capacityPolicies;
+    private final List<SessionVisibilityPolicy> visibilityPolicies;
     private final ApplicationEventPublisher events;
 
     @Override
@@ -226,7 +238,21 @@ public class SessionServiceImpl implements SessionService {
         }
         // Only ACTIVE rooms: that is what the friend list shows as really "hosting"
         // (host connected), instead of a room that was created and abandoned.
-        return sessionRepository.findOpenByHostIds(friendIds, SessionStatus.ACTIVE);
+        List<Session> rooms = sessionRepository.findOpenByHostIds(friendIds, SessionStatus.ACTIVE);
+        if (rooms.isEmpty()) {
+            return List.of();
+        }
+
+        // Visibility is a chain, not a permission: what it hides is only removed from
+        // this listing (the room may still be joinable by code).
+        Actor viewer = contextFactory.actor(userId);
+        List<Session> visible = new ArrayList<>(rooms.size());
+        for (Session room : rooms) {
+            if (visibleTo(room, viewer)) {
+                visible.add(room);
+            }
+        }
+        return visible;
     }
 
     /**
@@ -303,25 +329,67 @@ public class SessionServiceImpl implements SessionService {
         }
     }
 
-    /** Common entry rules: state, friendship with the host and (optionally) capacity. */
+    /**
+     * Common entry rules: the {@link SessionJoinPolicy} chain (whose default reproduces
+     * "host or friend of the host, and not an ended room") and, when connecting, the
+     * {@link SessionCapacityPolicy} chain.
+     *
+     * <p>All policies that serve this app type must approve; the first denial wins and
+     * carries the HTTP status that maps back to the pre-refactor exception (404/403/409).
+     */
     private void assertJoinable(Session session, Long userId, boolean checkCapacity) {
-        if (session.getStatus() == SessionStatus.ENDED) {
-            throw new IllegalStateException("Sessão encerrada: " + session.getId());
-        }
+        SessionContext ctx = contextFactory.sessionContext(session.getId());
+        Actor joiner = contextFactory.actor(userId);
 
-        Long hostId = session.getHost().getId();
-        boolean isHost = hostId.equals(userId);
-        if (!isHost && !userRepository.areFriends(hostId, userId)) {
-            throw new AccessDeniedException("Só amigos do host podem entrar nesta sessão");
+        for (SessionJoinPolicy policy : joinPolicies) {
+            if (!policy.supports(ctx.appType())) {
+                continue;
+            }
+            JoinDecision decision = policy.decide(ctx, joiner, JoinRequest.none());
+            if (!decision.allowed()) {
+                throw denial(decision);
+            }
         }
 
         if (checkCapacity) {
+            int max = capacityPolicies.stream()
+                    .filter(policy -> policy.supports(ctx.appType()))
+                    .mapToInt(policy -> policy.maxParticipants(ctx))
+                    .min()
+                    .orElse(MAX_PARTICIPANTS);
             // Excludes the user themselves: somebody reconnecting does not take two seats.
             long others = participantRepository.countBySessionIdAndActiveTrueAndUserIdNot(session.getId(), userId);
-            if (others >= MAX_PARTICIPANTS) {
-                throw new IllegalStateException("Sessão cheia (" + MAX_PARTICIPANTS + " participantes)");
+            if (others >= max) {
+                throw new IllegalStateException("Sessão cheia (" + max + " participantes)");
             }
         }
+    }
+
+    /** Whether every visibility policy that serves this app type lets the viewer see it. */
+    private boolean visibleTo(Session room, Actor viewer) {
+        SessionContext ctx = contextFactory.sessionContext(room.getId());
+        for (SessionVisibilityPolicy policy : visibilityPolicies) {
+            if (policy.supports(ctx.appType()) && !policy.visibleTo(ctx, viewer)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Keeps the REST mapping the client already knows when a policy says no. */
+    private RuntimeException denial(JoinDecision decision) {
+        String message = decision.message() == null ? decision.code() : decision.message();
+        HttpStatus status = decision.statusIfDenied();
+        if (status == HttpStatus.NOT_FOUND) {
+            return new EntityNotFoundException(message);
+        }
+        if (status == HttpStatus.CONFLICT) {
+            return new IllegalStateException(message);
+        }
+        if (status == HttpStatus.BAD_REQUEST) {
+            return new IllegalArgumentException(message);
+        }
+        return new AccessDeniedException(message);
     }
 
     private String generateUniqueCode() {
