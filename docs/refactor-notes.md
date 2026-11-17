@@ -296,7 +296,31 @@ contrato" continua aberta.
 
 ---
 
-## 5. Observações (fora do escopo da Fase 0 — não corrigidas)
+## 5. Flyway: estratégia adotada em P0.5
+
+- **Dependências:** `spring-boot-starter-flyway` (traz o módulo `spring-boot-flyway`, onde está a
+auto-configuração no Boot 4) + `org.flywaydb:flyway-database-postgresql` em `runtime` (§3.1).
+- **`V1__baseline.sql`** foi gerado do banco **real** que o Hibernate criava
+  (`pg_dump --schema-only --no-owner --no-privileges`), sem reescrever DDL à mão: os nomes de
+  tabelas, colunas, `CHECK`s e constraints (`uk_session_operation_seq`, `uk_session_operation_op`,
+  `uk_session_participant`, `sessions.user_id`) são exatamente os do schema anterior.
+- **`ddl-auto` passou de `create` para `validate`** (`application.properties`).
+- **`spring.flyway.baseline-on-migrate=true`:** a base de desenvolvimento/teste já existia sem
+  histórico do Flyway; sem o baseline o Flyway recusa um schema não vazio. Efeito observado: na
+  base existente o Flyway gravou `1 | << Flyway Baseline >> | BASELINE` (V1 **não** é reexecutada);
+  numa base limpa ele executa V1 de verdade. A adoção silenciosa de uma base antiga é aceitável
+  porque até agora `ddl-auto=create` apagava o schema a cada start — não há dado histórico a
+  proteger — e fica registrado que **P1.10** deve introduzir `V2` normalmente sobre esse histórico.
+- **Verificação (banco limpo):** com um segundo processo apontando para um banco novo
+  (`blenderpds_clean`, `--spring.docker.compose.enabled=false`), o log mostrou
+  `Migrating schema "public" to version "1 - baseline"` → `Successfully applied 1 migration` →
+  `Started BlenderpdsApplication`, e o banco ficou com as 7 tabelas + `flyway_schema_history`
+  (`1 | baseline | SQL | t`). O `validate` do Hibernate aceitou o schema criado pelo Flyway; o
+  banco de teste foi removido no fim.
+
+**Débito `ddl_auto_destructive`: resolvido.**
+
+## 6. Observações (fora do escopo da Fase 0 — não corrigidas)
 
 - `frontend/README.md` aponta para `../docs/frontend-architecture.md` e
   `../docs/backend-architecture.md`, removidos em `9fbbf44`. Os snapshots correspondentes agora
