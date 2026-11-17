@@ -1,4 +1,4 @@
-import { BaseOperation, OpId } from '@collab3d/core';
+import { BaseOperation } from '@collab3d/core';
 
 /**
  * Operations carry RESULTS, not recipes: "set transform to this matrix", never "move by +1".
@@ -35,23 +35,22 @@ export interface SetTransform extends BaseOperation
     matrix: number[];
 }
 
-/** Stage 2 (after the MVP): vertex drags and topology edits on stable vertex/face ids. */
-export interface MeshEdit extends BaseOperation
+/**
+ * Replaces an object's geometry buffer (last-writer-wins, like every other field).
+ *
+ * It is a result, not a recipe: the whole buffer travels, so applying it twice is
+ * harmless. Undo is not an operation — commands emit a compensating set_transform /
+ * add_object / set_mesh instead.
+ */
+export interface SetMesh extends BaseOperation
 {
-    kind: 'mesh_edit';
+    kind: 'set_mesh';
     objectId: string;
-    vertexId: string;
-    position: [number, number, number];
+    /** Serialized geometry, bounded by design.max-mesh-bytes on both sides. */
+    geometry: string;
 }
 
-/** Stage 3 (after the MVP): marks earlier ops by this author as undone. */
-export interface UndoOp extends BaseOperation
-{
-    kind: 'undo';
-    targets: OpId[];
-}
-
-export type Operation = AddObject | RemoveObject | SetTransform | MeshEdit | UndoOp | ChangeColor;
+export type Operation = AddObject | RemoveObject | SetTransform | SetMesh | ChangeColor;
 
 /** Distributes Omit over the union so callers can build an op without id/author/deps. */
 export type NewOperation = Operation extends infer O ? (O extends Operation ? Omit<O, 'id' | 'author' | 'deps'> : never) : never;

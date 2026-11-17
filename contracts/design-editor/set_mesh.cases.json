@@ -1,0 +1,76 @@
+{
+  "kind": "set_mesh",
+  "valid": [
+    {
+      "description": "buffer serializado",
+      "operation": {
+        "id": {
+          "lamport": 5,
+          "siteId": "site-a"
+        },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_mesh",
+        "objectId": "obj-1",
+        "geometry": "v 0 0 0\\nv 1 0 0\\nf 1 2 3"
+      }
+    },
+    {
+      "description": "nome de primitiva continua válido como buffer",
+      "operation": {
+        "id": {
+          "lamport": 5,
+          "siteId": "site-a"
+        },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_mesh",
+        "objectId": "obj-1",
+        "geometry": "cube"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "reason": "geometria vazia",
+      "operation": {
+        "id": {
+          "lamport": 5,
+          "siteId": "site-a"
+        },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_mesh",
+        "objectId": "obj-1",
+        "geometry": ""
+      }
+    },
+    {
+      "reason": "geometria não é string",
+      "operation": {
+        "id": {
+          "lamport": 5,
+          "siteId": "site-a"
+        },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_mesh",
+        "objectId": "obj-1",
+        "geometry": 42
+      }
+    },
+    {
+      "reason": "sem objectId",
+      "operation": {
+        "id": {
+          "lamport": 5,
+          "siteId": "site-a"
+        },
+        "author": "site-a",
+        "deps": [],
+        "kind": "set_mesh",
+        "geometry": "cube"
+      }
+    }
+  ]
+}

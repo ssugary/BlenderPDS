@@ -1,4 +1,5 @@
 import { Operation } from './Operation';
+import { isGeometry } from '../kinds/validation';
 import { VersionVector } from '@collab3d/core';
 
 const MAX_ID_LENGTH = 100;
@@ -46,6 +47,8 @@ export function isOperation(value: unknown): value is Operation
             return isShortString(op.objectId) && isMatrix(op.matrix);
         case 'change_color':
             return isShortString(op.objectId) && isColor(op.color);
+        case 'set_mesh':
+            return isShortString(op.objectId) && isGeometry(op.geometry);
         default:
             return false;
     }

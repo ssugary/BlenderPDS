@@ -4,6 +4,7 @@ import { ReplicaSession } from '../collab/ReplicaSession';
 import { isOperation } from '../collab/validate';
 import { PresenceService } from '../collab/PresenceService';
 import { buildSceneSnapshot } from '../collab/SceneSnapshot';
+import { editorKinds } from '../kinds';
 
 /**
  * Two replicas, the real SyncEngine, the real PresenceService and a transport that only moves
@@ -146,6 +147,37 @@ describe('duas réplicas do editor', () => {
         expect(right.state.get('obj-1')?.deleted).toBe(true);
         expect(snapshotOf(left)).toBe(snapshotOf(right));
         expect(added.kind).toBe('add_object');
+    });
+
+    it('set_mesh converge entre duas réplicas, inclusive com escritas concorrentes', () => {
+        const left = new ReplicaSession('site-a');
+        const right = new ReplicaSession('site-b');
+        const [l, r] = pair();
+        connect(left, right, l, r);
+
+        left.commit({ kind: 'add_object', objectId: 'obj-1', geometry: 'cube', transform: IDENTITY, color: 1 });
+        settle(l, r);
+
+        const leftMesh = 'v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3';
+        const rightMesh = 'v 0 0 0\nv 0 0 1\nv 0 1 1\nf 1 2 3';
+
+        left.commit({ kind: 'set_mesh', objectId: 'obj-1', geometry: leftMesh });
+        right.commit({ kind: 'set_mesh', objectId: 'obj-1', geometry: rightMesh });
+        // Simultaneous writes need more than one exchange to reach both sides.
+        for (let round = 0; round < 3; round++)
+            settle(l, r);
+
+        expect(snapshotOf(left)).toBe(snapshotOf(right));
+        // The winning buffer is one of the two, never a merge of them.
+        const winner = left.state.get('obj-1')?.fields.get('geometry')?.value;
+        expect([leftMesh, rightMesh]).toContain(winner);
+    });
+
+    it('kinds que o core não conhece não são aceitos pelo registro do editor', () => {
+        const kinds = editorKinds();
+        expect(kinds.get('mesh_edit')).toBeUndefined();
+        expect(kinds.get('undo')).toBeUndefined();
+        expect(kinds.get('set_mesh')).toBeDefined();
     });
 
     it('a reconexão reenvia só o que falta e não duplica operações', () => {

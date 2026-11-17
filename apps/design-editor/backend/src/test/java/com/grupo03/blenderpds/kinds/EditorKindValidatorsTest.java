@@ -23,6 +23,8 @@ class EditorKindValidatorsTest {
     private final RemoveObjectKindValidator removeObject = new RemoveObjectKindValidator();
     private final SetTransformKindValidator setTransform = new SetTransformKindValidator();
     private final ChangeColorKindValidator changeColor = new ChangeColorKindValidator();
+    /** A small ceiling so the boundary can be tested without a 256 KB string. */
+    private final SetMeshKindValidator setMesh = new SetMeshKindValidator(512);
 
     @Test
     void addObjectNeedsGeometryTransformAndColor() {
@@ -66,11 +68,27 @@ class EditorKindValidatorsTest {
     }
 
     @Test
+    void setMeshNeedsABoundedGeometryBuffer() {
+        assertDoesNotThrow(() -> setMesh.validate(json(
+                "{\"objectId\":\"obj-1\",\"geometry\":\"v 0 0 0\\\\nf 1 2 3\"}")));
+
+        assertThrows(InvalidOperationException.class, () -> setMesh.validate(json(
+                "{\"objectId\":\"obj-1\",\"geometry\":\"\"}")));
+        assertThrows(InvalidOperationException.class, () -> setMesh.validate(json(
+                "{\"objectId\":\"obj-1\",\"geometry\":" + 42 + "}")));
+        assertThrows(InvalidOperationException.class, () -> setMesh.validate(json(
+                "{\"objectId\":\"obj-1\",\"geometry\":\"" + "x".repeat(513) + "\"}")));
+        assertDoesNotThrow(() -> setMesh.validate(json(
+                "{\"objectId\":\"obj-1\",\"geometry\":\"" + "x".repeat(512) + "\"}")));
+    }
+
+    @Test
     void everyKindDeclaresTheWireNameTheClientUses() {
-        List<String> kinds = List.of(addObject.kind(), removeObject.kind(), setTransform.kind(), changeColor.kind());
+        List<String> kinds = List.of(addObject.kind(), removeObject.kind(), setTransform.kind(),
+                changeColor.kind(), setMesh.kind());
 
         org.junit.jupiter.api.Assertions.assertEquals(
-                List.of("add_object", "remove_object", "set_transform", "change_color"), kinds);
+                List.of("add_object", "remove_object", "set_transform", "change_color", "set_mesh"), kinds);
     }
 
     private static JsonNode json(String raw) {

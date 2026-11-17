@@ -44,6 +44,20 @@ export function isColor(value: unknown): value is number
     return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 0xffffff;
 }
 
+/**
+ * Ceiling for one serialized geometry buffer, mirroring `design.max-mesh-bytes`.
+ * The server rejects anything above it, so the client must never build such an op.
+ */
+export const MAX_MESH_BYTES = 262_144;
+
+/** A serialized mesh: non-empty and within the byte budget (not the 100-char short string). */
+export function isGeometry(value: unknown, maxBytes = MAX_MESH_BYTES): value is string
+{
+    return typeof value === 'string'
+        && value.length > 0
+        && new TextEncoder().encode(value).length <= maxBytes;
+}
+
 /** A transform is a column-major 4x4 matrix, already flattened to sixteen numbers. */
 export function isTransform(value: unknown): value is number[]
 {

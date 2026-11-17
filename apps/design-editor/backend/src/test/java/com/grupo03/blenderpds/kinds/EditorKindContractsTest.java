@@ -31,7 +31,8 @@ class EditorKindContractsTest {
             AddObjectKindValidator.KIND, new AddObjectKindValidator(),
             RemoveObjectKindValidator.KIND, new RemoveObjectKindValidator(),
             SetTransformKindValidator.KIND, new SetTransformKindValidator(),
-            ChangeColorKindValidator.KIND, new ChangeColorKindValidator());
+            ChangeColorKindValidator.KIND, new ChangeColorKindValidator(),
+            SetMeshKindValidator.KIND, new SetMeshKindValidator(262_144));
 
     @Test
     void everyRegisteredKindHasAContractFile() throws IOException {

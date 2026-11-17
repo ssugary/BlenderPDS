@@ -61,7 +61,12 @@ export class SceneProjector
                     break;
                 case 'color':
                     this.applyColor(this.meshes.get(record.id), record);
-                    break;    
+                    break;
+                case 'mesh':
+                    // Geometry changed: the old mesh is replaced by one built from the new buffer.
+                    this.removeMesh(record.id);
+                    this.addMesh(record);
+                    break;
             }
         }
     }

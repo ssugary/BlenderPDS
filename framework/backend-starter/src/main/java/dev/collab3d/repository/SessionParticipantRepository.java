@@ -41,6 +41,4 @@ public interface SessionParticipantRepository extends JpaRepository<SessionParti
 
     /** Before deleting a user: takes them out of other people's rooms. */
     void deleteByUserId(Long userId);
-
-    void deleteBySessionIdAndUserId(Long sessionId, Long userId);
 }

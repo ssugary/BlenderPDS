@@ -5,7 +5,10 @@ export const IDENTITY_TRANSFORM = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
 
 export function geometryOf(record: DocumentRecord): string
 {
-    return (record.meta.get('geometry') as string | undefined) ?? 'cube';
+    // set_mesh writes a last-writer-wins register; the add's meta is the initial value.
+    return LwwStrategy.value<string>(record, 'geometry')
+        ?? (record.meta.get('geometry') as string | undefined)
+        ?? 'cube';
 }
 
 export function transformOf(record: DocumentRecord): number[]

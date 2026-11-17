@@ -12,7 +12,9 @@
   "scripts": {
     "build:core": "npm run build -w @collab3d/core",
     "test:core": "npm test -w @collab3d/core",
-    "check-boundaries": "node scripts/check-boundaries.mjs"
+    "check-boundaries": "node scripts/check-boundaries.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "madge": "^8.0.0"
