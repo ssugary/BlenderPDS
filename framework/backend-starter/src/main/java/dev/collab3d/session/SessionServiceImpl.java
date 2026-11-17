@@ -103,6 +103,7 @@ public class SessionServiceImpl implements SessionService {
         participant.setLastSeenAt(Instant.now());
         participantRepository.save(participant);
 
+        events.publishEvent(new SessionCreatedEvent(saved.getId(), hostId));
         return saved;
     }
 
@@ -136,13 +137,19 @@ public class SessionServiceImpl implements SessionService {
 
         SessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
                 .orElseGet(SessionParticipant::new);
+        boolean isNewParticipant = participant.getId() == null;
         participant.setSession(session);
         participant.setUser(user);
-        if (participant.getId() == null) {
+        if (isNewParticipant) {
             participant.setActive(false);
         }
         participant.setLastSeenAt(Instant.now());
         participantRepository.save(participant);
+
+        // Joining again is idempotent and is NOT a new participation.
+        if (isNewParticipant) {
+            events.publishEvent(new ParticipantJoinedEvent(sessionId, userId));
+        }
 
         return session;
     }
@@ -157,6 +164,7 @@ public class SessionServiceImpl implements SessionService {
 
         SessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
                 .orElseGet(SessionParticipant::new);
+        boolean isNewParticipant = participant.getId() == null;
         participant.setSession(session);
         participant.setUser(user);
         participant.setActive(true);
@@ -166,6 +174,11 @@ public class SessionServiceImpl implements SessionService {
         if (session.getStatus() == SessionStatus.WAITING) {
             session.setStatus(SessionStatus.ACTIVE);
             sessionRepository.save(session);
+        }
+
+        // The host's first handshake creates their participation; a reconnect does not.
+        if (isNewParticipant) {
+            events.publishEvent(new ParticipantJoinedEvent(sessionId, userId));
         }
         return saved;
     }
@@ -183,6 +196,7 @@ public class SessionServiceImpl implements SessionService {
         participant.setActive(false);
         participant.setLastSeenAt(Instant.now());
         participantRepository.save(participant);
+        events.publishEvent(new ParticipantLeftEvent(sessionId, userId));
 
         if (participantRepository.countBySessionIdAndActiveTrue(sessionId) == 0) {
             sessionRepository.findById(sessionId)
