@@ -90,6 +90,13 @@ public interface SessionService {
     /** How many participants the session has, connected or not. */
     long countParticipants(Long sessionId);
 
+    /**
+     * How many seats the room has, as decided by the {@code SessionCapacityPolicy} chain
+     * (the strictest policy wins). It is what {@code SessionDto.maxParticipants} reports,
+     * so the REST answer cannot drift from the rule that actually refuses a join.
+     */
+    int maxParticipants(Long sessionId);
+
     /** ACTIVE rooms (host connected) among {@code userId}'s friends. */
     List<Session> getJoinableSessionsFor(Long userId);
 

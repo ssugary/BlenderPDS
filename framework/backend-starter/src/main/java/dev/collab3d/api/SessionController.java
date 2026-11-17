@@ -6,7 +6,6 @@ import dev.collab3d.dto.SessionJoinDto;
 import dev.collab3d.dto.SessionParticipantDto;
 import dev.collab3d.model.Session;
 import dev.collab3d.session.SessionService;
-import dev.collab3d.session.SessionServiceImpl;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -128,6 +127,6 @@ public class SessionController {
 
     private SessionDto toDto(Session session) {
         return SessionDto.from(session, sessionService.countParticipants(session.getId()),
-                SessionServiceImpl.MAX_PARTICIPANTS);
+                sessionService.maxParticipants(session.getId()));
     }
 }

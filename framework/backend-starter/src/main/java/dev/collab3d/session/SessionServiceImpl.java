@@ -249,6 +249,21 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional(readOnly = true)
+    public int maxParticipants(Long sessionId) {
+        return effectiveCapacity(contextFactory.sessionContext(sessionId));
+    }
+
+    /** The strictest capacity policy that serves the app type (fallback: the old constant). */
+    private int effectiveCapacity(SessionContext ctx) {
+        return capacityPolicies.stream()
+                .filter(policy -> policy.supports(ctx.appType()))
+                .mapToInt(policy -> policy.maxParticipants(ctx))
+                .min()
+                .orElse(MAX_PARTICIPANTS);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Session> getJoinableSessionsFor(Long userId) {
         User user = findUserOrThrow(userId);
         List<Long> friendIds = user.getFriendList().stream().map(User::getId).toList();
@@ -387,11 +402,7 @@ public class SessionServiceImpl implements SessionService {
         }
 
         if (checkCapacity) {
-            int max = capacityPolicies.stream()
-                    .filter(policy -> policy.supports(ctx.appType()))
-                    .mapToInt(policy -> policy.maxParticipants(ctx))
-                    .min()
-                    .orElse(MAX_PARTICIPANTS);
+            int max = effectiveCapacity(ctx);
             // Excludes the user themselves: somebody reconnecting does not take two seats.
             long others = participantRepository.countBySessionIdAndActiveTrueAndUserIdNot(session.getId(), userId);
             if (others >= max) {
