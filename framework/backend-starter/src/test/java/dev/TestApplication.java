@@ -2,6 +2,7 @@ package dev;
 
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Import;
 
 /**
  * Boot configuration used only by the starter's tests.
@@ -15,9 +16,11 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
  *
  * <p>It sits in the {@code dev} package — above {@code dev.collab3d} — so the scan the
  * auto-configuration performs does not see it; {@code @SpringBootTest} finds it by
- * walking up from the test packages.
+ * walking up from the test packages. Applications register their operation kinds as
+ * beans; the tests get the editor's four from {@link TestKindsConfiguration}.
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration
+@Import(TestKindsConfiguration.class)
 public class TestApplication {
 }

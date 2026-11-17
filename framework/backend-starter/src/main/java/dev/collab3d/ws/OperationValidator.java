@@ -1,6 +1,10 @@
 package dev.collab3d.ws;
 
+import dev.collab3d.autoconfigure.Collab3dProperties;
 import dev.collab3d.session.SessionOperationInput;
+import dev.collab3d.spi.InvalidOperationException;
+import dev.collab3d.spi.OperationFields;
+import dev.collab3d.spi.OperationKindValidator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -13,10 +17,12 @@ import tools.jackson.databind.ObjectMapper;
  * The sieve for everything that arrives over the network before it becomes a row in
  * the database.
  *
- * <p>It is the Java mirror of {@code frontend/src/collab/validate.ts} — the source of
- * truth for operation types is the client, and this file has to follow whenever it
- * grows. The rule is the same as the comments there say: nothing that comes from the
- * socket is trustworthy, so shape and size are checked before any persistence.
+ * <p>It validates the <em>envelope</em> only ({@code id}, {@code author}, {@code deps},
+ * {@code kind}); the fields of each kind belong to the application and are checked by
+ * the {@link OperationKindValidator} registered for it in {@link OperationKindRegistry}.
+ * A kind nobody registered is refused — the framework no longer knows a single domain
+ * kind. This is the Java mirror of the envelope part of
+ * {@code apps/design-editor/web/src/collab/validate.ts}.
  *
  * <p>What does not pass is DROPPED (it does not take the connection down): a
  * participant with a newer client version must not be able to break everyone else's
@@ -29,16 +35,9 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class OperationValidator {
 
-    /** Same cap as validate.ts: object/site ids and geometry names. */
-    public static final int MAX_ID_LENGTH = 100;
-
-    /** Maximum batch per message, matching the client's SyncEngine MAX_OPS_PER_MESSAGE. */
-    public static final int MAX_OPS_PER_MESSAGE = 1_000;
-
-    private static final int MAX_COLOR = 0xFF_FFFF;
-    private static final int MATRIX_SIZE = 16;
-
     private final ObjectMapper objectMapper;
+    private final OperationKindRegistry kinds;
+    private final Collab3dProperties properties;
 
     /** Only the valid operations of the batch; an empty batch means "nothing usable". */
     public List<SessionOperationInput> validateBatch(JsonNode opsNode) {
@@ -46,9 +45,10 @@ public class OperationValidator {
             return List.of();
         }
 
+        int maxOps = properties.sync().maxOpsPerMessage();
         List<SessionOperationInput> valid = new ArrayList<>();
         for (JsonNode node : opsNode) {
-            if (valid.size() >= MAX_OPS_PER_MESSAGE) {
+            if (valid.size() >= maxOps) {
                 break;
             }
             validate(node).ifPresent(valid::add);
@@ -56,7 +56,7 @@ public class OperationValidator {
         return valid;
     }
 
-    /** checks the json format */
+    /** checks the envelope, then hands the payload to the kind's validator */
     public Optional<SessionOperationInput> validate(JsonNode node) {
         if (node == null || !node.isObject()) {
             return Optional.empty();
@@ -72,14 +72,14 @@ public class OperationValidator {
             return Optional.empty();
         }
 
-        String siteId = shortString(id.get("siteId"));
+        String siteId = OperationFields.shortString(id.get("siteId"));
         if (siteId == null) {
             return Optional.empty();
         }
 
         // The author must be the very replica that signed the operation.
         JsonNode author = node.get("author");
-        if (author == null || !author.isTextual() || !author.asText().equals(siteId)) {
+        if (author == null || !author.isTextual() || !author.asString().equals(siteId)) {
             return Optional.empty();
         }
 
@@ -93,8 +93,16 @@ public class OperationValidator {
         if (kindNode == null || !kindNode.isTextual()) {
             return Optional.empty();
         }
-        String kind = kindNode.asText();
-        if (!hasValidPayload(kind, node)) {
+        String kind = kindNode.asString();
+
+        // No validator, no entry: an unknown kind is refused, never trusted.
+        OperationKindValidator validator = kinds.find(kind).orElse(null);
+        if (validator == null) {
+            return Optional.empty();
+        }
+        try {
+            validator.validate(node);
+        } catch (InvalidOperationException ex) {
             return Optional.empty();
         }
 
@@ -105,45 +113,5 @@ public class OperationValidator {
         } catch (RuntimeException ex) {
             return Optional.empty();
         }
-    }
-
-    /** The same types the client's DocumentState understands today. */
-    private boolean hasValidPayload(String kind, JsonNode node) {
-        return switch (kind) {
-            case "add_object" -> shortString(node.get("objectId")) != null
-                    && shortString(node.get("geometry")) != null
-                    && isMatrix(node.get("transform"))
-                    && isColor(node.get("color"));
-            case "remove_object" -> shortString(node.get("objectId")) != null;
-            case "set_transform" -> shortString(node.get("objectId")) != null
-                    && isMatrix(node.get("matrix"));
-            case "change_color" -> shortString(node.get("objectId")) != null
-                    && isColor(node.get("color"));
-            default -> false;
-        };
-    }
-
-    private String shortString(JsonNode node) {
-        if (node == null || !node.isTextual()) {
-            return null;
-        }
-        String value = node.asText();
-        return value.isEmpty() || value.length() > MAX_ID_LENGTH ? null : value;
-    }
-
-    private boolean isMatrix(JsonNode node) {
-        if (node == null || !node.isArray() || node.size() != MATRIX_SIZE) {
-            return false;
-        }
-        for (JsonNode value : node) {
-            if (!value.isNumber() || !Double.isFinite(value.asDouble())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean isColor(JsonNode node) {
-        return node != null && node.isIntegralNumber() && node.asLong() >= 0 && node.asLong() <= MAX_COLOR;
     }
 }

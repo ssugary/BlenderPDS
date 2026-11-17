@@ -10,7 +10,7 @@ package dev.collab3d.session;
  *
  * @param siteId  the replica that produced the operation (the client's Lamport clock siteId)
  * @param lamport the operation's Lamport counter — together with siteId it deduplicates redeliveries
- * @param kind    the operation type (add_object, set_transform, change_color, remove_object)
+ * @param kind    the operation type, a kind the application registered a validator for
  * @param payload the raw JSON that goes back to the client exactly as it arrived
  */
 public record SessionOperationInput(String siteId, long lamport, String kind, String payload) {

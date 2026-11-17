@@ -78,7 +78,7 @@ public class SessionOperation {
     @JoinColumn(name = "author_id")
     private User author;
 
-    /** Operation type (add_object, set_transform...), for diagnostics/indexing only. */
+    /** Operation type (a kind registered by the application), for diagnostics/indexing only. */
     @Column(name = "kind", nullable = false, length = 32)
     private String kind;
 

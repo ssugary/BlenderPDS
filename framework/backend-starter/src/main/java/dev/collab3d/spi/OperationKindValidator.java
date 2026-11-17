@@ -3,7 +3,8 @@ package dev.collab3d.spi;
 import tools.jackson.databind.JsonNode;
 
 /**
- * HS3: the payload rules of one operation kind ({@code add_object}, {@code place_piece}).
+ * HS3: the payload rules of one operation kind (the application's own, such as a
+ * primitive creation or a board move).
  *
  * <p>It lives in the application, not in the framework: the starter knows no kind
  * literal, so an operation kind that nobody registered is rejected with
