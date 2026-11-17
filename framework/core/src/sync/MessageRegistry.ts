@@ -18,6 +18,8 @@ export interface SyncPolicy
 {
     chunkSize: number;
     maxOpsPerMessage: number;
+    /** Text-frame budget, well below the ~8 KB where the socket is closed with 1009. */
+    maxFrameBytes: number;
     /** Rejects a malformed operation before it reaches the document. Injected by the app. */
     validateOperation(op: unknown): op is BaseOperation;
 }
@@ -25,6 +27,7 @@ export interface SyncPolicy
 export const DEFAULT_SYNC_POLICY: SyncPolicy = {
     chunkSize: 200,
     maxOpsPerMessage: 1000,
+    maxFrameBytes: 7000,
     validateOperation: (op): op is BaseOperation =>
         typeof op === 'object' && op !== null && typeof (op as BaseOperation).kind === 'string'
 };

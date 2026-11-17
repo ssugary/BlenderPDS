@@ -9,6 +9,7 @@ import {
     SyncPolicy,
     SyncReplica
 } from './MessageRegistry';
+import { chunkOperations } from './chunking';
 
 function isVersionVector(value: unknown): value is VersionVector
 {
@@ -127,13 +128,16 @@ export class SyncEngine
         };
     }
 
-    /** Peer told us what it has: send what it is missing, in log order, in chunks. */
+    /**
+     * Peer told us what it has: send what it is missing, in log order, cut by count and by
+     * bytes. A room with serialized meshes needs the size cap as much as the count cap.
+     */
     private answerHello(vv: VersionVector): void
     {
         const missing = this.replica.log.since(vv);
 
-        for (let i = 0; i < missing.length; i += this.policy.chunkSize)
-            this.context.send({ type: 'sync_ops', ops: missing.slice(i, i + this.policy.chunkSize) });
+        for (const batch of chunkOperations(missing, this.policy.chunkSize, this.policy.maxFrameBytes))
+            this.context.send({ type: 'sync_ops', ops: batch });
     }
 
     /** Duplicates are dropped inside receive(). Anything that fails validation is ignored. */

@@ -7,6 +7,7 @@ import dev.collab3d.spi.AbstractMessageTypeHandler;
 import dev.collab3d.spi.AppendedOperation;
 import dev.collab3d.spi.Delivery;
 import dev.collab3d.spi.WsMessageContext;
+import dev.collab3d.ws.FrameBatcher;
 import dev.collab3d.ws.ProtocolLimits;
 import dev.collab3d.ws.SessionConnection;
 import dev.collab3d.ws.SessionConnectionRegistry;
@@ -104,8 +105,12 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
                             objectMapper.readTree(stored.getPayload())));
                 }
             }
-            if (!missing.isEmpty()) {
-                connection.sendNow(frames.syncOps(missing).toString());
+            // A page can still be too big for one text frame: cut it by bytes before sending.
+            for (List<AppendedOperation> frame : FrameBatcher.split(missing,
+                    properties.sync().maxOpsPerMessage(),
+                    properties.sync().maxFrameBytes(),
+                    batch -> frames.syncOps(batch).toString())) {
+                connection.sendNow(frames.syncOps(frame).toString());
             }
 
             cursor = page.getLast().getSeq();

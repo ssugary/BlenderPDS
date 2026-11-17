@@ -42,6 +42,7 @@ export type { PresenceEntry, PresenceChannelOptions } from './presence/PresenceC
 
 export { MessageRegistry } from './sync/MessageRegistry';
 export { SyncEngine } from './sync/SyncEngine';
+export { chunkOperations } from './sync/chunking';
 export { DEFAULT_SYNC_POLICY } from './sync/MessageRegistry';
 export type { MessageDefinition, MessageContext, SyncPolicy, SyncReplica } from './sync/MessageRegistry';
 

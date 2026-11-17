@@ -1,9 +1,12 @@
 package dev.collab3d.ws.handler;
 
+import dev.collab3d.autoconfigure.Collab3dProperties;
 import dev.collab3d.spi.AbstractMessageTypeHandler;
+import dev.collab3d.spi.AppendedOperation;
 import dev.collab3d.spi.AppendResult;
 import dev.collab3d.spi.Delivery;
 import dev.collab3d.spi.WsMessageContext;
+import dev.collab3d.ws.FrameBatcher;
 import dev.collab3d.ws.WsFrames;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +27,7 @@ import tools.jackson.databind.JsonNode;
 public class SyncOpsHandler extends AbstractMessageTypeHandler {
 
     private final WsFrames frames;
+    private final Collab3dProperties properties;
 
     @Override
     public String type() {
@@ -55,7 +59,14 @@ public class SyncOpsHandler extends AbstractMessageTypeHandler {
             return;
         }
 
-        ctx.broadcaster().broadcastExcept(ctx.connectionId(), frames.syncOps(result.accepted()));
+        // The batch was already capped by count; the size cap is what keeps a big
+        // operation (a serialized mesh) from closing the peers' sockets with 1009.
+        for (List<AppendedOperation> frame : FrameBatcher.split(result.accepted(),
+                properties.sync().maxOpsPerMessage(),
+                properties.sync().maxFrameBytes(),
+                batch -> frames.syncOps(batch).toString())) {
+            ctx.broadcaster().broadcastExcept(ctx.connectionId(), frames.syncOps(frame));
+        }
         result.accepted().forEach(operation -> ctx.broadcaster().reply(frames.ack(operation)));
     }
 

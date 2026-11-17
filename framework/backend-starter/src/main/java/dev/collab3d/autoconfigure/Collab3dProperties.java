@@ -34,7 +34,9 @@ public record Collab3dProperties(
     public record Sync(
             @DefaultValue("200") int chunkSize,
             @DefaultValue("1000") int maxOpsPerMessage,
-            @DefaultValue("100") int maxVersionEntries) {
+            @DefaultValue("100") int maxVersionEntries,
+            /** Text-frame budget: the container closes the socket (1009) around 8 KB. */
+            @DefaultValue("7000") int maxFrameBytes) {
     }
 
     /** The scene snapshot is a denormalisation, not the source of truth: it is capped. */
