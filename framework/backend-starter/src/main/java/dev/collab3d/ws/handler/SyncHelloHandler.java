@@ -4,12 +4,14 @@ import dev.collab3d.autoconfigure.Collab3dProperties;
 import dev.collab3d.model.SessionOperation;
 import dev.collab3d.session.SessionService;
 import dev.collab3d.spi.AbstractMessageTypeHandler;
+import dev.collab3d.spi.AppendedOperation;
 import dev.collab3d.spi.Delivery;
 import dev.collab3d.spi.WsMessageContext;
 import dev.collab3d.ws.ProtocolLimits;
 import dev.collab3d.ws.SessionConnection;
 import dev.collab3d.ws.SessionConnectionRegistry;
 import dev.collab3d.ws.WsFrames;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Catch-up: the client says what it already has (a version vector) and receives only what
@@ -36,6 +39,7 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
     private final SessionConnectionRegistry registry;
     private final WsFrames frames;
     private final Collab3dProperties properties;
+    private final ObjectMapper objectMapper;
 
     @Override
     public String type() {
@@ -63,7 +67,8 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
         Map<String, Integer> versionVector = readVersionVector(root.get("vv"));
         registry.runLocked(ctx.session().sessionId(), () -> {
             try {
-                List<SessionOperation> missing = sessionService.syncSince(ctx.session().sessionId(), versionVector);
+                List<AppendedOperation> missing = toAppended(
+                        sessionService.syncSince(ctx.session().sessionId(), versionVector));
                 int chunkSize = properties.sync().chunkSize();
                 for (int i = 0; i < missing.size(); i += chunkSize) {
                     connection.sendNow(frames.syncOps(
@@ -77,6 +82,21 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
                 connection.finishCatchUp();
             }
         });
+    }
+
+    /**
+     * Catch-up only needs {@code seq} and the stored JSON; the author is not part of a
+     * {@code sync_ops} frame, so it is not read here (and the lazy association is never
+     * initialised outside the transaction). P1.12 replaces this read with a pageable
+     * query that returns the operations already in this shape.
+     */
+    private List<AppendedOperation> toAppended(List<SessionOperation> stored) {
+        List<AppendedOperation> operations = new ArrayList<>(stored.size());
+        for (SessionOperation operation : stored) {
+            operations.add(new AppendedOperation(operation.getSeq(), null,
+                    objectMapper.readTree(operation.getPayload())));
+        }
+        return operations;
     }
 
     /** Keeps only the entries that make sense; the whole node is dropped when it is too big. */

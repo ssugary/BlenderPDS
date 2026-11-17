@@ -99,7 +99,9 @@ public class SessionSocketHandler extends TextWebSocketHandler {
             }
         } catch (InvalidOperationException ex) {
             sendError(connection, ex.code());
-        } catch (InvalidMessageException | MessageRejectedException ex) {
+        } catch (InvalidMessageException ex) {
+            sendError(connection, ex.code());
+        } catch (MessageRejectedException ex) {
             sendError(connection, ex.code());
         } catch (RuntimeException ex) {
             // No malformed message may take the whole room down.
