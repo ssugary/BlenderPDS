@@ -491,7 +491,31 @@ var B = class {
 		let n = this.listeners.get(e);
 		n && n.forEach((e) => e(t));
 	}
-}(), W = class {
+}();
+new class {
+	listeners;
+	constructor() {
+		this.listeners = /* @__PURE__ */ new Map();
+	}
+	on(e, t) {
+		let n = this.listeners.get(e);
+		if (n) n.push(t);
+		else {
+			let n = [];
+			n.push(t), this.listeners.set(e, n);
+		}
+	}
+	off(e, t) {
+		let n = this.listeners.get(e);
+		n && this.listeners.set(e, n.filter((e) => e !== t));
+	}
+	emit(e, t) {
+		let n = this.listeners.get(e);
+		n && n.forEach((e) => e(t));
+	}
+}();
+// src/camera/Navigation.ts
+var W = class {
 	enable() {}
 	disable() {}
 	update(e) {}

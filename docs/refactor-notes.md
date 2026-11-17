@@ -450,3 +450,94 @@ auto-configuração no Boot 4) + `org.flywaydb:flyway-database-postgresql` em `r
 - `appendSystem` (operações emitidas pelo servidor) segue sem implementação (Fase 4).
 - O teto de ~8 KB por frame de texto continua de pé: um `chunk` de 200 operações não cabe nele. O
   catch-up pagina, mas o tamanho do frame não foi reduzido nem configurável (débito da v0.1 §2.5).
+
+---
+
+# Fase 2 — Core frontend e framework compartilhado (P2.1–P2.11)
+
+## 12. Estado encontrado nesta sessão (ponto de partida)
+
+- HEAD `a2069b1` (P1.13), árvore limpa, `./mvnw test` com 156 testes verdes e o frontend com 29
+  testes Vitest em 4 arquivos.
+- O frontend era um único pacote (`apps/design-editor/web`): CRDT com `switch` por kind, protocolo
+  com `switch` por tipo de mensagem, presença acoplada ao protocolo e `Engine.ts` montando renderer,
+  câmera, sync e presença à mão.
+- **P1.13** (feita antes de P2.1, como pedido): `SessionService.maxParticipants(Long)` é o mínimo
+  entre as políticas de capacidade que suportam o app type (fallback `MAX_PARTICIPANTS`) e
+  `SessionController.toDto` passou a usá-lo. Shape do DTO inalterado. Teste
+  `SessionCapacityDtoTest` com `dev.support.CapacityTwoConfiguration` (capacidade 2).
+
+## 13. Divergências entre plano e código real (Fase 2)
+
+1. **P2.5–P2.9 em um commit só.** As cinco tarefas compartilham a raiz de composição
+   (`createCollabApp`): mover o renderer, trocar a presença e remover o `switch` do protocolo não
+   compilam separadamente, porque `Engine.ts` era o único ponto que ligava todas as peças. A
+   separação teria exigido reconstruir estados intermediários que nunca existiram no repositório.
+   O commit `1c7f680` lista as tarefas e o relatório da fase detalha o aceite de cada uma.
+2. **P2.10 parcial: importação `.obj` colaborativa continua local.** O `SceneFormatRegistry` e o
+   `ObjImporter`/`ObjExporter` existem, mas transformar os meshes em `add_object` esbarraria em
+   três limites congelados: (a) `geometry` é `shortString` (≤100 caracteres) no validador do
+   servidor e no `validate.ts`; (b) um OBJ real serializa para muito mais que os ~8 KB de um frame;
+   (c) `CreateObjectTool.buildPrimitive` só conhece primitivas — não há caminho de geometria
+   serializada no projetor. Mudar qualquer um dos três é contrato da Fase 3, então a importação
+   segue local e o `.obj` não converge entre réplicas hoje.
+3. **Sem `eslint-plugin-boundaries` no repositório.** O gate de fronteira foi implementado com
+   `madge` em `scripts/check-boundaries.mjs` (a alternativa que o próprio plano admite), verificando
+   que `framework/` não importa `apps/` e que não há ciclos.
+4. **TTL de presença desligado no editor.** `PresenceChannel` suporta expiração, mas o editor não
+   tem heartbeat: ligar TTL faria um peer parado desaparecer. O `onClose` continua sendo o que
+   limpa a presença, como antes.
+5. **Testes do CRDT mudaram de casa, não de comportamento.** `LamportClock`, `OpLog` e
+   `LWWRegister` foram para `framework/core` com os seus testes. A suíte de convergência
+   (`DocumentState.test.ts`) ficou no app e foi reescrita sobre os kinds do editor: os 13 casos e
+   as asserções de caracterização são os mesmos (incluindo o revive que não regrava cor e o LWW
+   que reporta mudança por carimbo), apenas lendo os campos genéricos do registro.
+6. **`OpLog` ficou com genérico `any` por default.** O log é do framework e não conhece a união de
+   operações do app; o default permissivo evita obrigar cada aplicação a parametrizar o tipo em
+   todo uso. A validação de forma continua no `SyncPolicy.validateOperation` do app.
+
+## 14. Decisões tomadas (Fase 2)
+
+1. **Core sem domínio.** `framework/core` não tem literais de kind, de objeto ou de cena. O que era
+   `ObjectRecord` virou `DocumentRecord` genérico: `meta` (valores imutáveis), `fields`
+   (`LWWRegister` por nome), `addStamp`/`removeStamp` (tombstone) e `deleted` (cache).
+2. **Merge como estratégia.** `LwwStrategy` e `TombstoneSetStrategy` implementam a comutatividade;
+   `DocumentState` é um fold que delega ao `OperationKindRegistry`. Nenhum `switch` por kind sobrou
+   no core (`grep -R "add_object" framework/core` vazio, verificado no gate).
+3. **Kinds e validação pertencem ao app.** Os quatro kinds vivem em
+   `apps/design-editor/web/src/kinds/`, cada um com o seu `validate` e o seu `apply`. O editor
+   registra-os com `editorKinds()`; o registry é criado por documento e kind duplicado lança.
+4. **Contratos compartilhados.** `contracts/design-editor/<kind>.cases.json` é lido pelo
+   `EditorKindContractsTest` (JUnit) e pelo `src/kinds/contracts.test.ts` (Vitest). O limite de 100
+   caracteres dos campos curtos foi replicado no cliente para o arquivo significar o mesmo dos dois
+   lados.
+5. **Presença genérica.** `PresenceChannel<T>` cuida de wire, throttle, TTL, conflito por `siteId`
+   e limpeza no close; `PresenceService` é o adaptador do editor (claim/lockedBy/onLockLost).
+6. **Protocolo por registro.** `MessageRegistry` + `MessageDefinition`: `sync_hello` e `sync_ops`
+   são definições como qualquer outra, e chat/snapshot entram pelo mesmo caminho. `SyncPolicy`
+   carrega `chunkSize`, `maxOpsPerMessage` e o `validateOperation` do app.
+7. **Raiz de composição.** `createCollabApp` constrói `SceneHost` (cena, renderer, câmera, loop) e
+   o `SyncEngine`, e chama `mount` para o app montar ferramentas/controles/projeção. O `Engine.ts`
+   virou `createEditorApp.ts` com essa função; `Viewport3D` só chama `createEditorApp`.
+8. **Alias de fonte, não `dist`.** O app resolve `@collab3d/core` e `@collab3d/react-kit` para o
+   `src` via `tsconfig.paths` + alias do Vite/Vitest; os pacotes também têm build próprio (`vite
+   build` + `tsc` para `.d.ts`), que é o que o gate de P2.1 valida.
+9. **Teto de ~8 KB por frame — decisão registrada para a Fase 3.** O limite do Tomcat (1009) e o
+   `chunk-size` de 200 operações não cabem; a **primeira tarefa da Fase 3** é limitar o chunk por
+   bytes (não apenas por contagem de ops). Não foi tratado nesta fase.
+10. **`OperationAppender.appendSystem` é pré-requisito da Fase 4.** Continua
+    `UnsupportedOperationException`; o `game_over` do turn-game é a primeira operação autoritativa
+    do servidor e depende dele. Registrado aqui para não se perder entre fases.
+11. **Dívida `session_dto_fixed_capacity` resolvida** em P1.13 (capacidade do DTO vem da política);
+    marcada como resolvida no delta da v0.3.
+
+## 15. Observações (fora do escopo da Fase 2 — não corrigidas)
+
+- O timeline reconstrói o estado com `replayDocumentState` a cada passo; com logs grandes isso é
+  O(n) por frame do scrubber. Otimização não é do escopo.
+- `ObjImporter` usa a geometria serializada (`BufferGeometry.toJSON`) só para a cena local; o
+  projetor ainda não sabe recriá-la a partir de uma operação (ver §13.2).
+- O bundle de `react-kit` inclui o `react-router-dom` (não externalizado por subcaminho); o app
+  deduplica React, mas o tamanho do artefato não foi otimizado.
+- O gate visual do editor (criar/mover/colorir/excluir numa tela real, duas abas) não foi executado:
+  não há Playwright no projeto e o teste de integração cobre o protocolo, não o WebGL.
