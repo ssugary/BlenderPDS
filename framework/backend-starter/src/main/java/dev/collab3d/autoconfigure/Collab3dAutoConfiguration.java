@@ -1,8 +1,19 @@
 package dev.collab3d.autoconfigure;
 
+import dev.collab3d.repository.UserRepository;
+import dev.collab3d.spi.OperationAdmissionPolicy;
+import dev.collab3d.spi.SessionCapacityPolicy;
+import dev.collab3d.spi.SessionJoinPolicy;
+import dev.collab3d.spi.SnapshotPolicy;
+import dev.collab3d.spi.defaults.AdmitAllPolicy;
+import dev.collab3d.spi.defaults.FixedCapacityPolicy;
+import dev.collab3d.spi.defaults.HostFriendJoinPolicy;
+import dev.collab3d.spi.defaults.HostOnlySnapshotPolicy;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
@@ -33,4 +44,34 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan("dev.collab3d.model")
 @EnableJpaRepositories("dev.collab3d.repository")
 public class Collab3dAutoConfiguration {
+
+    /*
+     * The default policies. `@ConditionalOnMissingBean` is what makes an application able
+     * to REPLACE a rule (declare a bean of the same type) instead of always adding to it;
+     * the chains (List<..Policy>) do add up, one element per bean.
+     */
+
+    @Bean
+    @ConditionalOnMissingBean
+    OperationAdmissionPolicy operationAdmissionPolicy() {
+        return new AdmitAllPolicy();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    SnapshotPolicy snapshotPolicy(Collab3dProperties properties) {
+        return new HostOnlySnapshotPolicy(properties.snapshot().maxBytes());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    SessionCapacityPolicy sessionCapacityPolicy(Collab3dProperties properties) {
+        return new FixedCapacityPolicy(properties.session().maxParticipants());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SessionJoinPolicy.class)
+    SessionJoinPolicy sessionJoinPolicy(UserRepository userRepository) {
+        return new HostFriendJoinPolicy(userRepository);
+    }
 }
