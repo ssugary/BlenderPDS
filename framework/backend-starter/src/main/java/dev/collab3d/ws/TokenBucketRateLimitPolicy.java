@@ -38,6 +38,12 @@ public class TokenBucketRateLimitPolicy implements RateLimitPolicy {
 
     @Override
     public boolean allow(String connectionId, String messageType) {
+        // Never drop an edit: CRDT operations are outside the budget (they are still bounded
+        // by the frame size, and a client cannot create them faster than it sends frames).
+        if (properties.rateLimit().exemptTypes().contains(messageType)) {
+            return true;
+        }
+
         int rate = properties.rateLimit().perType()
                 .getOrDefault(messageType, properties.rateLimit().defaultPerSecond());
         if (rate <= 0) {

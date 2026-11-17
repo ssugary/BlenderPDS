@@ -29,6 +29,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 class RateLimitTest {
 
     private static final String PASSWORD = "senha12345";
+    private static final String MATRIX = "[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]";
 
     @LocalServerPort
     private int port;
@@ -80,6 +81,30 @@ class RateLimitTest {
         assertThat(socket.isOpen()).isTrue();
     }
 
+    @Test
+    void aFastDragSendsMoreOpsThanTheBudgetAndNoneIsLost() throws Exception {
+        host = userService.register("drag-host", "drag-host@example.com", PASSWORD).getId();
+        userService.confirmEmail(host);
+        Session session = sessionService.createSession(host);
+
+        Client handler = connect(session.getId());
+        socket = handler.socket;
+
+        // 120 frames in a row, well above the 1/s budget of this test: sync_ops is exempt,
+        // so every edit must receive its ack and stay in the log.
+        int frames = 120;
+        for (int i = 1; i <= frames; i++) {
+            handler.send(new TextMessage("{\"type\":\"sync_ops\",\"ops\":["
+                    + "{\"id\":{\"lamport\":" + i + ",\"siteId\":\"site-a\"},"
+                    + "\"author\":\"site-a\",\"deps\":[],\"kind\":\"add_object\","
+                    + "\"objectId\":\"drag-" + i + "\",\"geometry\":\"cube\","
+                    + "\"transform\":" + MATRIX + ",\"color\":1}]}"));
+        }
+
+        assertThat(handler.count("sync_ack", frames)).isEqualTo(frames);
+        assertThat(sessionService.getById(session.getId())).isPresent();
+    }
+
     private Client connect(long sessionId) throws Exception {
         Client handler = new Client();
         WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
@@ -107,6 +132,21 @@ class RateLimitTest {
 
         void send(TextMessage message) throws Exception {
             socket.sendMessage(message);
+        }
+
+        int count(String type, int expected) throws InterruptedException {
+            int seen = 0;
+            long deadline = System.currentTimeMillis() + 20_000;
+            while (seen < expected && System.currentTimeMillis() < deadline) {
+                String raw = received.poll(2, TimeUnit.SECONDS);
+                if (raw == null) {
+                    break;
+                }
+                if (raw.contains("\"type\":\"" + type + "\"")) {
+                    seen++;
+                }
+            }
+            return seen;
         }
 
         String next(String type) throws InterruptedException {

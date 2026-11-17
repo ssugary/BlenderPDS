@@ -50,7 +50,14 @@ public record Collab3dProperties(
     public record Ws(@DefaultValue List<String> allowedOrigins, @DefaultValue("500") int maxChatLength) {
     }
 
-    /** Per-connection message budget (the limiter itself arrives in Fase 3). */
-    public record RateLimit(@DefaultValue("50") int defaultPerSecond, @DefaultValue Map<String, Integer> perType) {
+    /**
+     * Per-connection message budget. {@code exemptTypes} never consume a token: dropping a
+     * CRDT operation would lose an edit, so {@code sync_ops} (and the hello that opens the
+     * catch-up) are outside the budget; frames are still capped by bytes.
+     */
+    public record RateLimit(
+            @DefaultValue("50") int defaultPerSecond,
+            @DefaultValue Map<String, Integer> perType,
+            @DefaultValue({"sync_ops", "sync_hello"}) List<String> exemptTypes) {
     }
 }
