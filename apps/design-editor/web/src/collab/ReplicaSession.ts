@@ -64,6 +64,12 @@ export class ReplicaSession
         this.notifyChanges(restored);
     }
 
+    /** Materialisation sent to the server by the host (P3.4). Stamps and tombstones included. */
+    public toSnapshot(): DocumentSnapshot
+    {
+        return this.state.toSnapshot();
+    }
+
     /** Remote edit. Duplicates are dropped, and it never fires onLocalOp (no echo back to the sender). */
     public receive(op: Operation): void
     {

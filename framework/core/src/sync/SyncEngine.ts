@@ -10,6 +10,7 @@ import {
     SyncReplica
 } from './MessageRegistry';
 import { chunkOperations } from './chunking';
+import { checksumOfState } from './snapshot';
 
 function isVersionVector(value: unknown): value is VersionVector
 {
@@ -32,6 +33,9 @@ export class SyncEngine
 {
     private readonly registry: MessageRegistry;
     private readonly policy: SyncPolicy;
+    /** Highest server `seq` already folded into the replica (snapshots declare it). */
+    private lastSeq = 0;
+    private snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
     public constructor(
         private readonly replica: SyncReplica,
@@ -56,6 +60,7 @@ export class SyncEngine
         this.replica.onLocalOp(this.onLocalOp);
 
         this.sendHello();
+        this.startSnapshots();
     }
 
     /**
@@ -67,6 +72,11 @@ export class SyncEngine
     {
         this.transport.offMessage(this.onMessage);
         this.replica.offLocalOp(this.onLocalOp);
+        if (this.snapshotTimer !== null)
+        {
+            clearInterval(this.snapshotTimer);
+            this.snapshotTimer = null;
+        }
     }
 
     public get messages(): readonly string[]
@@ -79,9 +89,12 @@ export class SyncEngine
         if (typeof data !== 'object' || data === null)
             return;
 
-        const message = data as { type?: unknown };
+        const message = data as { type?: unknown; seq?: unknown };
         if (typeof message.type !== 'string')
             return;
+
+        if (typeof message.seq === 'number')
+            this.lastSeq = Math.max(this.lastSeq, message.seq);
 
         const definition = this.registry.get(message.type);
         if (!definition || !definition.validate(data))
@@ -164,11 +177,50 @@ export class SyncEngine
             this.context.send({ type: 'sync_ops', ops: batch });
     }
 
+    /**
+     * Periodic materialisation (P3.4): the host publishes what it already folded so a new
+     * replica can start from `sync_snapshot` instead of the whole log. `baseSeq` is the last
+     * server sequence seen, never one the state does not contain.
+     */
+    private startSnapshots(): void
+    {
+        if (this.policy.snapshotIntervalMs <= 0 || !this.replica.toSnapshot)
+            return;
+
+        this.snapshotTimer = setInterval(this.sendSnapshot, this.policy.snapshotIntervalMs);
+        // A Vitest/Node process should not stay alive because of this timer.
+        (this.snapshotTimer as unknown as { unref?: () => void }).unref?.();
+    }
+
+    private readonly sendSnapshot = (): void =>
+    {
+        const state = this.replica.toSnapshot?.();
+        if (state === undefined)
+            return;
+
+        void checksumOfState(state).then((checksum) =>
+        {
+            this.context.send({
+                type: 'scene_snapshot',
+                snapshot: {
+                    schemaVersion: 1,
+                    baseSeq: this.lastSeq,
+                    versionVector: this.replica.log.versionVector(),
+                    state,
+                    checksum
+                }
+            });
+        }).catch(() => { /* no crypto.subtle: the next tick tries again */ });
+    };
+
     /** Duplicates are dropped inside receive(). Anything that fails validation is ignored. */
     private receiveOps(ops: unknown[]): void
     {
         for (const op of ops.slice(0, this.policy.maxOpsPerMessage))
         {
+            if (typeof (op as { seq?: unknown }).seq === 'number')
+                this.lastSeq = Math.max(this.lastSeq, (op as { seq: number }).seq);
+
             if (this.policy.validateOperation(op))
                 this.replica.receive(op);
         }

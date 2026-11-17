@@ -145,6 +145,58 @@ class SnapshotRehydrationTest {
                 .hasMessageContaining("atrás");
     }
 
+    @Test
+    void aHostSnapshotSentOverTheWireBecomesTheNextClientStartingPoint() throws Exception {
+        host = userService.register("snapshot-live", "snapshot-live@example.com", PASSWORD).getId();
+        userService.confirmEmail(host);
+        Session session = sessionService.createSession(host);
+
+        Client hostClient = connect(session.getId(), host);
+        hostClient.send(new TextMessage("{\"type\":\"sync_hello\",\"vv\":{}}"));
+        hostClient.send(new TextMessage("{\"type\":\"sync_ops\",\"ops\":["
+                + operation(1, "live-1") + "]}"));
+        assertThat(hostClient.next("sync_ack")).contains("\"seq\":1");
+
+        String stateJson = "{\"schemaVersion\":1,\"records\":[{\"id\":\"live-1\"}]}";
+        JsonNode state = JSON.readTree(stateJson);
+        String envelope = "{\"schemaVersion\":1,\"appType\":\"design\",\"baseSeq\":1,"
+                + "\"versionVector\":{\"site-a\":1},\"state\":" + stateJson + ","
+                + "\"checksum\":\"" + SnapshotChecksums.ofState(state) + "\"}";
+        hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\",\"snapshot\":" + envelope + "}"));
+
+        // The snapshot is a monitor write: wait until it is stored before the next client.
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (sessionService.getSnapshot(session.getId()).isEmpty()
+                && System.currentTimeMillis() < deadline) {
+            Thread.sleep(50);
+        }
+        assertThat(sessionService.getSnapshot(session.getId())).isPresent();
+
+        hostClient.send(new TextMessage("{\"type\":\"sync_ops\",\"ops\":["
+                + operation(2, "live-2") + "]}"));
+        assertThat(hostClient.next("sync_ack")).contains("\"seq\":2");
+
+        Client fresh = connect(session.getId(), host);
+        fresh.send(new TextMessage("{\"type\":\"sync_hello\",\"vv\":{}}"));
+
+        String snapshotFrame = fresh.next("sync_snapshot");
+        assertThat(snapshotFrame).isNotNull();
+        JsonNode snapshot = JSON.readTree(snapshotFrame).get("snapshot");
+        assertThat(snapshot.get("baseSeq").asLong()).isEqualTo(1);
+        assertThat(snapshot.get("checksum").asString()).isEqualTo(SnapshotChecksums.ofState(state));
+
+        String catchUp = fresh.next("sync_ops");
+        assertThat(catchUp).isNotNull().contains("\"seq\":2").doesNotContain("\"seq\":1,");
+        assertThat(JSON.readTree(catchUp).get("ops").size()).isEqualTo(1);
+    }
+
+    private static String operation(long lamport, String objectId) {
+        return "{\"id\":{\"lamport\":" + lamport + ",\"siteId\":\"site-a\"},"
+                + "\"author\":\"site-a\",\"deps\":[],\"kind\":\"add_object\","
+                + "\"objectId\":\"" + objectId + "\",\"geometry\":\"cube\","
+                + "\"transform\":" + MATRIX + ",\"color\":1}";
+    }
+
     private void storeOperations(Session session, int count) {
         storeOperations(session, 1, count);
     }

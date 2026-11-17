@@ -64,7 +64,14 @@ export class CollabApp
         // Sync only exists inside a session: an offline editor has nothing to exchange.
         this.syncEngine = config.session
             ? new SyncEngine(config.replica, config.session.transport, {
-                policy: config.syncPolicy,
+                policy: {
+                    ...config.syncPolicy,
+                    // Only the host may write the snapshot (server-side policy); a guest
+                    // sending one would just collect SNAPSHOT_REJECTED.
+                    snapshotIntervalMs: config.session.role === 'host'
+                        ? config.syncPolicy?.snapshotIntervalMs ?? 30_000
+                        : 0
+                },
                 messages: config.messages
             })
             : null;

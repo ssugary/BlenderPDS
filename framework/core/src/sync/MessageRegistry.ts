@@ -13,6 +13,8 @@ export interface SyncReplica
     receive(op: BaseOperation): void;
     /** Optional: a replica that can be rehydrated from a snapshot (P3.3). */
     restoreSnapshot?(snapshot: unknown, versionVector?: VersionVector): void;
+    /** Optional: the document's snapshot, so a host can publish it periodically (P3.4). */
+    toSnapshot?(): unknown;
 }
 
 /** Wire limits, owned by the application so it can tune them without touching the core. */
@@ -24,12 +26,18 @@ export interface SyncPolicy
     maxFrameBytes: number;
     /** Rejects a malformed operation before it reaches the document. Injected by the app. */
     validateOperation(op: unknown): op is BaseOperation;
+    /**
+     * How often a host publishes `scene_snapshot`, in milliseconds (0 disables it). It is 0
+     * by default so a replica without `toSnapshot` or without host rights never sends one.
+     */
+    snapshotIntervalMs: number;
 }
 
 export const DEFAULT_SYNC_POLICY: SyncPolicy = {
     chunkSize: 200,
     maxOpsPerMessage: 1000,
     maxFrameBytes: 7000,
+    snapshotIntervalMs: 0,
     validateOperation: (op): op is BaseOperation =>
         typeof op === 'object' && op !== null && typeof (op as BaseOperation).kind === 'string'
 };
