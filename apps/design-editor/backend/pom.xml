@@ -20,11 +20,29 @@
 			<artifactId>collab3d-spring-boot-starter</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<!-- Starts the Postgres/Mailpit from the repo-root compose.yaml on `spring-boot:run`.
+		     The starter declares it as optional (a library must not force a container runtime on
+		     its consumers), so the application opts in here. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-docker-compose</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
