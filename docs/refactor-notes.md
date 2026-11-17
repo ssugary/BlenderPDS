@@ -364,3 +364,89 @@ auto-configuração no Boot 4) + `org.flywaydb:flyway-database-postgresql` em `r
   do cliente: a conexão nasce em `catchingUp` e `SessionConnection.send` enfileira tudo até
   `finishCatchUp()`. Não é bug (é a proteção contra perder ops durante o catch-up), mas é
   comportamento de protocolo que não estava no manifesto; ficou congelado em P0.2.
+
+---
+
+# Fase 1 — Extração do core backend (P1.1–P1.12)
+
+## 8. Estado encontrado nesta sessão (ponto de partida)
+
+- HEAD `6e23c66` ("refactor (phase1)"), árvore limpa. P1.1 (`d3a9418`), P1.2 (`d5d5e90`),
+  P1.3 (`bc35f9f`) e P1.4 (`87968b7`) já estavam commitadas.
+- **Divergência 1:** o commit de P1.5 (`6e23c66`) tem mensagem fora do padrão (`refactor (phase1)`,
+  sem ID) e **não compilava**:
+  - `ws/SessionSocketHandler.java:103` — `catch (InvalidMessageException | MessageRejectedException ex)`
+    infere `RuntimeException` como tipo comum, e `ex.code()` não existe nele;
+  - `ws/handler/SyncHelloHandler.java:70` — `SessionService.syncSince` devolve `List<SessionOperation>`
+    e `WsFrames.syncOps` recebe `List<AppendedOperation>`.
+  - Corrigido em `8461b7b` (catches separados + conversão para `AppendedOperation`), sem tocar no
+    contrato do frame. `./mvnw test` voltou a 132 testes verdes.
+
+## 9. Divergências entre plano e código real (Fase 1)
+
+1. **P1.5 quebrado e sem ID** — ver §8. O histórico não foi reescrito; o conserto é um commit novo
+   referenciando P1.5.
+2. **`SessionController.toDto` usa `SessionServiceImpl.MAX_PARTICIPANTS` como capacidade do DTO**
+   (`framework/backend-starter/src/main/java/dev/collab3d/api/SessionController.java`). Com uma
+   `SessionCapacityPolicy` diferente da default, o REST continua anunciando 4. Não corrigido (fora
+   do escopo de P1.9; o contrato do DTO não podia mudar agora) — anotado em §11.
+3. **`OperationAppender.appendSystem` continua `UnsupportedOperationException`** — o plano menciona
+   operações emitidas pelo servidor (§11 decisão 4) mas nenhuma tarefa da Fase 1 exige implementá-las;
+   a primeira aplicação autoritativa é a Fase 4.
+4. **"ArchUnit/grep no CI" (P1.6)**: não existe CI no repositório. O gate foi criado como script
+   executável, `scripts/check-no-domain-kinds.sh`, e rodado manualmente (verde).
+5. **Contratos compartilhados front/back (§10, `contracts/<app>/<kind>.cases.json`)** não foram
+   criados: o plano os coloca junto da generalização do frontend (Fase 2). A equivalência atual é
+   garantida pelos testes dos validadores do app contra os mesmos limites de `validate.ts`.
+
+## 10. Decisões tomadas (Fase 1)
+
+1. **P1.6 — onde ficam os predicados de campo:** `dev.collab3d.spi.OperationFields` (público) com
+   `shortString`, `isMatrix`, `isColor` e os limites; os validadores da aplicação não importam
+   classes de `ws`.
+2. **P1.6 — `OperationKindRegistry` no pacote `ws`**, ao lado de `OperationValidator` e
+   `MessageCatalog`: é o mesmo tipo de tabela (chave → handler) e não pode ler repositórios.
+3. **P1.6 — kinds de teste do starter** em `framework/backend-starter/src/test/java/dev/TestKindsConfiguration.java`
+   (pacote `dev`, fora de `dev.collab3d`), importado pelo `TestApplication`. Os kinds reais vivem só
+   em `apps/design-editor/backend/.../kinds`.
+4. **P1.8 — estado reduzido:** `SessionStateStore` no pacote `session` (lê repositório; não pode
+   ficar em `ws`/`api`). O reducer é opcional (`ObjectProvider`), o estado é reconstruído do log na
+   primeira leitura da sala e avançado por operação aceita, na ordem de `seq`; `evict` no fim da
+   sessão.
+5. **P1.9 — visibilidade default:** a query congelada já seleciona apenas salas ACTIVE de amigos do
+   usuário; `AlwaysVisiblePolicy` não esconde nada e serve de base para apps que queiram restringir.
+   A capacidade efetiva é o **mínimo** entre as políticas que suportam o app type.
+6. **P1.10 — `sessions.app_type`:** escrita a partir de `collab3d.app-type` na criação (nunca do
+   request); `SessionCreateDto.appType` é aceito e ignorado, como o plano descreve, e está documentado
+   no DTO. `SessionContextFactory` passou a ler a coluna (com fallback para a configuração).
+7. **P1.11 — eventos:** `SessionLifecycleListener` no SPI, eventos no pacote `session`, entrega por
+   `SessionLifecycleDispatcher` em `@TransactionalEventListener(AFTER_COMMIT)`; falha de um listener é
+   logada e não interrompe os outros nem a requisição já commitada.
+8. **P1.12 — catch-up:** `SessionService.syncSinceSeq` virou `(sessionId, seq, limit)` e é o caminho
+   do `sync_hello`; `syncSince` (version vector) pagina por `seq` e filtra o vv página a página. Uma
+   página = um `chunk` = um frame `sync_ops`, preservando o teto de ~8 KB já conhecido (§2.5).
+9. **Gate da Fase 1 pelo lado do app:** `apps/design-editor/backend/.../BlenderpdsApplicationTests`
+   sobe o contexto real (Postgres do compose) e confere que o registro de kinds tem exatamente os
+   quatro do editor — o starter não parte se exigir um kind de domínio.
+10. **Armadilha registrada (teste do app):** um `src/test/resources/application.properties` no módulo
+    do app **substitui** o `application.properties` de `src/main/resources` no classpath de teste
+    (arquivo homônimo tem precedência). O teste passou a declarar as duas propriedades de docker
+    compose em `@SpringBootTest(properties = ...)`, mantendo as propriedades principais.
+11. **Configurações de teste fora do pacote escaneado:** `dev.support.*` (não `dev.collab3d.*`).
+    Motivo real: `Collab3dAutoConfiguration` faz `@ComponentScan("dev.collab3d")` e o scan roda
+    também sobre o classpath de teste, então uma `@TestConfiguration` aninhada em `dev.collab3d.*`
+    vira bean de **todos** os contextos da suíte. Descoberto quando a política de join customizada
+    derrubou 13 testes de outras classes; a política de admissão da P1.8 já vazava, silenciosamente.
+
+## 11. Observações (fora do escopo da Fase 1 — não corrigidas)
+
+- `SessionController.toDto` anuncia capacidade fixa 4 (ver §9.2). Decidir na Fase 2/4 se o DTO passa
+  a receber a capacidade da política.
+- `getJoinableSessionsFor` constrói um `SessionContext` por sala listada quando há políticas de
+  visibilidade (N+1 leituras). N é o número de salas ACTIVE de amigos; otimização não é do escopo.
+- `Collab3dProperties.rateLimit` existe desde P1.3 mas ainda não é aplicado (Fase 3).
+- `SessionEndedEvent` tem dois ouvintes independentes (`SessionSocketHandler` e
+  `SessionLifecycleDispatcher`); é intencional, mas vale lembrar ao mexer no encerramento.
+- `appendSystem` (operações emitidas pelo servidor) segue sem implementação (Fase 4).
+- O teto de ~8 KB por frame de texto continua de pé: um `chunk` de 200 operações não cabe nele. O
+  catch-up pagina, mas o tamanho do frame não foi reduzido nem configurável (débito da v0.1 §2.5).
