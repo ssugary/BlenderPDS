@@ -1,180 +1,114 @@
-# BlenderPDS
+# BlenderPDS → `collab3d`
 
-Browser-based 3D modeling editor with real-time collaborative editing. The front end is a
-React + three.js SPA; the Spring Boot backend stores users, friends and sessions, sequences
-the operations and relays whatever each participant is still missing.
+Editor 3D colaborativo em navegador (React + three.js) sobre um framework de colaboração
+(`collab3d`) e um backend Spring Boot. É o projeto da disciplina **Projeto Detalhado de
+Software — Grupo 03**.
 
-Course project for **Projeto Detalhado de Software — Grupo 03**.
+O repositório é um monorepo com dois lados:
 
-## Features
-
-**Modeling**
-
-- Primitives: cube, cylinder, torus, sphere and capsule.
-- Transform gizmo: move (`G`), rotate (`R`) and scale (`C`).
-- Mesh edit mode (`Tab`): vertex, edge and face selection; coplanar faces are selected together.
-- Extrude (`E`) and edge split (`P`).
-- Object color through the color picker.
-- `.obj` import and scene export to `.obj`.
-- Undo/redo (`Z`/`Y`) through the command stack.
-
-**Collaboration**
-
-- Hosted session with a shareable code; join by code or from the friends list.
-- Operations replicated as a CRDT (Lamport clock + LWW registers): arrival order does not
-  change the result.
-- Reconnection with version-vector exchange: each side sends only what the other lacks.
-- Presence and selection lock (warns when another player already selected the object).
-- Session chat and an edit timeline with a scrubber.
-- Periodic scene snapshot for inspecting the session; the log remains the source of truth and
-  reopening still replays it.
-
-**Accounts and friends**
-
-- Sign-up with e-mail confirmation and session login (cookie `JSESSIONID`).
-- Friend requests; only the host's friends may join the session.
-
-## Stack
-
-| Layer | Technologies |
-|---|---|
-| Frontend | React 19, TypeScript 7, Vite 8, three.js 0.161, React Router 7 |
-| Backend | Java 21, Spring Boot 4.1.1 (Web MVC, Security, Data JPA, WebSocket, Mail), Maven |
-| Data | PostgreSQL 16 (Docker Compose) |
-| E-mail (dev) | Mailpit — UI at `http://localhost:8025` |
-| Tests | JUnit + Spring Boot Test on the backend |
-
-## Repository layout
-
-```
-PDS/
-├── docs/                    # architecture documents (backend and frontend)
-├── backend/blenderpds/
-│   ├── src/main/java/com/grupo03/blenderpds/
-│   │   ├── config/         # security, WebSocket, auditing
-│   │   ├── controller/     # REST: auth, users, friends, sessions
-│   │   ├── service/        # business rules
-│   │   ├── websocket/      # handshake, connections, validation and operation relay
-│   │   ├── model/          # JPA entities
-│   │   └── repository/     # Spring Data
-│   ├── src/test/java/      # controller, service, model and WebSocket tests
-│   └── compose.yaml        # Postgres 16 + Mailpit
-└── apps/design-editor/web/   # SPA (npm workspace `blenderpds`)
-    ├── src/api/            # REST client (session + CSRF)
-    ├── src/collab/         # CRDT: operations, log, state, sync, presence
-    ├── src/core/           # Engine (composition root), EventBus, controllers
-    ├── src/entity/         # half-edge mesh, modes and navigation
-    ├── src/manager/        # scene, camera, selection, tools, commands, input
-    ├── src/network/        # Transport contract and WebSocketTransport
-    ├── src/tool/           # tools
-    ├── src/command/        # commands with undo
-    └── src/react/          # viewport and UI (lobby, toolbar, chat, timeline)
-```
-
-## Running locally (development)
-
-Prerequisites:
-
-- Node.js `^20.19` or `>=22.12` (the project was developed with Node 22).
-- JDK 21 on the `PATH` (or `JAVA_HOME` pointing at it — `./mvnw` needs one of the two).
-- Docker running (the backend starts Postgres and Mailpit through `compose.yaml`).
-
-**1. Backend**
-
-```bash
-cd backend/blenderpds
-./mvnw spring-boot:run
-```
-
-Spring Boot Docker Compose starts Postgres and Mailpit automatically. The API listens on
-`http://localhost:8080` and the mail UI on `http://localhost:8025`.
-
-**2. Frontend**
-
-```bash
-npm install                  # na raiz: instala todos os workspaces (apps/*/web)
-npm run dev -w blenderpds
-```
-
-Open `http://localhost:5173`. Vite proxies `/api` and `/ws` to the backend, so the browser sees
-a single origin — that is what keeps the session cookie valid during the WebSocket handshake
-as well.
-
-**3. First access**
-
-Create an account on the sign-up screen. Login is only enabled after confirming the e-mail:
-open Mailpit at `http://localhost:8025`, click the confirmation link and come back to the app.
-
-The lobby's **Offline** mode opens the editor without a session; edits stay in that browser only.
-
-## Environment variables
-
-Backend (all optional in development, with the defaults below):
-
-| Variable | Default | Purpose |
+| Lado | Onde | O quê |
 |---|---|---|
-| `MAIL_HOST` / `MAIL_PORT` | `localhost` / `1025` | SMTP server (Mailpit in dev) |
-| `MAIL_USERNAME` / `MAIL_PASSWORD` | empty | SMTP credentials, if any |
-| `MAIL_SMTP_AUTH` / `MAIL_SMTP_STARTTLS` | `false` | SMTP TLS/authentication switches |
-| `MAIL_FROM` | `no-reply@blenderpds.local` | Sender of the e-mails |
-| `APP_BASE_URL` | `http://localhost:8080` | Base of the confirmation link |
-| `WS_ALLOWED_ORIGINS` | `http://localhost:5173`, `http://127.0.0.1:5173`, `http://*:5173` | Origins accepted in the WebSocket handshake |
+| Backend | `framework/backend-starter` + `apps/design-editor/backend` | Framework (`dev.collab3d:collab3d-spring-boot-starter`) e a aplicação do editor |
+| Frontend | `framework/core` + `framework/react-kit` + `apps/design-editor/web` | Framework de colaboração 3D, componentes React e o app do editor |
 
-Frontend:
+## Requisitos
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `BACKEND_URL` | `http://localhost:8080` | Vite proxy target; in production the app calls the same origin |
+- **Docker** rodando (o backend sobe Postgres 16 e Mailpit pelo `compose.yaml` da raiz).
+- **Java 21** (`java -version`; `JAVA_HOME` ou `PATH`).
+- **Node.js 22** (`node -v`; o projeto pede `^20.19` ou `>=22.12`).
 
-## API and protocol
+## Rodando localmente
 
-The REST API covers what happens before and after a session: authentication (`/auth/login`,
-`/auth/logout`, `/auth/csrf`), users (`/users`, e-mail confirmation), friends
-(`/users/{id}/friends` and the requests under `/users/{id}/friend-requests`) and rooms
-(`/sessions`, `/sessions/{id}/join`, `/sessions/{id}/leave`, `/sessions/{id}/end`,
-`/sessions/{id}/participants`, `/sessions/friends/{userId}`).
+### Backend
 
-Mutations require the CSRF token served by `GET /auth/csrf`, echoed in the header the endpoint
-itself advertises. Collaborative operations do **not** go through REST: they travel as JSON
-over `ws://<origin>/ws/sessions/{id}` (in dev Vite forwards `/ws` to the backend), and the
-server only validates the format, orders (`seq`) and stores them — merging is the client's job.
-
-Protocol details, the data model and the join rules are in
-[`docs/backend-architecture.md`](docs/backend-architecture.md).
-
-## Build and tests
-
-Frontend (from the repo root; the SPA is the `blenderpds` workspace):
+O backend é multi-módulo: o app depende do `collab3d-spring-boot-starter`. Há dois caminhos:
 
 ```bash
-npm run build -w blenderpds     # tsc (strict) + vite build
-npm test -w blenderpds          # Vitest: LamportClock, OpLog, LWWRegister, DocumentState
-npm run preview -w blenderpds   # serves the production build
+# Opção A (direto, sem instalar nada no ~/.m2 antes):
+./mvnw -pl apps/design-editor/backend spring-boot:run
+
+# Opção B (instala o framework e depois roda o app):
+./mvnw -q -DskipTests install -pl framework/backend-starter -am
+./mvnw -pl apps/design-editor/backend spring-boot:run
 ```
 
-Backend:
+Na primeira execução, o Spring Boot Docker Compose sobe o Postgres e o Mailpit. A API fica em
+`http://localhost:8080` e a caixa de e-mail de desenvolvimento em `http://localhost:8025`.
+
+### Frontend
 
 ```bash
-cd backend/blenderpds
+npm install                       # na raiz: instala todos os workspaces
+npm run dev -w blenderpds         # http://localhost:5173
+```
+
+O Vite faz proxy de `/api` e `/ws` para `http://localhost:8080` (ou `BACKEND_URL`), então o
+navegador enxerga uma origem só — é isso que mantém o cookie de sessão válido também no upgrade
+do WebSocket.
+
+### Primeiro acesso
+
+Crie a conta na tela de cadastro. O login só libera depois da confirmação de e-mail: abra o
+Mailpit em `http://localhost:8025`, clique no link e volte ao app. O modo **Offline** do lobby
+abre o editor sem sessão (as edições ficam só naquele navegador).
+
+## Estrutura
+
+```text
+.
+├── framework/
+│   ├── backend-starter/     # framework Java: usuários, salas, WS, sequenciador, SPI
+│   ├── core/                # @collab3d/core: CRDT, sync, presença, cena, createCollabApp
+│   └── react-kit/           # @collab3d/react-kit: lobby, social, chat, toast
+├── apps/design-editor/
+│   ├── backend/             # aplicação Spring Boot + os kinds do editor
+│   └── web/                 # app React/three.js (workspace npm `blenderpds`)
+├── contracts/design-editor/ # casos de contrato de kind (JUnit + Vitest)
+├── docs/                    # arquitetura versionada, notas de refatoração, protocolo
+└── compose.yaml             # Postgres + Mailpit
+```
+
+## Build e testes
+
+Frontend (da raiz):
+
+```bash
+npm run build -w @collab3d/core
+npm run build -w @collab3d/react-kit
+npm run build -w blenderpds
+npm test -w @collab3d/core
+npm test -w blenderpds
+npm run check-boundaries          # framework não importa apps (madge)
+```
+
+Backend (da raiz, com Docker ativo):
+
+```bash
 ./mvnw test
 ```
 
-The tests use the Postgres from `compose.yaml` (and Mailpit for the confirmation test), so
-Docker must be running.
+## API e protocolo
 
-## Documentation
+O REST cobre autenticação (`/auth/*`), usuários (`/users`), amizades
+(`/users/{id}/friend-requests`, `/users/{id}/friends`) e salas (`/sessions` e as rotas de
+entrada/saída/participantes). As mutações exigem o token de `GET /auth/csrf`.
 
-- [`docs/backend-architecture.md`](docs/backend-architecture.md) — backend layers, REST surface, WebSocket protocol, data model, security and limits.
-- [`docs/frontend-architecture.md`](docs/frontend-architecture.md) — editor core, commands, the CRDT stack, the collaboration data flow and the UI layers.
-- [`frontend/backlog.md`](frontend/backlog.md) — what remains for the next sprints.
+As operações colaborativas **não** passam pelo REST: vão como JSON pelo WebSocket em
+`/ws/sessions/{id}`. O servidor valida, ordena (`seq`) e guarda; a convergência é do CRDT do
+cliente. Detalhes em [`docs/ws-protocol.md`](docs/ws-protocol.md).
 
-## Known limitations
+## Documentação
 
-- The WebSocket connection registry lives in memory: one backend instance. Horizontal scaling
-  requires a broker.
-- `scene_snapshot` is a denormalisation; reopening a session still replays the log (there is no
-  `fromSnapshot`).
-- Friends appear as "hosting" or offline — there is no "online" presence outside a session.
-- Imported `.obj` models are local: they do not enter the log, do not sync and have no undo.
-- Concurrent extrude/split on the same mesh has no topology merge; the selection lock is advisory.
-- The front end only has unit tests for the CRDT; UI and engine have none.
+- [`docs/architecture/README.md`](docs/architecture/README.md) — histórico versionado de arquitetura
+  (o snapshot vigente é o último marcado como VIGENTE).
+- [`docs/ws-protocol.md`](docs/ws-protocol.md) — protocolo WebSocket, códigos de erro e limites.
+- [`docs/refactor-notes.md`](docs/refactor-notes.md) — decisões, divergências e dívidas por fase.
+- [`docs/new-app-guide.md`](docs/new-app-guide.md) — como criar outra aplicação sobre o framework.
+
+## Limitações conhecidas
+
+- O registro de conexões WebSocket é em memória: uma instância. Escala horizontal exige broker
+  (`SessionBroadcaster` é a SPI, a implementação distribuída está fora do escopo).
+- A presença é efêmera e não tem heartbeat; quem cai é removido pelo fechamento da conexão.
+- A importação `.obj` local continua no app; a versão colaborativa usa `set_mesh` com o limite
+  `design.max-mesh-bytes`.
