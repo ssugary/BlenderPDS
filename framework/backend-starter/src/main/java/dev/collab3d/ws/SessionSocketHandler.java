@@ -12,6 +12,8 @@ import dev.collab3d.spi.InvalidMessageException;
 import dev.collab3d.spi.InvalidOperationException;
 import dev.collab3d.spi.MessageRejectedException;
 import dev.collab3d.spi.MessageTypeHandler;
+import dev.collab3d.spi.RateLimitPolicy;
+import dev.collab3d.spi.SessionBroadcaster;
 import dev.collab3d.spi.SessionContext;
 import dev.collab3d.spi.WsMessageContext;
 import jakarta.persistence.EntityNotFoundException;
@@ -56,6 +58,8 @@ public class SessionSocketHandler extends TextWebSocketHandler {
     private final SessionStateStore stateStore;
     private final WsFrames frames;
     private final ObjectMapper objectMapper;
+    private final RateLimitPolicy rateLimitPolicy;
+    private final SessionBroadcaster broadcaster;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession socket) {
@@ -85,9 +89,17 @@ public class SessionSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        Optional<MessageTypeHandler> handler = catalog.find(root.path("type").asText(""));
+        String type = root.path("type").asText("");
+        Optional<MessageTypeHandler> handler = catalog.find(type);
         if (handler.isEmpty()) {
             sendError(connection, "UNKNOWN_TYPE");
+            return;
+        }
+
+        // P3.4: a loop (a pose stream gone wild) must not take the room down. The frame
+        // is discarded and the connection stays open.
+        if (!rateLimitPolicy.allow(connection.getSocketId(), type)) {
+            sendError(connection, "RATE_LIMITED");
             return;
         }
 
@@ -100,11 +112,11 @@ public class SessionSocketHandler extends TextWebSocketHandler {
                 run.run();
             }
         } catch (InvalidOperationException ex) {
-            sendError(connection, ex.code());
+            sendError(connection, ex.code(), ex.getMessage());
         } catch (InvalidMessageException ex) {
-            sendError(connection, ex.code());
+            sendError(connection, ex.code(), ex.getMessage());
         } catch (MessageRejectedException ex) {
-            sendError(connection, ex.code());
+            sendError(connection, ex.code(), ex.getMessage());
         } catch (RuntimeException ex) {
             // No malformed message may take the whole room down.
             log.warn("Falha ao tratar mensagem da sessão {}: {}", connection.getSessionId(), ex.toString());
@@ -120,6 +132,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         }
 
         registry.remove(connection);
+        rateLimitPolicy.release(connection.getSocketId());
         sessionService.leaveSession(connection.getSessionId(), connection.getUserId());
         broadcastRoster(connection.getSessionId());
     }
@@ -127,7 +140,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
     /** The host ended the session: drop the connections (after the database commit). */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionEnded(SessionEndedEvent event) {
-        registry.closeAll(event.sessionId(), CloseStatus.NORMAL);
+        broadcaster.closeAll(event.sessionId(), CloseStatus.NORMAL);
         // The reduced state of a room that ended is rebuilt from the log if it ever reopens.
         stateStore.evict(event.sessionId());
     }
@@ -147,7 +160,7 @@ public class SessionSocketHandler extends TextWebSocketHandler {
         try {
             status = sessionService.getById(sessionId).map(session -> session.getStatus().name()).orElse(null);
             java.util.List<SessionParticipant> participants = sessionService.getParticipants(sessionId);
-            registry.broadcast(sessionId, frames.roster(sessionId, status, participants).toString(), null);
+            broadcaster.broadcast(sessionId, frames.roster(sessionId, status, participants));
         } catch (EntityNotFoundException ex) {
             // The room is gone: the connections are on their way out, nothing to announce.
         }
@@ -155,6 +168,10 @@ public class SessionSocketHandler extends TextWebSocketHandler {
 
     private void sendError(SessionConnection connection, String code) {
         connection.sendNow(frames.error(code).toString());
+    }
+
+    private void sendError(SessionConnection connection, String code, String detail) {
+        connection.sendNow(frames.error(code, detail).toString());
     }
 
     private SessionConnection newConnection(WebSocketSession socket) {

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,9 +58,24 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @GetMapping
-    public List<UserDto> list() {
-        return userService.getAll().stream().map(UserDto::from).toList();
+    /**
+     * Search by nickname (P3.4). It replaces the full listing: three characters minimum,
+     * at most 20 results per page, and only the public fields — no e-mail, no enumeration
+     * of every account in one request.
+     */
+    @GetMapping("/search")
+    public List<PublicUserDto> search(@RequestParam String nickname,
+                                      @RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "10") int size) {
+        String term = nickname == null ? "" : nickname.trim();
+        if (term.length() < 3) {
+            throw new IllegalArgumentException("nickname precisa de ao menos 3 caracteres");
+        }
+        int cappedSize = Math.min(Math.max(size, 1), 20);
+        return userService.searchByNickname(term, PageRequest.of(Math.max(page, 0), cappedSize))
+                .stream()
+                .map(PublicUserDto::from)
+                .toList();
     }
 
     @GetMapping("/{id}")

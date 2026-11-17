@@ -199,8 +199,12 @@ export async function confirmEmail(id: number): Promise<ApiUser>
  */
 export async function findUserByNickname(nickname: string): Promise<ApiUser | null>
 {
-    const users = await request<ApiUser[]>('/users');
-    const wanted = nickname.trim().toLowerCase();
+    const term = nickname.trim();
+    if (term.length < 3)
+        return null;
+
+    const users = await request<ApiUser[]>(`/users/search?nickname=${encodeURIComponent(term)}`);
+    const wanted = term.toLowerCase();
     return users.find((user) => user.nickname.toLowerCase() === wanted) ?? null;
 }
 

@@ -150,13 +150,24 @@ class UserControllerTest {
     }
 
     @Test
-    void listsRegisteredUsers() throws Exception {
+    void searchesByNicknameWithoutLeakingEmailOrListingEveryone() throws Exception {
         userService.register("elo", "elo@example.com", "senha12345");
 
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/users/search").param("nickname", "elo"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.email == 'elo@example.com')]").exists())
-                .andExpect(jsonPath("$[*].password").doesNotExist());
+                .andExpect(jsonPath("$[0].nickname").value("elo"))
+                .andExpect(jsonPath("$[0].email").doesNotExist())
+                .andExpect(jsonPath("$[0].password").doesNotExist());
+
+        // The full listing is gone: GET /users only accepts POST (registration).
+        mockMvc.perform(get("/users")).andExpect(status().isMethodNotAllowed());
+
+        // Enumeration needs at least three characters and is paginated.
+        mockMvc.perform(get("/users/search").param("nickname", "el"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/users/search").param("nickname", "elo").param("size", "500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -232,7 +243,7 @@ class UserControllerTest {
     @Test
     @WithAnonymousUser
     void anonymousUserCannotReadUsers() throws Exception {
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/users/search").param("nickname", "elo"))
                 .andExpect(status().isUnauthorized());
     }
 }

@@ -541,3 +541,40 @@ auto-configuração no Boot 4) + `org.flywaydb:flyway-database-postgresql` em `r
   deduplica React, mas o tamanho do artefato não foi otimizado.
 - O gate visual do editor (criar/mover/colorir/excluir numa tela real, duas abas) não foi executado:
   não há Playwright no projeto e o teste de integração cobre o protocolo, não o WebGL.
+
+## 16. Fase 3 — segurança e débitos (v0.4)
+
+Decisões que mudaram contrato ou arquitetura:
+
+- **Identidade**: `AppUserDetails` guarda o id no principal; `ActorResolver` lê sempre o
+  `SecurityContext`. Os campos antigos (`hostId`, `userId`, `?userId=`) sobrevivem por
+  uma versão: coincidem → ignorados; divergem → `403` + `WARN`. O `author` de cada
+  operação é normalizado para o `siteId` do remetente e a linha pertence ao ator.
+- **Kinds**: o core continua sem kinds de domínio. `mesh_edit`/`undo` saíram; undo é
+  compensatório nos `Command.undo()`. `set_mesh` é LWW do buffer de geometria, limitado
+  por `design.max-mesh-bytes` (property no backend, constante espelhada no cliente).
+  O contrato compartilhado são os `contracts/design-editor/*.cases.json` executados nos
+  dois lados — mais forte que um JSON Schema textual, que não foi adotado.
+- **Snapshots**: envelope com `baseSeq`, `versionVector` e checksum SHA-256 do estado
+  canônico (chaves ordenadas). `baseSeq` é monótono e ≤ head do log; só o host grava.
+  O log não é podado.
+- **Rate limit**: `RateLimitPolicy` com token bucket por conexão e por tipo (50/s por
+  padrão); acima disso `error{RATE_LIMITED}` e descarte. `SessionBroadcaster` isola o
+  fan-out em memória (single-instance).
+- **Configuração**: `POSTGRES_PASSWORD` é obrigatória no `compose.yaml` e vem do `.env`
+  (`.env.example` versionado). CI em `.github/workflows/ci.yml` cobre backend e frontend.
+
+Dívidas novas registradas nesta fase:
+
+1. **TTL de presença sem heartbeat**: `last_seen_at` só é atualizado em
+   connect/leave/snapshot; um cliente que morre sem fechar o socket (rede caindo) fica
+   `active=true` até alguém reconectar. Fase 4 deve adicionar heartbeat/ping e um TTL
+   de presença.
+2. **`SessionBroadcaster` em memória**: uma segunda instância do backend não vê as
+   conexões da primeira; um broker (Redis) fica fora do escopo desta fase.
+3. **Sem envio periódico de snapshot pelo cliente**: o servidor aceita e usa o snapshot,
+   mas o editor ainda não o envia em intervalo; a reidratação funciona quando o
+   snapshot é gravado (teste E2E cobre o caminho de leitura).
+4. **`SnapshotCodec.migrate` não é chamado no caminho de leitura**: snapshots com
+   `schemaVersion` menor que o atual são enviados como estão; a migração é o próximo
+   passo quando houver a primeira mudança de formato.

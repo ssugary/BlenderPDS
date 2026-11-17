@@ -114,6 +114,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<User> searchByNickname(
+            String nickname, org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findByNicknameContainingIgnoreCase(nickname, pageable);
+    }
+
+    @Override
     @Transactional
     public User update(User user) {
         User existing = findOrThrow(user.getId());

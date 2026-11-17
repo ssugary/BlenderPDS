@@ -23,11 +23,23 @@ public class WsFrames {
 
     private final ObjectMapper objectMapper;
 
-    /** The one error frame: {@code {type:"error", code}}. */
+    /** The one error frame: {@code {type:"error", code}} (detail is optional, P3.4). */
     public ObjectNode error(String code) {
         ObjectNode frame = objectMapper.createObjectNode();
         frame.put("type", "error");
         frame.put("code", code);
+        return frame;
+    }
+
+    /**
+     * The same frame with a short, human-readable reason. {@code detail} is additive: old
+     * clients ignore it, and it never carries stack traces or payload contents.
+     */
+    public ObjectNode error(String code, String detail) {
+        ObjectNode frame = error(code);
+        if (detail != null && !detail.isBlank()) {
+            frame.put("detail", detail.length() > 200 ? detail.substring(0, 200) : detail);
+        }
         return frame;
     }
 

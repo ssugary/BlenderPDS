@@ -2,6 +2,8 @@ package dev.collab3d.repository;
 
 import dev.collab3d.model.User;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    /** P3.4: user search by nickname (no full listing, no e-mail in the answer). */
+    Page<User> findByNicknameContainingIgnoreCase(String nickname, Pageable pageable);
 
     /**
      * Confirmed friendship between two users. In JPQL rather than
