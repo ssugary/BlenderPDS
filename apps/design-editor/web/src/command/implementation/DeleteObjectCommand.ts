@@ -1,5 +1,6 @@
 import { Command } from "../Command";
 import { ReplicaSession } from "../../collab/ReplicaSession";
+import { colorOf, geometryOf, transformOf } from "../../collab/objectState";
 
 /** Deleting tombstones the object, and undo re-adds the same id with its current transform and its color. */
 export class DeleteObjectCommand extends Command
@@ -26,9 +27,9 @@ export class DeleteObjectCommand extends Command
         this.session.commit({
             kind: 'add_object',
             objectId: this.objectId,
-            geometry: record.geometry,
-            transform: record.transform.value, 
-            color: record.color.value,
+            geometry: geometryOf(record),
+            transform: transformOf(record), 
+            color: colorOf(record),
         });
     }
 

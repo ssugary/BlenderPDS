@@ -4,6 +4,7 @@ import { EditorModeManager } from '../../manager/EditorModeManager';
 import { RaycasterManager } from '../../manager/RaycasterManager';
 import { SelectionManager } from '../../manager/SelectionManager';
 import { PresenceService } from '../../collab/PresenceService';
+import { colorOf } from '../../collab/objectState';
 import { ReplicaSession } from '../../collab/ReplicaSession';
 import { SceneProjector } from '../../collab/SceneProjector';
 import { GLOBAL_BUS } from '@collab3d/core';
@@ -81,7 +82,7 @@ export class SelectionController
         const objectId = this.deps.projector.objectIdFor(selectedMesh);
         const record = objectId ? this.deps.replica.state.get(objectId) : undefined;
         const colorHex = record
-            ? record.color.value
+            ? colorOf(record)
             : (selectedMesh.material as THREE.MeshStandardMaterial).color.getHex();
 
         GLOBAL_BUS.emit('selection:changed', { objectId, color: colorHex });

@@ -14,6 +14,7 @@ import { DeleteObjectCommand } from '../../command/implementation/DeleteObjectCo
 import { ColorEditCommand } from '../../command/implementation/ColorEditCommand';
 import { ReplicaSession } from '../../collab/ReplicaSession';
 import { SceneProjector } from '../../collab/SceneProjector';
+import { colorOf } from '../../collab/objectState';
 import { ObjectParser } from '../ObjectParser';
 import { FileExporter } from '../utils/FileExporter';
 import { BusSubscriptions } from '../BusSubscriptions';
@@ -125,7 +126,7 @@ export class ActionRouter
         const record = objectId ? this.deps.replica.state.get(objectId) : undefined;
 
         if (record)
-            material.color.setHex(record.color.value);
+            material.color.setHex(colorOf(record));
     }
 
     /** Releasing the picker commits once, so one colour choice is one operation and one undo step. */
@@ -138,14 +139,14 @@ export class ActionRouter
         const record = objectId ? this.deps.replica.state.get(objectId) : undefined;
         const hex = color.getHex();
 
-        if (!objectId || !record || record.color.value === hex)
+        if (!objectId || !record || colorOf(record) === hex)
             return;
 
         this.deps.commandManager.execute(new ColorEditCommand(
             this.deps.replica,
             objectId,
             hex,
-            record.color.value
+            colorOf(record)
         ));
     }
 

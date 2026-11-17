@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { OpLog, compareOpId } from '@collab3d/core';
-import { DocumentState } from '../../collab/DocumentState';
+import { replayDocumentState } from '../../collab/DocumentState';
 import { Operation } from '../../collab/Operation';
 
 const REFRESH_MS = 500;
@@ -107,7 +107,7 @@ export function TimelinePanel({ log }: TimelinePanelProps)
 
 function aliveObjectsAfter(ops: readonly Operation[], step: number): number
 {
-    return [...DocumentState.replay(ops.slice(0, step)).all()].filter((record) => !record.deleted).length;
+    return [...replayDocumentState(ops.slice(0, step)).all()].filter((record) => !record.deleted).length;
 }
 
 function describe(op: Operation): string

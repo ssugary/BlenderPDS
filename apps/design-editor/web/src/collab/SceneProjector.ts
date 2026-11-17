@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ReplicaSession } from './ReplicaSession';
-import { Change, ObjectRecord } from './DocumentState';
+import { DocumentRecord } from '@collab3d/core';
+import { Change } from './DocumentState';
+import { colorOf, geometryOf, transformOf } from './objectState';
 import { SceneManager } from '../manager/SceneManager';
 import { SelectionManager } from '../manager/SelectionManager';
 import { CreateObjectTool } from '../tool/implementation/CreateObjectTool';
@@ -64,12 +66,12 @@ export class SceneProjector
         }
     }
 
-    private addMesh(record: ObjectRecord): void
+    private addMesh(record: DocumentRecord): void
     {
         if (this.meshes.has(record.id))
             return;
 
-        const mesh = this.createObjectTool.buildPrimitive(record.geometry);
+        const mesh = this.createObjectTool.buildPrimitive(geometryOf(record));
         if (!mesh)
             return;
 
@@ -97,22 +99,22 @@ export class SceneProjector
     }
 
     /** The record holds a 16-number matrix. Position, rotation and scale are what three.js renders from. */
-    private applyTransform(mesh: THREE.Mesh | undefined, record: ObjectRecord): void
+    private applyTransform(mesh: THREE.Mesh | undefined, record: DocumentRecord): void
     {
         if (!mesh)
             return;
 
-        mesh.matrix.fromArray(record.transform.value);
+        mesh.matrix.fromArray(transformOf(record));
         mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
         mesh.updateMatrixWorld(true);
     }
 
-    private applyColor(mesh: THREE.Mesh | undefined, record: ObjectRecord): void
+    private applyColor(mesh: THREE.Mesh | undefined, record: DocumentRecord): void
     {
         if (!mesh)
             return;
 
-        (mesh.material as THREE.MeshStandardMaterial).color.setHex(record.color.value);
+        (mesh.material as THREE.MeshStandardMaterial).color.setHex(colorOf(record));
     }
 
     /**

@@ -61,7 +61,97 @@ var r = class {
 	static wins(e, n) {
 		return t(e, n) > 0;
 	}
-}, o = class {
+}, o = {
+	read(e, t) {
+		return e.fields.get(t);
+	},
+	value(e, t) {
+		return o.read(e, t)?.value;
+	},
+	write(e, t, n, r) {
+		let i = e.fields, o = i.get(t);
+		return o ? o.set(n, r) : (i.set(t, new a(n, r)), !0);
+	}
+}, s = {
+	isPresent(e) {
+		return e.removeStamp === null || t(e.removeStamp, e.addStamp) <= 0;
+	},
+	add(e, n) {
+		t(n, e.addStamp) > 0 && (e.addStamp = n), e.deleted = !s.isPresent(e);
+	},
+	remove(e, n) {
+		(e.removeStamp === null || t(n, e.removeStamp) > 0) && (e.removeStamp = n), e.deleted = !s.isPresent(e);
+	}
+}, c = class {
+	id;
+	createdBy;
+	addStamp;
+	meta = /* @__PURE__ */ new Map();
+	fields = /* @__PURE__ */ new Map();
+	removeStamp = null;
+	deleted = !1;
+	constructor(e, t, n) {
+		this.id = e, this.createdBy = t, this.addStamp = n;
+	}
+}, l = class e {
+	kinds;
+	records = /* @__PURE__ */ new Map();
+	constructor(e) {
+		this.kinds = e;
+	}
+	apply(e) {
+		let t = this.kinds.get(e.kind);
+		return t ? t.apply(this.draft, e) : [];
+	}
+	get(e) {
+		return this.records.get(e);
+	}
+	all() {
+		return this.records.values();
+	}
+	static replay(t, n) {
+		let r = new e(n);
+		for (let e of t) r.apply(e);
+		return r;
+	}
+	draft = {
+		get: (e) => this.records.get(e),
+		create: (e, t, n = {}) => {
+			let r = new c(e, t, t);
+			for (let [e, t] of Object.entries(n)) r.meta.set(e, t);
+			return this.records.set(e, r), r;
+		},
+		isPresent: (e) => s.isPresent(e),
+		addToSet: (e, t) => s.add(e, t),
+		removeFromSet: (e, t) => s.remove(e, t),
+		readField: (e, t) => o.value(e, t),
+		writeField: (e, t, n, r) => o.write(e, t, n, r),
+		all: () => this.records.values(),
+		metaValue: (e, t) => e.meta.get(t)
+	};
+}, u = class {
+	definitions = /* @__PURE__ */ new Map();
+	constructor(e = []) {
+		for (let t of e) this.register(t);
+	}
+	register(e) {
+		if (this.definitions.has(e.kind)) throw Error(`Operation kind already registered: ${e.kind}`);
+		return this.definitions.set(e.kind, {
+			kind: e.kind,
+			validate: (t) => e.validate(t),
+			apply: (t, n) => e.apply(t, n)
+		}), this;
+	}
+	get(e) {
+		return this.definitions.get(e);
+	}
+	has(e) {
+		return this.definitions.has(e);
+	}
+	kinds() {
+		return [...this.definitions.keys()];
+	}
+}, d = class {
 	listeners;
 	constructor() {
 		this.listeners = /* @__PURE__ */ new Map();
@@ -82,7 +172,7 @@ var r = class {
 		let n = this.listeners.get(e);
 		n && n.forEach((e) => e(t));
 	}
-}, s = new o(), c = 500, l = 5, u = 500, d = 5e3, f = class {
+}, f = new d(), p = 500, m = 5, h = 500, g = 5e3, _ = class {
 	socket;
 	messageListeners;
 	closeListeners;
@@ -99,7 +189,7 @@ var r = class {
 	}
 	send(e) {
 		let t = this.serialize(e);
-		t !== null && (e?.type === "sync_hello" && (this.lastHello = t), this.socket?.readyState === WebSocket.OPEN ? this.socket.send(t) : (this.pending.length >= c && this.pending.shift(), this.pending.push(e)));
+		t !== null && (e?.type === "sync_hello" && (this.lastHello = t), this.socket?.readyState === WebSocket.OPEN ? this.socket.send(t) : (this.pending.length >= p && this.pending.shift(), this.pending.push(e)));
 	}
 	onMessage(e) {
 		this.messageListeners.push(e);
@@ -136,8 +226,8 @@ var r = class {
 			for (let e of [...this.messageListeners]) e(t);
 		}, e.onclose = () => {
 			if (!this.closedByUser) {
-				if (this.attempts < l) {
-					let e = Math.min(u * 2 ** this.attempts, d);
+				if (this.attempts < m) {
+					let e = Math.min(h * 2 ** this.attempts, g);
 					this.attempts += 1, window.setTimeout(() => {
 						this.closedByUser || this.open();
 					}, e);
@@ -155,43 +245,43 @@ var r = class {
 	notifyClose() {
 		for (let e of [...this.closeListeners]) e();
 	}
-}, p = "/api";
-function m(e) {
-	p = e.baseUrl.replace(/\/$/, ""), g = null;
+}, v = "/api";
+function y(e) {
+	v = e.baseUrl.replace(/\/$/, ""), x = null;
 }
-var h = class extends Error {
+var b = class extends Error {
 	status;
 	constructor(e, t) {
 		super(t), this.status = e, this.name = "ApiError";
 	}
-}, g = null;
-async function _() {
-	if (g) return g;
-	let e = await fetch(`${p}/auth/csrf`, { credentials: "include" });
-	if (!e.ok) throw new h(e.status, "Could not get a CSRF token from the server.");
-	return g = await e.json(), g;
+}, x = null;
+async function S() {
+	if (x) return x;
+	let e = await fetch(`${v}/auth/csrf`, { credentials: "include" });
+	if (!e.ok) throw new b(e.status, "Could not get a CSRF token from the server.");
+	return x = await e.json(), x;
 }
-function v() {
-	g = null;
+function C() {
+	x = null;
 }
-async function y(e, t = {}) {
+async function w(e, t = {}) {
 	let n = (t.method ?? "GET").toUpperCase(), r = { ...t.headers };
 	if (t.body && (r["Content-Type"] = "application/json"), n !== "GET" && n !== "HEAD") {
-		let { token: e, headerName: t } = await _();
+		let { token: e, headerName: t } = await S();
 		r[t] = e;
 	}
-	let i = await fetch(`${p}${e}`, {
+	let i = await fetch(`${v}${e}`, {
 		...t,
 		method: n,
 		headers: r,
 		credentials: "include"
 	});
-	if (!i.ok) throw new h(i.status, await b(i));
+	if (!i.ok) throw new b(i.status, await T(i));
 	if (i.status === 204) return;
 	let a = await i.text();
 	return a === "" ? void 0 : JSON.parse(a);
 }
-async function b(e) {
+async function T(e) {
 	let t = await e.text();
 	if (t !== "") try {
 		let n = JSON.parse(t);
@@ -208,8 +298,8 @@ async function b(e) {
 		default: return `Request failed (${e.status}).`;
 	}
 }
-async function x(e, t) {
-	return y("/auth/login", {
+async function E(e, t) {
+	return w("/auth/login", {
 		method: "POST",
 		body: JSON.stringify({
 			email: e,
@@ -217,15 +307,15 @@ async function x(e, t) {
 		})
 	});
 }
-async function S() {
+async function D() {
 	try {
-		await y("/auth/logout", { method: "POST" });
+		await w("/auth/logout", { method: "POST" });
 	} finally {
-		v();
+		C();
 	}
 }
-async function C(e, t, n) {
-	return y("/users", {
+async function O(e, t, n) {
+	return w("/users", {
 		method: "POST",
 		body: JSON.stringify({
 			nickname: e,
@@ -234,89 +324,89 @@ async function C(e, t, n) {
 		})
 	});
 }
-async function w(e) {
-	return y(`/users/${e}/confirm-email`, { method: "POST" });
+async function k(e) {
+	return w(`/users/${e}/confirm-email`, { method: "POST" });
 }
-async function T(e) {
-	let t = await y("/users"), n = e.trim().toLowerCase();
+async function A(e) {
+	let t = await w("/users"), n = e.trim().toLowerCase();
 	return t.find((e) => e.nickname.toLowerCase() === n) ?? null;
 }
-async function E(e) {
-	return y(`/users/${e}/friends`);
+async function j(e) {
+	return w(`/users/${e}/friends`);
 }
-async function D(e) {
-	return y(`/users/${e}/friend-requests`);
+async function M(e) {
+	return w(`/users/${e}/friend-requests`);
 }
-async function O(e, t) {
-	return y(`/users/${e}/friend-requests`, {
+async function N(e, t) {
+	return w(`/users/${e}/friend-requests`, {
 		method: "POST",
 		body: JSON.stringify({ receiverId: t })
 	});
 }
-async function k(e, t) {
-	return y(`/users/${e}/friend-requests/${t}/accept`, { method: "POST" });
+async function P(e, t) {
+	return w(`/users/${e}/friend-requests/${t}/accept`, { method: "POST" });
 }
-async function A(e, t) {
-	return y(`/users/${e}/friend-requests/${t}/reject`, { method: "POST" });
+async function F(e, t) {
+	return w(`/users/${e}/friend-requests/${t}/reject`, { method: "POST" });
 }
-async function j(e, t) {
-	return y(`/users/${e}/friend-requests/${t}`, { method: "DELETE" });
+async function I(e, t) {
+	return w(`/users/${e}/friend-requests/${t}`, { method: "DELETE" });
 }
-async function M(e, t) {
-	return y(`/users/${e}/friends/${t}`, { method: "DELETE" });
+async function L(e, t) {
+	return w(`/users/${e}/friends/${t}`, { method: "DELETE" });
 }
-async function N(e) {
-	return y("/sessions", {
+async function R(e) {
+	return w("/sessions", {
 		method: "POST",
 		body: JSON.stringify({ hostId: e })
 	});
 }
-async function P(e) {
-	return y(`/sessions/${e}`);
-}
-async function F(e) {
-	try {
-		return await y(`/sessions/open/${e}`);
-	} catch (e) {
-		if (e instanceof h && e.status === 404) return null;
-		throw e;
-	}
-}
-async function I(e) {
-	return y(`/sessions/code/${encodeURIComponent(e.trim())}`);
-}
-async function L(e, t) {
-	return y(`/sessions/${e}/join`, {
-		method: "POST",
-		body: JSON.stringify({ userId: t })
-	});
-}
-async function R(e, t) {
-	return y(`/sessions/${e}/leave`, {
-		method: "POST",
-		body: JSON.stringify({ userId: t })
-	});
-}
-async function z(e, t) {
-	return y(`/sessions/${e}/end`, {
-		method: "POST",
-		body: JSON.stringify({ userId: t })
-	});
+async function z(e) {
+	return w(`/sessions/${e}`);
 }
 async function B(e) {
-	return y(`/sessions/${e}/participants`);
-}
-async function V(e) {
-	return y(`/sessions/friends/${e}`);
-}
-async function H(e) {
 	try {
-		return await y(`/sessions/${e}/state`);
+		return await w(`/sessions/open/${e}`);
 	} catch (e) {
-		if (e instanceof h && e.status === 404) return null;
+		if (e instanceof b && e.status === 404) return null;
 		throw e;
 	}
 }
-export { h as ApiError, e as CORE_VERSION, o as EventBus, s as GLOBAL_BUS, a as LWWRegister, r as LamportClock, i as OpLog, f as WebSocketTransport, k as acceptFriendRequest, j as cancelFriendRequest, t as compareOpId, m as configureBackend, w as confirmEmail, N as createSession, z as endSession, T as findUserByNickname, F as getOpenSession, P as getSession, I as getSessionByCode, H as getSessionState, L as joinSession, R as leaveSession, D as listFriendRequests, E as listFriends, V as listFriendsSessions, B as listParticipants, x as login, S as logout, n as opIdKey, C as register, A as rejectFriendRequest, M as removeFriend, v as resetCsrf, O as sendFriendRequest };
+async function V(e) {
+	return w(`/sessions/code/${encodeURIComponent(e.trim())}`);
+}
+async function H(e, t) {
+	return w(`/sessions/${e}/join`, {
+		method: "POST",
+		body: JSON.stringify({ userId: t })
+	});
+}
+async function U(e, t) {
+	return w(`/sessions/${e}/leave`, {
+		method: "POST",
+		body: JSON.stringify({ userId: t })
+	});
+}
+async function W(e, t) {
+	return w(`/sessions/${e}/end`, {
+		method: "POST",
+		body: JSON.stringify({ userId: t })
+	});
+}
+async function G(e) {
+	return w(`/sessions/${e}/participants`);
+}
+async function K(e) {
+	return w(`/sessions/friends/${e}`);
+}
+async function q(e) {
+	try {
+		return await w(`/sessions/${e}/state`);
+	} catch (e) {
+		if (e instanceof b && e.status === 404) return null;
+		throw e;
+	}
+}
+export { b as ApiError, e as CORE_VERSION, l as DocumentState, d as EventBus, f as GLOBAL_BUS, a as LWWRegister, r as LamportClock, o as LwwStrategy, i as OpLog, u as OperationKindRegistry, s as TombstoneSetStrategy, _ as WebSocketTransport, P as acceptFriendRequest, I as cancelFriendRequest, t as compareOpId, y as configureBackend, k as confirmEmail, R as createSession, W as endSession, A as findUserByNickname, B as getOpenSession, z as getSession, V as getSessionByCode, q as getSessionState, H as joinSession, U as leaveSession, M as listFriendRequests, j as listFriends, K as listFriendsSessions, G as listParticipants, E as login, D as logout, n as opIdKey, O as register, F as rejectFriendRequest, L as removeFriend, C as resetCsrf, N as sendFriendRequest };
 
 //# sourceMappingURL=collab3d-core.js.map

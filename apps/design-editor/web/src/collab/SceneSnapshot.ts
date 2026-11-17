@@ -1,4 +1,5 @@
-import { DocumentState } from './DocumentState';
+import { DocumentRecord } from '@collab3d/core';
+import { colorOf, geometryOf, transformOf } from './objectState';
 import { VersionVector } from '@collab3d/core';
 
 /**
@@ -26,16 +27,19 @@ export interface SceneSnapshot
     objects: SceneObjectSnapshot[];
 }
 
-export function buildSceneSnapshot(state: DocumentState, versionVector: VersionVector): SceneSnapshot
+export function buildSceneSnapshot(
+    state: { all(): IterableIterator<DocumentRecord> },
+    versionVector: VersionVector
+): SceneSnapshot
 {
     const objects: SceneObjectSnapshot[] = [];
     for (const record of state.all())
     {
         objects.push({
             id: record.id,
-            geometry: record.geometry,
-            color: record.color.value,
-            transform: record.transform.value,
+            geometry: geometryOf(record),
+            color: colorOf(record),
+            transform: transformOf(record),
             deleted: record.deleted
         });
     }

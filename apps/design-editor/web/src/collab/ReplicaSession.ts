@@ -1,5 +1,5 @@
 import { uuid } from '../core/utils/Id';
-import { DocumentState, Change } from './DocumentState';
+import { Change, createDocumentState } from './DocumentState';
 import { LamportClock } from '@collab3d/core';
 import { NewOperation, Operation } from './Operation';
 import { OpLog } from '@collab3d/core';
@@ -12,7 +12,7 @@ export class ReplicaSession
 {
     public readonly clock: LamportClock;
     public readonly log = new OpLog();
-    public readonly state = new DocumentState();
+    public readonly state = createDocumentState();
 
     private changeListeners: Array<(changes: Change[]) => void> = [];
     private localListeners: Array<(op: Operation) => void> = [];

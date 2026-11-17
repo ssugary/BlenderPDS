@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DocumentState } from './DocumentState';
-import { Operation, AddObject, ChangeColor, RemoveObject, SetTransform } from './Operation';
-import { OpId, opIdKey } from '@collab3d/core';
+import { LwwStrategy, OpId, opIdKey } from '@collab3d/core';
+import { createDocumentState, replayDocumentState, EditorDocumentState } from './DocumentState';
+import { AddObject, ChangeColor, Operation, RemoveObject, SetTransform } from './Operation';
+import { colorOf, geometryOf, transformOf } from './objectState';
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const MOVED = [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -33,19 +34,19 @@ function paint(siteId: string, lamport: number, objectId: string, color: number)
 }
 
 /** Everything the CRDT knows about, sorted by object id so arrival order cannot mask a diff. */
-function snapshot(state: DocumentState) {
+function snapshot(state: EditorDocumentState) {
     const entries: Array<Record<string, unknown>> = [];
     for (const record of state.all()) {
         entries.push({
             id: record.id,
-            geometry: record.geometry,
+            geometry: geometryOf(record),
             deleted: record.deleted,
             addStamp: opIdKey(record.addStamp),
             removeStamp: record.removeStamp === null ? null : opIdKey(record.removeStamp),
-            transform: record.transform.value,
-            transformStamp: opIdKey(record.transform.stamp),
-            color: record.color.value,
-            colorStamp: opIdKey(record.color.stamp)
+            transform: transformOf(record),
+            transformStamp: opIdKey(LwwStrategy.read<number[]>(record, 'transform')!.stamp),
+            color: colorOf(record),
+            colorStamp: opIdKey(LwwStrategy.read<number>(record, 'color')!.stamp)
         });
     }
     return entries.sort((left, right) => String(left.id).localeCompare(String(right.id)));
@@ -69,10 +70,10 @@ function permutations<T>(items: readonly T[]): T[][] {
 
 describe('DocumentState', () => {
     it('creates an object and reports the change', () => {
-        const state = new DocumentState();
+        const state = createDocumentState();
 
         expect(state.apply(add('a', 1, 'o1'))).toEqual([{ type: 'added', objectId: 'o1' }]);
-        expect(state.get('o1')?.geometry).toBe('cube');
+        expect(geometryOf(state.get('o1')!)).toBe('cube');
         expect(state.get('o1')?.deleted).toBe(false);
     });
 
@@ -87,12 +88,12 @@ describe('DocumentState', () => {
             paint('a', 4, 'o2', 0x0000ff)
         ];
 
-        const expected = snapshot(DocumentState.replay([...heads, ...tail]));
+        const expected = snapshot(replayDocumentState([...heads, ...tail]));
         let compared = 0;
 
         for (const orderedHeads of permutations(heads)) {
             for (const orderedTail of permutations(tail)) {
-                const state = DocumentState.replay([...orderedHeads, ...orderedTail]);
+                const state = replayDocumentState([...orderedHeads, ...orderedTail]);
                 expect(snapshot(state)).toEqual(expected);
                 compared++;
             }
@@ -104,8 +105,8 @@ describe('DocumentState', () => {
 
     it('applying the same operation twice changes nothing (idempotency)', () => {
         const ops = [add('a', 1, 'o1'), move('b', 2, 'o1', MOVED), paint('c', 3, 'o1', 0xff0000)];
-        const once = DocumentState.replay(ops);
-        const twice = new DocumentState();
+        const once = replayDocumentState(ops);
+        const twice = createDocumentState();
         const changes: unknown[] = [];
 
         for (const op of [...ops, ...ops]) {
@@ -120,7 +121,7 @@ describe('DocumentState', () => {
     });
 
     it('a remove is a tombstone: the record stays and hides the object', () => {
-        const state = DocumentState.replay([add('a', 1, 'o1')]);
+        const state = replayDocumentState([add('a', 1, 'o1')]);
 
         expect(state.apply(remove('b', 2, 'o1'))).toEqual([{ type: 'removed', objectId: 'o1' }]);
         expect(state.get('o1')).toBeDefined();
@@ -130,47 +131,47 @@ describe('DocumentState', () => {
     });
 
     it('property writes on a deleted object are stored but not reported', () => {
-        const state = DocumentState.replay([add('a', 1, 'o1'), remove('b', 2, 'o1')]);
+        const state = replayDocumentState([add('a', 1, 'o1'), remove('b', 2, 'o1')]);
 
         expect(state.apply(move('c', 3, 'o1', MOVED))).toEqual([]);
-        expect(state.get('o1')?.transform.value).toEqual(MOVED);
+        expect(transformOf(state.get('o1')!)).toEqual(MOVED);
         expect(state.get('o1')?.deleted).toBe(true);
     });
 
     it('an add newer than the remove revives the object', () => {
-        const state = DocumentState.replay([add('a', 1, 'o1'), remove('b', 3, 'o1')]);
+        const state = replayDocumentState([add('a', 1, 'o1'), remove('b', 3, 'o1')]);
 
         expect(state.apply(add('c', 4, 'o1', { color: 0x00ff00, transform: MOVED })))
             .toEqual([{ type: 'added', objectId: 'o1' }]);
         expect(state.get('o1')?.deleted).toBe(false);
-        expect(state.get('o1')?.transform.value).toEqual(MOVED);
+        expect(transformOf(state.get('o1')!)).toEqual(MOVED);
         // Characteristic of today's implementation: the reviving add_object writes transform and
         // addStamp but NOT color (the record is only created once), so the object comes back with
         // the color it had before the delete.
-        expect(state.get('o1')?.color.value).toBe(0xffffff);
+        expect(colorOf(state.get('o1')!)).toBe(0xffffff);
     });
 
     it('an add older than the remove does not revive it', () => {
-        const state = DocumentState.replay([add('a', 5, 'o1'), remove('b', 6, 'o1')]);
+        const state = replayDocumentState([add('a', 5, 'o1'), remove('b', 6, 'o1')]);
 
         expect(state.apply(add('c', 1, 'o1'))).toEqual([]);
         expect(state.get('o1')?.deleted).toBe(true);
     });
 
     it('two adds of the same object keep the newest stamp per field', () => {
-        const state = DocumentState.replay([
+        const state = replayDocumentState([
             add('a', 1, 'o1', { transform: MOVED, color: 0x111111 }),
             add('b', 2, 'o1', { transform: IDENTITY })
         ]);
 
-        expect(state.get('o1')?.transform.value).toEqual(IDENTITY);
-        expect(state.get('o1')?.color.value).toBe(0x111111);
-        expect(state.get('o1')?.transform.stamp).toEqual({ siteId: 'b', lamport: 2 });
-        expect(state.get('o1')?.color.stamp).toEqual({ siteId: 'a', lamport: 1 });
+        expect(transformOf(state.get('o1')!)).toEqual(IDENTITY);
+        expect(colorOf(state.get('o1')!)).toBe(0x111111);
+        expect(LwwStrategy.read<number[]>(state.get('o1')!, 'transform')!.stamp).toEqual({ siteId: 'b', lamport: 2 });
+        expect(LwwStrategy.read<number>(state.get('o1')!, 'color')!.stamp).toEqual({ siteId: 'a', lamport: 1 });
     });
 
     it('an operation for an object that was never added is dropped', () => {
-        const state = new DocumentState();
+        const state = createDocumentState();
 
         // The ordered channel is what makes this safe: an op always arrives after the object it
         // refers to, so the state below is the same on every replica that saw the same channel.
@@ -180,33 +181,33 @@ describe('DocumentState', () => {
 
     it('replay of a prefix equals applying that prefix one by one', () => {
         const ops = [add('a', 1, 'o1'), move('b', 2, 'o1', MOVED), paint('c', 3, 'o1', 0xff0000)];
-        const incremental = new DocumentState();
+        const incremental = createDocumentState();
         for (const op of ops) {
             incremental.apply(op);
         }
 
-        expect(snapshot(DocumentState.replay(ops))).toEqual(snapshot(incremental));
-        expect(snapshot(DocumentState.replay(ops.slice(0, 2)))).not.toEqual(snapshot(incremental));
+        expect(snapshot(replayDocumentState(ops))).toEqual(snapshot(incremental));
+        expect(snapshot(replayDocumentState(ops.slice(0, 2)))).not.toEqual(snapshot(incremental));
     });
 
     it('reports a transform whenever the write wins, even with the same matrix', () => {
-        const state = DocumentState.replay([add('a', 1, 'o1')]);
+        const state = replayDocumentState([add('a', 1, 'o1')]);
 
         expect(state.apply(move('b', 2, 'o1', MOVED))).toEqual([{ type: 'transform', objectId: 'o1' }]);
         // the register compares STAMPS, not values: a newer stamp wins and is reported
         expect(state.apply(move('c', 3, 'o1', MOVED))).toEqual([{ type: 'transform', objectId: 'o1' }]);
         // an older stamp loses and reports nothing
         expect(state.apply(move('d', 1, 'o1', IDENTITY))).toEqual([]);
-        expect(state.get('o1')?.transform.value).toEqual(MOVED);
+        expect(transformOf(state.get('o1')!)).toEqual(MOVED);
     });
 
     it('reports a color whenever the write wins, even with the same colour', () => {
-        const state = DocumentState.replay([add('a', 1, 'o1', { color: 0xff0000 })]);
+        const state = replayDocumentState([add('a', 1, 'o1', { color: 0xff0000 })]);
 
         expect(state.apply(paint('b', 2, 'o1', 0xff0000))).toEqual([{ type: 'color', objectId: 'o1' }]);
         expect(state.apply(paint('c', 3, 'o1', 0x00ff00))).toEqual([{ type: 'color', objectId: 'o1' }]);
         expect(state.apply(paint('d', 1, 'o1', 0x0000ff))).toEqual([]);
-        expect(state.get('o1')?.color.value).toBe(0x00ff00);
+        expect(colorOf(state.get('o1')!)).toBe(0x00ff00);
     });
 
     it('keeps the ids it was given, whatever the arrival order', () => {
@@ -214,14 +215,14 @@ describe('DocumentState', () => {
             { siteId: 'b', lamport: 2 },
             { siteId: 'a', lamport: 2 }
         ];
-        const state = DocumentState.replay([
+        const state = replayDocumentState([
             add('a', 1, 'o1'),
             move(stamps[0].siteId, stamps[0].lamport, 'o1', MOVED),
             move(stamps[1].siteId, stamps[1].lamport, 'o1', IDENTITY)
         ]);
 
         // same lamport: the site id decides, so 'b' wins
-        expect(state.get('o1')?.transform.value).toEqual(MOVED);
-        expect(state.get('o1')?.transform.stamp).toEqual({ siteId: 'b', lamport: 2 });
+        expect(transformOf(state.get('o1')!)).toEqual(MOVED);
+        expect(LwwStrategy.read<number[]>(state.get('o1')!, 'transform')!.stamp).toEqual({ siteId: 'b', lamport: 2 });
     });
 });
