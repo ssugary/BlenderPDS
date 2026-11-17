@@ -1,10 +1,11 @@
 {
-  "devDependencies": {
-    "@types/node": "^26.6.5"
+  "name": "collab3d",
+  "private": true,
+  "description": "Monorepo do BlenderPDS: framework collab3d (busy being extracted) e as aplicações que o usam.",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
-  "dependencies": {
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "react-router-dom": "^7.18.4"
-  }
+  "workspaces": [
+    "apps/*/web"
+  ]
 }

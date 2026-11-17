@@ -1,21 +1,22 @@
-# Frontend — BlenderPDS
+# Frontend — BlenderPDS (`apps/design-editor/web`)
 
 React + TypeScript + three.js SPA that renders the editor, the lobby and the session panels.
-Full instructions (backend, database, accounts and tests) are in the
-[root README](../README.md).
+It is the `blenderpds` package of the npm workspace at the repo root; full instructions
+(backend, database, accounts and tests) are in the [root README](../../../README.md).
 
 ## Running
 
 ```bash
-npm install
-npm run dev      # http://localhost:5173
+npm install                # at the repo root, once — installs every workspace
+npm run dev -w blenderpds  # http://localhost:5173
 ```
 
 Vite proxies `/api` and `/ws` to `http://localhost:8080` (or to `BACKEND_URL`, when set).
 
 ```bash
-npm run build    # typecheck (tsc strict) + production build
-npm run preview  # serves the build
+npm run build -w blenderpds    # typecheck (tsc strict) + production build
+npm test -w blenderpds         # Vitest (CRDT unit tests)
+npm run preview -w blenderpds  # serves the build
 ```
 
 Requires Node.js `^20.19` or `>=22.12`.
@@ -34,6 +35,7 @@ Requires Node.js `^20.19` or `>=22.12`.
 
 ## Documentation
 
-- [Frontend architecture](../docs/frontend-architecture.md) — editor core, CRDT and collaboration data flow
-- [Backend architecture](../docs/backend-architecture.md) — REST surface, WebSocket protocol and data model
-- [Backlog](backlog.md)
+- [Backend and frontend architecture (v0.0)](../../../docs/architecture/README.md) — snapshots of
+  `docs/architecture/`, including the legacy guides `legacy/backend-architecture-v0.0.md` and
+  `legacy/frontend-architecture-v0.0.md`
+- [Refactor notes](../../../docs/refactor-notes.md)

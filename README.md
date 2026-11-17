@@ -59,7 +59,7 @@ PDS/
 │   │   └── repository/     # Spring Data
 │   ├── src/test/java/      # controller, service, model and WebSocket tests
 │   └── compose.yaml        # Postgres 16 + Mailpit
-└── frontend/
+└── apps/design-editor/web/   # SPA (npm workspace `blenderpds`)
     ├── src/api/            # REST client (session + CSRF)
     ├── src/collab/         # CRDT: operations, log, state, sync, presence
     ├── src/core/           # Engine (composition root), EventBus, controllers
@@ -92,9 +92,8 @@ Spring Boot Docker Compose starts Postgres and Mailpit automatically. The API li
 **2. Frontend**
 
 ```bash
-cd frontend
-npm install
-npm run dev
+npm install                  # na raiz: instala todos os workspaces (apps/*/web)
+npm run dev -w blenderpds
 ```
 
 Open `http://localhost:5173`. Vite proxies `/api` and `/ws` to the backend, so the browser sees
@@ -145,15 +144,13 @@ Protocol details, the data model and the join rules are in
 
 ## Build and tests
 
-Frontend:
+Frontend (from the repo root; the SPA is the `blenderpds` workspace):
 
 ```bash
-cd frontend
-npm run build     # tsc (strict) + vite build
-npm run preview   # serves the production build
+npm run build -w blenderpds     # tsc (strict) + vite build
+npm test -w blenderpds          # Vitest: LamportClock, OpLog, LWWRegister, DocumentState
+npm run preview -w blenderpds   # serves the production build
 ```
-
-The front end has no test runner configured yet; the automated check is the typecheck in `build`.
 
 Backend:
 
@@ -180,4 +177,4 @@ Docker must be running.
 - Friends appear as "hosting" or offline — there is no "online" presence outside a session.
 - Imported `.obj` models are local: they do not enter the log, do not sync and have no undo.
 - Concurrent extrude/split on the same mesh has no topology merge; the selection lock is advisory.
-- The front end has no automated tests.
+- The front end only has unit tests for the CRDT; UI and engine have none.

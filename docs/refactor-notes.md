@@ -320,7 +320,25 @@ auto-configuração no Boot 4) + `org.flywaydb:flyway-database-postgresql` em `r
 
 **Débito `ddl_auto_destructive`: resolvido.**
 
-## 6. Observações (fora do escopo da Fase 0 — não corrigidas)
+## 6. npm workspaces (P0.6)
+
+- `frontend/` foi movido com `git mv` para **`apps/design-editor/web/`** (histórico preservado) e a
+  raiz virou o workspace root: `{"name":"collab3d","private":true,"workspaces":["apps/*/web"]}`.
+- O `package.json` da raiz **não redeclara mais** `react`, `react-dom`, `react-router-dom` e
+  `@types/node` — débito `duplicate_root_package` resolvido. As versões vivem só no manifesto do
+  pacote web.
+- Scripts do pacote web passaram de `node_modules/.bin/vite`/`node_modules/.bin/tsc` para
+  `vite`/`tsc`: com workspaces os binários são içados para `node_modules/.bin` da raiz, e o
+  prefixo relativo antigo apontaria para uma pasta inexistente.
+- O glob inclui só `apps/*/web`; `framework/*` entra em **P2.1**, quando o pacote existir (um
+  workspace sem correspondência faz o `npm install` falhar).
+- Comandos passaram a ser `npm install` na raiz + `npm run <script> -w blenderpds`; o
+  `README.md` e o `apps/design-editor/web/README.md` foram atualizados (os caminhos antigos e a
+  frase "the front end has no test runner" ficariam falsos).
+- Verificado: `npm install` na raiz (exit 0, binários içados), `npm run build -w blenderpds`,
+  `npm test -w blenderpds` (29 testes) e `npm run build` de dentro da pasta do pacote.
+
+## 7. Observações (fora do escopo da Fase 0 — não corrigidas)
 
 - `frontend/README.md` aponta para `../docs/frontend-architecture.md` e
   `../docs/backend-architecture.md`, removidos em `9fbbf44`. Os snapshots correspondentes agora
