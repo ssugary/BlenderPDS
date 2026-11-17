@@ -3,32 +3,17 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.1</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>dev.collab3d</groupId>
+		<artifactId>collab3d-parent</artifactId>
+		<version>0.1.0-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<groupId>com.grupo03</groupId>
-	<artifactId>blenderpds</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
-	<properties>
-		<java.version>21</java.version>
-	</properties>
+
+	<groupId>dev.collab3d</groupId>
+	<artifactId>collab3d-spring-boot-starter</artifactId>
+	<name>collab3d-spring-boot-starter</name>
+	<description>Usuários, amizades, salas, sequenciador de operações e infraestrutura WebSocket</description>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -135,17 +120,13 @@
 		<dependency>
 			<groupId>com.tngtech.archunit</groupId>
 			<artifactId>archunit</artifactId>
-			<version>1.4.1</version>
+			<version>${archunit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
