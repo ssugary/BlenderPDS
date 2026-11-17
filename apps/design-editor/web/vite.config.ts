@@ -7,7 +7,12 @@ const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 export default defineConfig({
     plugins: [react()],
     resolve: {
-        dedupe: ['react', 'react-dom']
+        dedupe: ['react', 'react-dom'],
+        alias: {
+            // Source alias + workspace link: the editor always compiles the same core source the
+            // core package builds on its own, so a change never needs a dist rebuild to show up.
+            '@collab3d/core': new URL('../../../framework/core/src/index.ts', import.meta.url).pathname
+        }
     },
     optimizeDeps: {
         include: ['react', 'react-dom', 'react-router-dom']

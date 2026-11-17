@@ -6,6 +6,15 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "workspaces": [
-    "apps/*/web"
-  ]
+    "apps/*/web",
+    "framework/*"
+  ],
+  "scripts": {
+    "build:core": "npm run build -w @collab3d/core",
+    "test:core": "npm test -w @collab3d/core",
+    "check-boundaries": "node scripts/check-boundaries.mjs"
+  },
+  "devDependencies": {
+    "madge": "^8.0.0"
+  }
 }
