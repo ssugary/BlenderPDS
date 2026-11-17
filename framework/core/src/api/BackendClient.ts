@@ -11,7 +11,17 @@
  * from the backend too, so the client can never disagree with the server about it.
  */
 
-const API_BASE = '/api';
+let apiBase = '/api';
+
+/**
+ * Points the client somewhere other than the same-origin `/api` proxy (an app embedding the
+ * framework, a test server, a different deployment path). Call it once, before any request.
+ */
+export function configureBackend(options: { baseUrl: string }): void
+{
+    apiBase = options.baseUrl.replace(/\/$/, '');
+    csrf = null;
+}
 
 /** A failed backend call: `status` is the HTTP code and the message is already human-readable. */
 export class ApiError extends Error
@@ -36,7 +46,7 @@ async function csrfToken(): Promise<CsrfToken>
     if (csrf)
         return csrf;
 
-    const response = await fetch(`${API_BASE}/auth/csrf`, { credentials: 'include' });
+    const response = await fetch(`${apiBase}/auth/csrf`, { credentials: 'include' });
     if (!response.ok)
         throw new ApiError(response.status, 'Could not get a CSRF token from the server.');
 
@@ -64,7 +74,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T>
         headers[headerName] = token;
     }
 
-    const response = await fetch(`${API_BASE}${path}`, { ...init, method, headers, credentials: 'include' });
+    const response = await fetch(`${apiBase}${path}`, { ...init, method, headers, credentials: 'include' });
 
     if (!response.ok)
         throw new ApiError(response.status, await errorMessage(response));

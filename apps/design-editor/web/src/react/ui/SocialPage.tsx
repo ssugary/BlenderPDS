@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { joinSession, listFriendsSessions } from '../../api/Backend';
-import { WebSocketTransport } from '../../network/WebSocketTransport';
+import { joinSession, listFriendsSessions } from '@collab3d/core';
+import { WebSocketTransport } from '@collab3d/core';
 import { AuthPanel } from './AuthPanel';
 import { Friend } from './UseSocial';
 import { FriendsPanel } from './FriendsPanel';

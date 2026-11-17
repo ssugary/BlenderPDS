@@ -1,4 +1,4 @@
-import { EventBus, GLOBAL_BUS, ListenerFunction } from './EventBus';
+import { EventBus, GLOBAL_BUS, ListenerFunction } from '@collab3d/core';
 
 /**
  * Keeps the bus listeners a component installed so dispose() can remove exactly those.

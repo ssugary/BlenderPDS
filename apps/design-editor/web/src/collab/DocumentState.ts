@@ -1,6 +1,6 @@
 import { Operation } from './Operation';
-import { LWWRegister } from './LWWRegister';
-import { OpId, compareOpId } from './OpId';
+import { LWWRegister } from '@collab3d/core';
+import { OpId, compareOpId } from '@collab3d/core';
 
 /** What the shared model knows about one object. No three.js here, only plain data. */
 export interface ObjectRecord

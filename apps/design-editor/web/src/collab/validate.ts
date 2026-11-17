@@ -1,5 +1,5 @@
 import { Operation } from './Operation';
-import { VersionVector } from './OpLog';
+import { VersionVector } from '@collab3d/core';
 
 const MAX_ID_LENGTH = 100;
 const MAX_VERSION_ENTRIES = 100;

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ApiSession, getSessionByCode, joinSession } from '../../api/Backend';
-import { WebSocketTransport } from '../../network/WebSocketTransport';
+import { ApiSession, getSessionByCode, joinSession } from '@collab3d/core';
+import { WebSocketTransport } from '@collab3d/core';
 import { useSocialContext } from './SocialContext';
 import { codeBoxStyle, headingStyle, textStyle, useLobbyContext } from './LobbyShared';
 

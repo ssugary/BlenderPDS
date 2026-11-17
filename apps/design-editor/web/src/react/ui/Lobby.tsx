@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Session } from '../../network/Session';
+import { Session } from '@collab3d/core';
 import { LobbyCube } from './LobbyCube';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyOutletContext } from './LobbyShared';

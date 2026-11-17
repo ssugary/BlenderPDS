@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import * as THREE from 'three';
-import { GLOBAL_BUS } from '../../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 import { useBusEvent } from '../useBusEvent';
 
 const WHEEL_SIZE = 160;

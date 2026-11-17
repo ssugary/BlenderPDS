@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Session } from '../../network/Session';
+import { Session } from '@collab3d/core';
 
 /** What the Lobby layout hands to every lobby page through <Outlet context>. */
 export interface LobbyOutletContext

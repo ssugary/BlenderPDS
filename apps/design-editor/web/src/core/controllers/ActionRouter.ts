@@ -17,7 +17,7 @@ import { SceneProjector } from '../../collab/SceneProjector';
 import { ObjectParser } from '../ObjectParser';
 import { FileExporter } from '../utils/FileExporter';
 import { BusSubscriptions } from '../BusSubscriptions';
-import { GLOBAL_BUS } from '../EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 import { SelectionController } from './SelectionController';
 
 interface ActionRouterDependencies

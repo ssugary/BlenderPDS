@@ -12,7 +12,7 @@ import {
     rejectFriendRequest,
     removeFriend as apiRemoveFriend,
     sendFriendRequest
-} from '../../api/Backend';
+} from '@collab3d/core';
 
 /**
  * Account and friends state, backed by the real API.

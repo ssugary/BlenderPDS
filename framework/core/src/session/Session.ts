@@ -1,4 +1,4 @@
-import { Transport } from './Transport';
+import { Transport } from '../transport/Transport';
 
 export type SessionRole = 'host' | 'guest';
 

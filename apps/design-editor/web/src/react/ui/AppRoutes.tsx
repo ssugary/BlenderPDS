@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Session } from '../../network/Session';
+import { Session } from '@collab3d/core';
 import { Lobby } from './Lobby';
 import { MenuPage } from './MenuPage';
 import { HostPage } from './HostPage';

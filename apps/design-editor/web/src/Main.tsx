@@ -1,10 +1,10 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { endSession, leaveSession } from './api/Backend';
+import { endSession, leaveSession } from '@collab3d/core';
 import { ReplicaSession } from './collab/ReplicaSession';
 import { buildSceneSnapshot } from './collab/SceneSnapshot';
 import { InputManager } from './manager/InputManager';
-import { Session } from './network/Session';
+import { Session } from '@collab3d/core';
 import { Viewport3D } from './react/Viewport3D';
 import { AppRoutes } from './react/ui/AppRoutes';
 import { ChatPanel } from './react/ui/ChatPanel';

@@ -1,4 +1,4 @@
-import { OpId } from './OpId';
+import { BaseOperation, OpId } from '@collab3d/core';
 
 /**
  * Operations carry RESULTS, not recipes: "set transform to this matrix", never "move by +1".
@@ -6,14 +6,6 @@ import { OpId } from './OpId';
  * Everything must be plain JSON (it goes over the data channel), so no three.js classes here:
  * matrices are number[16], positions are [x, y, z].
  */
-interface BaseOperation
-{
-    id: OpId;
-    author: string;
-    /** Ops this one was created after. Used by the timeline and for causal ordering if needed. */
-    deps: OpId[];
-}
-
 export interface AddObject extends BaseOperation
 {
     kind: 'add_object';

@@ -6,7 +6,7 @@ import { SelectionManager } from '../../manager/SelectionManager';
 import { PresenceService } from '../../collab/PresenceService';
 import { ReplicaSession } from '../../collab/ReplicaSession';
 import { SceneProjector } from '../../collab/SceneProjector';
-import { GLOBAL_BUS } from '../EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 
 interface SelectionDependencies
 {

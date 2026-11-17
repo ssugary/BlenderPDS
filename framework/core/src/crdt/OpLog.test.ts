@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OpLog } from './OpLog';
+import { OpLog } from './OpLog';;
 import { Operation } from './Operation';
 
 const MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];

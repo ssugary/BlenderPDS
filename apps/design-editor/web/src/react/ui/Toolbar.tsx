@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GLOBAL_BUS } from '../../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 import { useBusEvent } from '../useBusEvent';
 import { ColorPicker } from './ColorPicker';
 

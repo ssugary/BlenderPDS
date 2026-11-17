@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { GLOBAL_BUS, ListenerFunction } from '../core/EventBus';
+import { GLOBAL_BUS, ListenerFunction } from '@collab3d/core';
 
 /**
  * Subscribes to GLOBAL_BUS for as long as the component stays mounted.

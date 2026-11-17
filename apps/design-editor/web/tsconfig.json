@@ -9,7 +9,6 @@
 
     /* Bundler mode (matches Vite) */
     "moduleResolution": "bundler",
-    "baseUrl": ".",
     "paths": {
       "@collab3d/core": ["../../../framework/core/src/index.ts"]
     },

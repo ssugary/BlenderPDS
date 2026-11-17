@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Engine } from '../core/Engine';
-import { GLOBAL_BUS } from '../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 import { ReplicaSession } from '../collab/ReplicaSession';
-import { Session } from '../network/Session';
+import { Session } from '@collab3d/core';
 
 /** A press-and-release further apart than this is a camera drag, not a selection click. */
 const CLICK_DRAG_TOLERANCE_PX = 5;

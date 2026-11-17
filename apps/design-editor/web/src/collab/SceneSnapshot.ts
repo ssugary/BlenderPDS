@@ -1,5 +1,5 @@
 import { DocumentState } from './DocumentState';
-import { VersionVector } from './OpLog';
+import { VersionVector } from '@collab3d/core';
 
 /**
  * Plain, JSON-only copy of the shared document.

@@ -1,5 +1,5 @@
 import { Object3D } from 'three';
-import { GLOBAL_BUS } from '../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 import { EditMode, EditorMode, ObjectMode } from '../entity/EditorMode';
 
 /**

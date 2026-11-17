@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SceneManager } from './SceneManager';
-import { GLOBAL_BUS } from '../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 
 /**
  * Holds the single selected mesh and the box drawn around it. Every change is announced on

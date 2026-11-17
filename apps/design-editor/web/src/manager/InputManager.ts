@@ -1,4 +1,4 @@
-import { GLOBAL_BUS } from '../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 
 type KeybindingsConfig = Record<string, string>;
 

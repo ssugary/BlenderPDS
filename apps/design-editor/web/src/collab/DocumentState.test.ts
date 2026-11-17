@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DocumentState } from './DocumentState';
 import { Operation, AddObject, ChangeColor, RemoveObject, SetTransform } from './Operation';
-import { OpId, opIdKey } from './OpId';
+import { OpId, opIdKey } from '@collab3d/core';
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const MOVED = [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];

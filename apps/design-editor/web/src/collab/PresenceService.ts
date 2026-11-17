@@ -1,4 +1,4 @@
-import { Transport } from '../network/Transport';
+import { Transport } from '@collab3d/core';
 
 export interface PeerPresence
 {

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { OpLog } from '../../collab/OpLog';
+import { OpLog, compareOpId } from '@collab3d/core';
 import { DocumentState } from '../../collab/DocumentState';
-import { compareOpId } from '../../collab/OpId';
 import { Operation } from '../../collab/Operation';
 
 const REFRESH_MS = 500;

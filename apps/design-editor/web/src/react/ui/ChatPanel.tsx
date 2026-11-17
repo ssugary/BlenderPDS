@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Session } from '../../network/Session';
+import { Session } from '@collab3d/core';
 
 const MAX_MESSAGE_LENGTH = 500;
 const ONLINE_COLOR = '#3ddc84';

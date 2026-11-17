@@ -1,8 +1,8 @@
 import { uuid } from '../core/utils/Id';
 import { DocumentState, Change } from './DocumentState';
-import { LamportClock } from './LamportClock';
+import { LamportClock } from '@collab3d/core';
 import { NewOperation, Operation } from './Operation';
-import { OpLog } from './OpLog';
+import { OpLog } from '@collab3d/core';
 
 /**
  * Glue for one replica: clock + log + state. Every edit, local or remote, goes through here.

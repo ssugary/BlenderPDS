@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLOBAL_BUS } from '../core/EventBus';
+import { GLOBAL_BUS } from '@collab3d/core';
 
 /** Base navigation strategy. CameraManager keeps one instance per mode and enables only the active one. */
 export class Navigation 

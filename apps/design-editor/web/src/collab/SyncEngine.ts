@@ -1,7 +1,7 @@
 import { ReplicaSession } from './ReplicaSession';
-import { Transport } from '../network/Transport';
+import { Transport } from '@collab3d/core';
 import { Operation } from './Operation';
-import { VersionVector } from './OpLog';
+import { VersionVector } from '@collab3d/core';
 import { isOperation, isVersionVector } from './validate';
 
 /**

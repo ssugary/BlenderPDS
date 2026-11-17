@@ -1,4 +1,4 @@
-import { Operation } from './Operation';
+import { BaseOperation } from './Operation';
 import { OpId, opIdKey } from './OpId';
 
 /** Highest lamport seen per site, e.g. { alice: 12, bob: 7 }. Tells a peer what you already have. */
@@ -8,14 +8,14 @@ export type VersionVector = Record<string, number>;
  * Append-only list of every operation, local and remote. This is the timeline.
  * Never edited, never reordered: DocumentState and the timeline scrubber both read from it.
  */
-export class OpLog
+export class OpLog<TOp extends BaseOperation = any>
 {
-    private ops: Operation[] = [];
+    private ops: TOp[] = [];
     private keys = new Set<string>();
     private vv: VersionVector = {};
 
     /** Returns false if the op is already in the log (duplicate delivery). */
-    public append(op: Operation): boolean
+    public append(op: TOp): boolean
     {
         const key = opIdKey(op.id);
         if (this.keys.has(key))
@@ -37,7 +37,7 @@ export class OpLog
      * Relies on each site's ops arriving in order (true on an ordered data channel),
      * and keeps log order so the receiver also gets them in order.
      */
-    public since(vv: VersionVector): Operation[]
+    public since(vv: VersionVector): TOp[]
     {
         return this.ops.filter((op) => op.id.lamport > (vv[op.id.siteId] ?? 0));
     }
@@ -49,7 +49,7 @@ export class OpLog
     }
 
     /** For the timeline panel: the log in insertion order. */
-    public all(): readonly Operation[]
+    public all(): readonly TOp[]
     {
         return this.ops;
     }
