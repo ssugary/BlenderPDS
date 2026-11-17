@@ -27,7 +27,7 @@ identidade dos handlers; nenhum payload pode escolhê-los.
 | `sync_ops` | `{ "ops": [op, ...] }` | valida envelope + kind registrado, atribui `seq`, persiste e responde `sync_ack`; retransmite aos demais. |
 | `presence` | `{ "siteId": "...", "selectedObjectId": "..." }` | efêmero; retransmitido sem persistir. |
 | `chat` | `{ "text": "..." }` | efêmero; o servidor reconstrói o frame (sem campos extras). |
-| `scene_snapshot` | `{ "snapshot": SnapshotEnvelope }` | valida e armazena o snapshot (política host). |
+| `scene_snapshot` | `{ "snapshot": SnapshotEnvelope }` | valida e armazena o snapshot (política host). O host o envia a cada `SyncPolicy.snapshotIntervalMs` (30 s por padrão); o convidado não envia. |
 
 ### Envelope de operação
 
@@ -71,7 +71,7 @@ identidade dos handlers; nenhum payload pode escolhê-los.
 | `INVALID_SNAPSHOT` | frame `scene_snapshot` sem `snapshot`. |
 | `SNAPSHOT_TOO_LARGE` | snapshot acima de `collab3d.snapshot.max-bytes`. |
 | `SNAPSHOT_REJECTED` | política recusou, `baseSeq` à frente do log/retrocedendo ou checksum inválido. |
-| `RATE_LIMITED` | frame acima do orçamento por conexão/tipo; é descartado e a conexão continua. |
+| `RATE_LIMITED` | frame acima do orçamento por conexão/tipo; é descartado e a conexão continua. `sync_ops` e `sync_hello` são isentos (descartar operação perderia edição); o teto deles é o de bytes. |
 | `SYNC_FAILED` | falha inesperada no catch-up. |
 | `INTERNAL_ERROR` | falha inesperada ao tratar o frame. |
 
@@ -109,5 +109,5 @@ identidade dos handlers; nenhum payload pode escolhê-los.
 | chat | 500 caracteres | `collab3d.ws.max-chat-length` |
 | id/nome curto | 100 caracteres | `OperationFields.MAX_ID_LENGTH` |
 | buffer de geometria | 262144 bytes | `design.max-mesh-bytes` (app) |
-| mensagens por conexão/tipo | 50/s | `collab3d.rate-limit.default-per-second` e `per-type` |
+| mensagens por conexão/tipo | 50/s (exceto `sync_ops`/`sync_hello`) | `collab3d.rate-limit.default-per-second`, `per-type` e `exempt-types` |
 | snapshot | 1 MB | `collab3d.snapshot.max-bytes` |

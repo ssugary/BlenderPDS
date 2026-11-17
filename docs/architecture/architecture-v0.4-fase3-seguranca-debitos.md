@@ -4,6 +4,7 @@ phase: "fase 3 — segurança, débitos críticos e reidratação por snapshot"
 commit_sha: "b80d5d5"
 date: "2026-11-17"
 previous_version: "architecture-v0.3-fase2-core-frontend.md"
+corrections_after_snapshot: "2026-11-17 — nota de cabeçalho, corpo preservado: (a) o compose usa postgres:16, não 17; (b) sync_ops/sync_hello são isentos do rate limit (o corpo sugere orçamento uniforme), e o snapshot periódico do host passou a existir em 6d8955c, resolvendo a dívida 3 do §8; (c) contagens atuais: starter 169, app 10, app web 52, core 25."
 scope: "Snapshot completo do repositório ao fim da Fase 3 (P2.fix, P3.0–P3.5 + gate). A identidade passa a vir sempre do usuário autenticado (principal + SecurityContext), operações e snapshots ganham validação completa e checksum, o WebSocket ganha rate limit e fan-out por SPI, a listagem de usuários vira busca, e a configuração/CI deixam de carregar segredos. Contratos REST/WS mudam em pontos explícitos e compatíveis por uma versão."
 ---
 

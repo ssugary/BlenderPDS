@@ -22,6 +22,15 @@ Cada fase é um marco funcional; mudanças de contrato estão marcadas como **ad
 - `DocumentState.toSnapshot()/fromSnapshot()` e `OpLog.seedFromSnapshot()` no core.
 - `error{RATE_LIMITED}` para o frame acima do orçamento por conexão/tipo.
 
+### Correções após o fechamento
+
+- **`sync_ops` isento do rate limit**: descartar um frame de operação perderia a edição.
+  Rajadas de arraste (120 frames no teste) recebem ack normalmente; o teto continua sendo
+  o de bytes por frame.
+- **Snapshot periódico do host**: `SyncPolicy.snapshotIntervalMs` (30 s por padrão no host,
+  0 no convidado) publica o envelope com checksum canônico; um cliente novo recebe
+  `sync_snapshot` + apenas as operações posteriores.
+
 ### De quebra
 
 - `hostId` (criar sala), `userId` (join/leave/end) e `?userId=` (WebSocket) deixam de
