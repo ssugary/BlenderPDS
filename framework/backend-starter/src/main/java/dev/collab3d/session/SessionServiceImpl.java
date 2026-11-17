@@ -18,6 +18,9 @@ import dev.collab3d.spi.SessionCapacityPolicy;
 import dev.collab3d.spi.SessionContext;
 import dev.collab3d.spi.SessionJoinPolicy;
 import dev.collab3d.spi.SessionVisibilityPolicy;
+import dev.collab3d.spi.SnapshotChecksums;
+import dev.collab3d.spi.SnapshotEnvelope;
+import dev.collab3d.spi.SnapshotPolicy;
 import dev.collab3d.session.SessionEndedEvent;
 import dev.collab3d.session.SessionOperationInput;
 import dev.collab3d.session.SessionService;
@@ -36,6 +39,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * {@link SessionService} on top of JPA: room lifecycle, presence and the operation
@@ -72,7 +76,9 @@ public class SessionServiceImpl implements SessionService {
     private final List<SessionJoinPolicy> joinPolicies;
     private final List<SessionCapacityPolicy> capacityPolicies;
     private final List<SessionVisibilityPolicy> visibilityPolicies;
+    private final List<SnapshotPolicy> snapshotPolicies;
     private final ApplicationEventPublisher events;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -340,22 +346,57 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional
-    public void saveSnapshot(Long sessionId, Long userId, String snapshotJson) {
-        if (snapshotJson == null || snapshotJson.isBlank()) {
+    public void saveSnapshot(Long sessionId, Long userId, SnapshotEnvelope envelope) {
+        if (envelope == null || envelope.state() == null || envelope.state().isNull()) {
             throw new IllegalArgumentException("Snapshot vazio");
         }
-        if (snapshotJson.getBytes(StandardCharsets.UTF_8).length > MAX_SNAPSHOT_BYTES) {
-            throw new IllegalArgumentException("Snapshot maior que " + MAX_SNAPSHOT_BYTES + " bytes");
+        if (envelope.schemaVersion() < 1 || envelope.checksum() == null) {
+            throw new IllegalArgumentException("Snapshot sem versão de schema ou checksum");
         }
 
         Session session = findSessionForUpdateOrThrow(sessionId);
-        // Having participated (even if already disconnected) is enough: the final
-        // snapshot is usually sent exactly while the socket is closing.
-        if (!participantRepository.existsBySessionIdAndUserId(sessionId, userId)) {
-            throw new AccessDeniedException("Usuário " + userId + " não participa da sessão " + sessionId);
+        Actor actor = contextFactory.actor(userId);
+        SessionContext ctx = contextFactory.sessionContext(sessionId);
+
+        SnapshotPolicy policy = snapshotPolicies.stream()
+                .filter(candidate -> candidate.supports(ctx.appType()))
+                .findFirst()
+                .orElse(null);
+        if (policy == null || !policy.mayWrite(ctx, actor, envelope)) {
+            throw new AccessDeniedException("Sem permissão para gravar o snapshot da sessão " + sessionId);
         }
 
-        session.setSceneSnapshot(snapshotJson);
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(envelope);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Snapshot não serializável", ex);
+        }
+        if (json.getBytes(StandardCharsets.UTF_8).length > policy.maxBytes()) {
+            throw new IllegalArgumentException("Snapshot maior que " + policy.maxBytes() + " bytes");
+        }
+
+        if (envelope.appType() != null && !envelope.appType().equals(session.getAppType())) {
+            throw new IllegalArgumentException("Snapshot de outro app type");
+        }
+
+        long head = operationRepository.findTopBySessionIdOrderBySeqDesc(sessionId)
+                .map(SessionOperation::getSeq)
+                .orElse(0L);
+        if (envelope.baseSeq() > head) {
+            throw new IllegalStateException("baseSeq " + envelope.baseSeq() + " à frente do log (" + head + ")");
+        }
+        long stored = session.getSnapshotSeq() == null ? -1L : session.getSnapshotSeq();
+        if (envelope.baseSeq() < stored) {
+            throw new IllegalStateException("baseSeq " + envelope.baseSeq() + " atrás do snapshot atual (" + stored + ")");
+        }
+        if (!SnapshotChecksums.ofState(envelope.state()).equals(envelope.checksum())) {
+            throw new IllegalStateException("Checksum do snapshot não confere");
+        }
+
+        session.setSceneSnapshot(json);
+        session.setSnapshotSeq(envelope.baseSeq());
+        session.setSnapshotVersion(envelope.schemaVersion());
         sessionRepository.save(session);
     }
 

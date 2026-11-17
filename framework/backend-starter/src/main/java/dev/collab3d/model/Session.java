@@ -81,6 +81,14 @@ public class Session {
     @Column(name = "scene_snapshot", columnDefinition = "text")
     private String sceneSnapshot;
 
+    /** {@code seq} folded into {@link #sceneSnapshot}; null while no snapshot was stored. */
+    @Column(name = "snapshot_seq")
+    private Long snapshotSeq;
+
+    /** Format version of the stored snapshot ({@code SnapshotEnvelope.schemaVersion}). */
+    @Column(name = "snapshot_version")
+    private Integer snapshotVersion;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -325,7 +325,13 @@ class SessionWebSocketTest {
         Session session = sessionService.createSession(host);
         Client hostClient = connect(session.getId(), host);
 
-        hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\",\"snapshot\":{\"blob\":\"ok\"}}"));
+        String stateJson = "{\"blob\":\"ok\"}";
+        String checksum = dev.collab3d.spi.SnapshotChecksums.ofState(
+                tools.jackson.databind.json.JsonMapper.builder().build().readTree(stateJson));
+        hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\",\"snapshot\":{"
+                + "\"schemaVersion\":1,\"appType\":\"design\",\"baseSeq\":0,"
+                + "\"versionVector\":{},\"state\":" + stateJson + ","
+                + "\"checksum\":\"" + checksum + "\"}}"));
         assertThat(snapshotOf(session.getId())).contains("ok");
 
         hostClient.send(new TextMessage("{\"type\":\"scene_snapshot\"}"));

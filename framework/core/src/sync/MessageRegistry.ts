@@ -11,6 +11,8 @@ export interface SyncReplica
     onLocalOp(callback: (op: BaseOperation) => void): void;
     offLocalOp(callback: (op: BaseOperation) => void): void;
     receive(op: BaseOperation): void;
+    /** Optional: a replica that can be rehydrated from a snapshot (P3.3). */
+    restoreSnapshot?(snapshot: unknown, versionVector?: VersionVector): void;
 }
 
 /** Wire limits, owned by the application so it can tune them without touching the core. */

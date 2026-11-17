@@ -42,6 +42,16 @@ export class OpLog<TOp extends BaseOperation = any>
         return this.ops.filter((op) => op.id.lamport > (vv[op.id.siteId] ?? 0));
     }
 
+    /**
+     * Rehydration: the snapshot already reflects this vector, so the next hello does not
+     * ask for the operations it folded in. Older entries never go backwards.
+     */
+    public seedFromSnapshot(versionVector: VersionVector): void
+    {
+        for (const [siteId, lamport] of Object.entries(versionVector))
+            this.vv[siteId] = Math.max(this.vv[siteId] ?? 0, lamport);
+    }
+
     /** Copy, so callers can't mutate the log's own vector. */
     public versionVector(): VersionVector
     {

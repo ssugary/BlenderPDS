@@ -68,7 +68,12 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
         Map<String, Integer> versionVector = readVersionVector(root.get("vv"));
         registry.runLocked(ctx.session().sessionId(), () -> {
             try {
-                sendCatchUp(connection, ctx.session().sessionId(), versionVector);
+                // A brand-new replica gets the stored materialisation first, then only
+                // the operations after it (P3.3). A client with a vector resumes normally.
+                long cursor = versionVector.isEmpty()
+                        ? sendSnapshotIfAny(connection, ctx.session().sessionId())
+                        : 0L;
+                sendCatchUp(connection, ctx.session().sessionId(), versionVector, cursor);
             } catch (RuntimeException ex) {
                 log.warn("Catch-up falhou na sessão {}: {}", ctx.session().sessionId(), ex.toString());
                 connection.sendNow(frames.error("SYNC_FAILED").toString());
@@ -88,9 +93,10 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
      * next page is read. The author is not part of a {@code sync_ops} frame, so it is not
      * read here (the lazy association is never initialised outside the transaction).
      */
-    private void sendCatchUp(SessionConnection connection, Long sessionId, Map<String, Integer> versionVector) {
+    private void sendCatchUp(SessionConnection connection, Long sessionId, Map<String, Integer> versionVector,
+                             long startCursor) {
         int pageSize = Math.max(1, properties.sync().chunkSize());
-        long cursor = 0;
+        long cursor = startCursor;
 
         while (true) {
             List<SessionOperation> page = sessionService.syncSinceSeq(sessionId, cursor, pageSize);
@@ -117,6 +123,28 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
             if (page.size() < pageSize) {
                 return;
             }
+        }
+    }
+
+    /**
+     * Sends the stored snapshot, if there is one, and returns its {@code baseSeq} so the
+     * catch-up starts after it. A snapshot that cannot be parsed is ignored: the log is
+     * still the source of truth and the client simply replays everything.
+     */
+    private long sendSnapshotIfAny(SessionConnection connection, Long sessionId) {
+        var stored = sessionService.getSnapshot(sessionId);
+        if (stored.isEmpty() || stored.get().isBlank()) {
+            return 0L;
+        }
+
+        try {
+            JsonNode snapshot = objectMapper.readTree(stored.get());
+            long baseSeq = snapshot.path("baseSeq").asLong(0);
+            connection.sendNow(frames.syncSnapshot(snapshot).toString());
+            return baseSeq;
+        } catch (RuntimeException ex) {
+            log.warn("Snapshot da sessão {} ilegível, enviando o log inteiro: {}", sessionId, ex.toString());
+            return 0L;
         }
     }
 

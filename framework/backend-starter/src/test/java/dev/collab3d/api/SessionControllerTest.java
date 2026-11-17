@@ -11,6 +11,8 @@ import dev.collab3d.model.Session;
 import dev.collab3d.mail.EmailService;
 import dev.support.LegacyIdentityConfiguration;
 import dev.collab3d.session.SessionService;
+import dev.collab3d.spi.SnapshotChecksums;
+import dev.collab3d.spi.SnapshotEnvelope;
 import dev.collab3d.user.UserService;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
@@ -259,13 +261,19 @@ class SessionControllerTest {
 
         mockMvc.perform(get("/sessions/" + sessionId + "/state")).andExpect(status().isNotFound());
 
-        sessionService.saveSnapshot(sessionId, host, "{\"objects\":[]}");
+        var state = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree("{\"objects\":[]}");
+        sessionService.saveSnapshot(sessionId, host,
+                new SnapshotEnvelope(1, "design", 0, java.util.Map.of(), state,
+                        SnapshotChecksums.ofState(state)));
 
         var result = mockMvc.perform(get("/sessions/" + sessionId + "/state"))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertThat(result.getResponse().getContentAsString()).isEqualTo("{\"objects\":[]}");
+        assertThat(result.getResponse().getContentAsString())
+                .contains("\"state\":{\"objects\":[]}")
+                .contains("\"checksum\":\"" + SnapshotChecksums.ofState(state) + "\"");
         assertThat(result.getResponse().getContentType()).contains(MediaType.APPLICATION_JSON_VALUE);
     }
 }

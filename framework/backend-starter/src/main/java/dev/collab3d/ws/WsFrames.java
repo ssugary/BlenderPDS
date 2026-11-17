@@ -51,6 +51,17 @@ public class WsFrames {
         return root;
     }
 
+    /**
+     * The rehydration frame: the stored snapshot, exactly as it was validated and saved.
+     * It always precedes the operations after its {@code baseSeq} (P3.3).
+     */
+    public ObjectNode syncSnapshot(JsonNode snapshot) {
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("type", "sync_snapshot");
+        root.set("snapshot", snapshot);
+        return root;
+    }
+
     /** Acknowledges one stored operation to its sender. */
     public ObjectNode ack(AppendedOperation operation) {
         JsonNode id = operation.operation().path("id");

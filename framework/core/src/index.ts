@@ -14,6 +14,7 @@ export { OpLog } from './crdt/OpLog';
 export type { VersionVector } from './crdt/OpLog';
 export { LWWRegister } from './crdt/LWWRegister';
 export { DocumentState } from './crdt/DocumentState';
+export type { DocumentSnapshot, SerializedRecord } from './crdt/DocumentState';
 export { LwwStrategy, TombstoneSetStrategy } from './crdt/Record';
 export type { DocumentRecord, DocumentDraft } from './crdt/Record';
 export { OperationKindRegistry } from './crdt/OperationKind';

@@ -43,6 +43,7 @@ export class SyncEngine
         this.registry = new MessageRegistry([
             this.helloDefinition(),
             this.opsDefinition(),
+            this.snapshotDefinition(),
             ...(options.messages ?? [])
         ]);
     }
@@ -125,6 +126,29 @@ export class SyncEngine
             type: 'sync_ops',
             validate: (payload) => Array.isArray(payload?.ops),
             handle: (payload: { ops: unknown[] }) => engine.receiveOps(payload.ops)
+        };
+    }
+
+    /**
+     * The server's rehydration frame (P3.3): the stored materialisation arrives before
+     * any operation after it. A replica that cannot restore ignores it and catches up
+     * from the log instead.
+     */
+    private snapshotDefinition(): MessageDefinition
+    {
+        const engine = this;
+
+        return {
+            type: 'sync_snapshot',
+            validate: (payload) => typeof payload?.snapshot === 'object' && payload.snapshot !== null,
+            handle: (payload: { snapshot: Record<string, unknown> }) =>
+            {
+                const envelope = payload.snapshot;
+                engine.replica.restoreSnapshot?.(
+                    envelope.state,
+                    envelope.versionVector as VersionVector | undefined
+                );
+            }
         };
     }
 

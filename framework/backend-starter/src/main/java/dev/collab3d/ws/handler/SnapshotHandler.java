@@ -3,13 +3,13 @@ package dev.collab3d.ws.handler;
 import dev.collab3d.session.SessionService;
 import dev.collab3d.spi.AbstractMessageTypeHandler;
 import dev.collab3d.spi.Delivery;
+import dev.collab3d.spi.SnapshotEnvelope;
 import dev.collab3d.spi.WsMessageContext;
 import dev.collab3d.ws.WsFrames;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -53,11 +53,11 @@ public class SnapshotHandler extends AbstractMessageTypeHandler {
         }
 
         try {
-            sessionService.saveSnapshot(ctx.session().sessionId(), ctx.actor().userId(),
-                    objectMapper.writeValueAsString(snapshot));
+            SnapshotEnvelope envelope = objectMapper.treeToValue(snapshot, SnapshotEnvelope.class);
+            sessionService.saveSnapshot(ctx.session().sessionId(), ctx.actor().userId(), envelope);
         } catch (IllegalArgumentException ex) {
             ctx.broadcaster().reply(frames.error("SNAPSHOT_TOO_LARGE"));
-        } catch (JacksonException | EntityNotFoundException | AccessDeniedException ex) {
+        } catch (EntityNotFoundException | AccessDeniedException | IllegalStateException ex) {
             ctx.broadcaster().reply(frames.error("SNAPSHOT_REJECTED"));
         }
     }

@@ -12,6 +12,8 @@ import dev.collab3d.repository.SessionRepository;
 import dev.collab3d.mail.EmailService;
 import dev.collab3d.session.SessionOperationInput;
 import dev.collab3d.session.SessionService;
+import dev.collab3d.spi.SnapshotChecksums;
+import dev.collab3d.spi.SnapshotEnvelope;
 import dev.collab3d.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
@@ -347,16 +349,24 @@ class SessionServiceImplTest {
         Long stranger = register("estranho-snapshot");
         Session session = sessionService.createSession(host);
 
-        sessionService.saveSnapshot(session.getId(), host, "{\"objects\":[{\"id\":\"obj-1\"}]}");
-        assertThat(sessionService.getSnapshot(session.getId()))
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var state = mapper.readTree("{\"objects\":[{\"id\":\"obj-1\"}]}");
+        sessionService.saveSnapshot(session.getId(), host, envelope(state));
+        assertThat(sessionService.getSnapshot(session.getId()).orElseThrow())
                 .contains("{\"objects\":[{\"id\":\"obj-1\"}]}");
 
-        assertThatThrownBy(() -> sessionService.saveSnapshot(session.getId(), stranger, "{}"))
+        assertThatThrownBy(() -> sessionService.saveSnapshot(session.getId(), stranger, envelope(state)))
                 .isInstanceOf(AccessDeniedException.class);
 
-        String tooBig = "{\"objects\":\"" + "x".repeat(SessionServiceImpl.MAX_SNAPSHOT_BYTES) + "\"}";
-        assertThatThrownBy(() -> sessionService.saveSnapshot(session.getId(), host, tooBig))
+        String tooBigState = "{\"objects\":\"" + "x".repeat(SessionServiceImpl.MAX_SNAPSHOT_BYTES) + "\"}";
+        assertThatThrownBy(() -> sessionService.saveSnapshot(session.getId(), host,
+                envelope(mapper.readTree(tooBigState))))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static SnapshotEnvelope envelope(tools.jackson.databind.JsonNode state) {
+        return new SnapshotEnvelope(1, "design", 0, java.util.Map.of(), state,
+                SnapshotChecksums.ofState(state));
     }
 
     @Test

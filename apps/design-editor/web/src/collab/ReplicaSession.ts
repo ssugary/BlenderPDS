@@ -1,6 +1,6 @@
 import { uuid } from '../core/utils/Id';
 import { Change, createDocumentState } from './DocumentState';
-import { LamportClock } from '@collab3d/core';
+import { DocumentSnapshot, LamportClock } from '@collab3d/core';
 import { NewOperation, Operation } from './Operation';
 import { OpLog } from '@collab3d/core';
 
@@ -35,6 +35,33 @@ export class ReplicaSession
             listener(op);
 
         return op;
+    }
+
+    /**
+     * Rehydration (P3.3): replaces the document with the server's snapshot and seeds the
+     * version vector, so the hello that follows asks only for the operations after it.
+     * Every live object is reported as one added change, which is what lets the projector
+     * rebuild the scene without knowing about snapshots.
+     */
+    public restoreSnapshot(snapshot: DocumentSnapshot, versionVector?: Record<string, number>): void
+    {
+        this.state.restore(snapshot);
+        if (versionVector)
+            this.log.seedFromSnapshot(versionVector);
+
+        const restored: Change[] = [];
+        for (const record of this.state.all())
+        {
+            this.clock.observe(record.addStamp);
+            if (record.removeStamp)
+                this.clock.observe(record.removeStamp);
+            for (const field of record.fields.values())
+                this.clock.observe(field.stamp);
+
+            if (!record.deleted)
+                restored.push({ type: 'added', objectId: record.id });
+        }
+        this.notifyChanges(restored);
     }
 
     /** Remote edit. Duplicates are dropped, and it never fires onLocalOp (no echo back to the sender). */

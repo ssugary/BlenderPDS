@@ -3,6 +3,7 @@ package dev.collab3d.session;
 import dev.collab3d.model.Session;
 import dev.collab3d.model.SessionOperation;
 import dev.collab3d.model.SessionParticipant;
+import dev.collab3d.spi.SnapshotEnvelope;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -125,9 +126,17 @@ public interface SessionService {
      * Stores the JSON scene snapshot sent by a client (a denormalisation; the operation
      * log stays the source of truth).
      *
-     * @throws IllegalArgumentException if the snapshot is null or over 1 MB
+     * <p>P3.3 adds the rehydration checks: the policy decides who may write, the size
+     * respects its ceiling, {@code baseSeq} must be at most the log's head and never go
+     * backwards, the app type must match the room and the checksum must match the
+     * canonical state.
+     *
+     * @throws IllegalArgumentException if the snapshot is malformed or over the size ceiling
+     * @throws AccessDeniedException    if the policy does not let this actor write it
+     * @throws IllegalStateException    if baseSeq is ahead of the log, goes backwards or
+     *                                  the checksum does not match
      */
-    void saveSnapshot(Long sessionId, Long userId, String snapshotJson);
+    void saveSnapshot(Long sessionId, Long userId, SnapshotEnvelope snapshot);
 
     Optional<String> getSnapshot(Long sessionId);
 

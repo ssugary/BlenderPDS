@@ -27,6 +27,30 @@ class Record implements DocumentRecord
 }
 
 /**
+ * Portable form of a whole document: every record's stamps and tombstones included.
+ *
+ * Without the stamps the merge after a snapshot would diverge, because a late operation
+ * could not be compared against what the snapshot already contains.
+ */
+export interface DocumentSnapshot
+{
+    /** Bumped when this shape changes; SnapshotCodec migrates older ones. */
+    schemaVersion: number;
+    records: SerializedRecord[];
+}
+
+export interface SerializedRecord
+{
+    id: string;
+    createdBy: OpId;
+    addStamp: OpId;
+    removeStamp: OpId | null;
+    deleted: boolean;
+    meta: { [name: string]: unknown };
+    fields: { [name: string]: { value: unknown; stamp: OpId } };
+}
+
+/**
  * The CRDT of a collaborative document.
  *
  * It is a fold over the operation log and it is domain-free: the meaning of each kind lives in
@@ -68,6 +92,58 @@ export class DocumentState<TChange = unknown>
     public all(): IterableIterator<DocumentRecord>
     {
         return this.records.values();
+    }
+
+    /** Full serialization, stamps and tombstones included (P3.3 rehydration). */
+    public toSnapshot(): DocumentSnapshot
+    {
+        const records: SerializedRecord[] = [];
+        for (const record of this.records.values())
+        {
+            const fields: { [name: string]: { value: unknown; stamp: OpId } } = {};
+            for (const [name, register] of record.fields)
+                fields[name] = { value: register.value, stamp: register.stamp };
+
+            records.push({
+                id: record.id,
+                createdBy: record.createdBy,
+                addStamp: record.addStamp,
+                removeStamp: record.removeStamp,
+                deleted: record.deleted,
+                meta: Object.fromEntries(record.meta),
+                fields
+            });
+        }
+        return { schemaVersion: 1, records };
+    }
+
+    /** Replaces the state with a snapshot, keeping the same kinds registry. */
+    public restore(snapshot: DocumentSnapshot): void
+    {
+        this.records.clear();
+        for (const serialized of snapshot.records)
+        {
+            const record = new Record(serialized.id, serialized.createdBy, serialized.addStamp);
+            record.removeStamp = serialized.removeStamp;
+            record.deleted = serialized.deleted;
+            for (const [name, value] of Object.entries(serialized.meta ?? {}))
+                record.meta.set(name, value);
+            for (const [name, field] of Object.entries(serialized.fields ?? {}))
+                record.fields.set(name, new LWWRegister<unknown>(field.value, field.stamp));
+
+            this.records.set(record.id, record);
+        }
+    }
+
+    /** Rebuilds a state from a snapshot (a brand-new replica rehydrating). */
+    public static fromSnapshot<TChange>(
+        snapshot: DocumentSnapshot,
+        kinds: OperationKindRegistry<TChange>
+    ): DocumentState<TChange>
+    {
+        const state = new DocumentState<TChange>(kinds);
+        state.restore(snapshot);
+        return state;
     }
 
     /** Rebuilds a state from a log prefix (the timeline uses this on a scratch instance). */
