@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
  * honest cost of keeping the handlers free of lazy JPA proxies; a cache belongs to the
  * later phases, together with the actor coming from the security context.
  *
- * <p>{@code appType} still comes from the configuration: the column that stores it per
- * room arrives with the V2 migration (P1.10).
+ * <p>{@code appType} comes from the room row (column added by V2, P1.10), falling back to
+ * the configured default for a row written before the migration.
  */
 @Component
 @RequiredArgsConstructor
@@ -50,7 +50,8 @@ public class SessionContextFactory {
                 .map(SessionOperation::getSeq)
                 .orElse(0L);
 
-        return new SessionContext(sessionId, properties.appType(), session.getStatus(),
+        String appType = session.getAppType() == null ? properties.appType() : session.getAppType();
+        return new SessionContext(sessionId, appType, session.getStatus(),
                 session.getHost().getId(), active, headSeq);
     }
 

@@ -1,5 +1,6 @@
 package dev.collab3d.session;
 
+import dev.collab3d.autoconfigure.Collab3dProperties;
 import dev.collab3d.model.Session;
 import dev.collab3d.model.SessionOperation;
 import dev.collab3d.model.SessionParticipant;
@@ -67,6 +68,7 @@ public class SessionServiceImpl implements SessionService {
     private final UserRepository userRepository;
     private final OperationSequencer sequencer;
     private final SessionContextFactory contextFactory;
+    private final Collab3dProperties properties;
     private final List<SessionJoinPolicy> joinPolicies;
     private final List<SessionCapacityPolicy> capacityPolicies;
     private final List<SessionVisibilityPolicy> visibilityPolicies;
@@ -86,6 +88,9 @@ public class SessionServiceImpl implements SessionService {
         Session session = new Session();
         session.setHost(host);
         session.setStatus(SessionStatus.WAITING);
+        // One deployment hosts one application: the type comes from the configuration,
+        // never from the create request (P1.10).
+        session.setAppType(properties.appType());
         session.setCode(generateUniqueCode());
         Session saved = sessionRepository.save(session);
 

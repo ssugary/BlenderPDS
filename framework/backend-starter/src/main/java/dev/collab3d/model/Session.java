@@ -58,6 +58,14 @@ public class Session {
     @Column(name = "status", nullable = false, length = 20)
     private SessionStatus status = SessionStatus.WAITING;
 
+    /**
+     * Which application owns the room ({@code design}, ...). The WebSocket layer and the
+     * policies use it to pick the handlers/validators of the domain; rooms created before
+     * V2 are {@code design}, the only application that existed.
+     */
+    @Column(name = "app_type", nullable = false, length = 32)
+    private String appType = "design";
+
     /** Short code so a friend can join without going through the friend list. */
     @Column(name = "code", nullable = false, unique = true, length = 12)
     private String code;
