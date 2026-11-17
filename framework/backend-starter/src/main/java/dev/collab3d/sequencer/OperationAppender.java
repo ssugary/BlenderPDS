@@ -2,7 +2,6 @@ package dev.collab3d.sequencer;
 
 import dev.collab3d.model.SessionOperation;
 import dev.collab3d.session.SessionOperationInput;
-import dev.collab3d.session.SessionService;
 import dev.collab3d.spi.Actor;
 import dev.collab3d.spi.AppendedOperation;
 import dev.collab3d.spi.AppendResult;
@@ -24,16 +23,16 @@ import tools.jackson.databind.node.ObjectNode;
  * The server-side door into the operation log, as the handlers see it: validate the
  * batch, append it under the session lock, hand back what entered.
  *
- * <p>It is deliberately thin today — {@code SessionService.appendOperations} still owns
- * the sequencing SQL. P1.7 moves that into {@code OperationSequencer}, P1.8 adds the
- * admission chain, and the handlers do not change: they already talk to this interface.
+ * <p>It is deliberately thin: {@link OperationSequencer} owns the lock, the {@code seq}
+ * and the dedupe; P1.8 adds the admission chain here, before the write, and the handlers
+ * do not change — they already talk to this interface.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OperationAppender {
 
-    private final SessionService sessionService;
+    private final OperationSequencer sequencer;
     private final OperationValidator operationValidator;
     private final ObjectMapper objectMapper;
 
@@ -49,7 +48,7 @@ public class OperationAppender {
 
         List<SessionOperation> saved;
         try {
-            saved = sessionService.appendOperations(sessionId, actor.userId(), inputs);
+            saved = sequencer.append(sessionId, actor.userId(), inputs);
         } catch (EntityNotFoundException | AccessDeniedException | IllegalStateException ex) {
             throw new MessageRejectedException("OP_REJECTED", ex.getMessage());
         }

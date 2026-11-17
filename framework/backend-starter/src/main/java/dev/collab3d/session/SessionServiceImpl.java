@@ -9,6 +9,7 @@ import dev.collab3d.repository.SessionOperationRepository;
 import dev.collab3d.repository.SessionParticipantRepository;
 import dev.collab3d.repository.SessionRepository;
 import dev.collab3d.repository.UserRepository;
+import dev.collab3d.sequencer.OperationSequencer;
 import dev.collab3d.session.SessionEndedEvent;
 import dev.collab3d.session.SessionOperationInput;
 import dev.collab3d.session.SessionService;
@@ -56,6 +57,7 @@ public class SessionServiceImpl implements SessionService {
     private final SessionParticipantRepository participantRepository;
     private final SessionOperationRepository operationRepository;
     private final UserRepository userRepository;
+    private final OperationSequencer sequencer;
     private final ApplicationEventPublisher events;
 
     @Override
@@ -227,45 +229,13 @@ public class SessionServiceImpl implements SessionService {
         return sessionRepository.findOpenByHostIds(friendIds, SessionStatus.ACTIVE);
     }
 
+    /**
+     * Kept on the service for its callers; the lock, the {@code seq} and the dedupe now
+     * belong to {@link OperationSequencer} (P1.7).
+     */
     @Override
-    @Transactional
     public List<SessionOperation> appendOperations(Long sessionId, Long userId, List<SessionOperationInput> inputs) {
-        if (inputs == null || inputs.isEmpty()) {
-            return List.of();
-        }
-
-        Session session = findSessionForUpdateOrThrow(sessionId);
-        if (session.getStatus() == SessionStatus.ENDED) {
-            throw new IllegalStateException("Sessão encerrada: " + sessionId);
-        }
-
-        SessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .filter(SessionParticipant::isActive)
-                .orElseThrow(() -> new AccessDeniedException("Participante não está conectado à sessão " + sessionId));
-
-        long nextSeq = operationRepository.findTopBySessionIdOrderBySeqDesc(sessionId)
-                .map(last -> last.getSeq() + 1)
-                .orElse(1L);
-
-        List<SessionOperation> saved = new ArrayList<>();
-        for (SessionOperationInput input : inputs) {
-            // Redelivery (reconnect, retry): the op is already in the log, nothing to do.
-            if (operationRepository.existsBySessionIdAndSiteIdAndLamport(sessionId, input.siteId(), input.lamport())) {
-                continue;
-            }
-
-            SessionOperation operation = new SessionOperation();
-            operation.setSession(session);
-            operation.setSeq(nextSeq++);
-            operation.setSiteId(input.siteId());
-            operation.setLamport(input.lamport());
-            operation.setAuthor(participant.getUser());
-            operation.setKind(input.kind());
-            operation.setPayload(input.payload());
-            saved.add(operationRepository.save(operation));
-        }
-
-        return saved;
+        return sequencer.append(sessionId, userId, inputs);
     }
 
     @Override
