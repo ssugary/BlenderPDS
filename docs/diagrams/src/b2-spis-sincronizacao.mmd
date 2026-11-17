@@ -1,0 +1,63 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+
+    namespace HS1 {
+        class OperationAdmissionPolicy {
+            <<interface>>
+            +admit(ctx, actor, operation, state) Optional
+        }
+        class SessionStateReducer {
+            <<interface>>
+            +initial(ctx) S
+            +reduce(current, operation, seq) S
+            +stateType() Class
+        }
+        class SnapshotPolicy {
+            <<interface>>
+            +mayWrite(ctx, actor, snapshot) boolean
+            +maxBytes() int
+        }
+        class AdmitAllPolicy
+        class HostOnlySnapshotPolicy
+    }
+    namespace HS2 {
+        class MessageTypeHandler {
+            <<interface>>
+            +type() String
+            +delivery() Delivery
+            +handle(ctx, payload) void
+        }
+        class SessionBroadcaster {
+            <<interface>>
+            +broadcast(sessionId, frame) void
+            +broadcastExcept(sessionId, connectionId, frame) void
+        }
+        class InMemorySessionBroadcaster
+    }
+    namespace HS3 {
+        class MessageValidator {
+            <<interface>>
+            +supports(messageType) boolean
+            +validate(ctx, actor, payload) void
+        }
+    }
+    namespace HS6 {
+        class SnapshotCodec {
+            <<interface>>
+            +currentSchemaVersion() int
+            +migrate(snapshot, fromVersion) JsonNode
+        }
+    }
+
+    OperationAdmissionPolicy <|.. AdmitAllPolicy
+    SnapshotPolicy <|.. HostOnlySnapshotPolicy
+    SessionBroadcaster <|.. InMemorySessionBroadcaster
+
+    note for SessionStateReducer "sem implementação no app atual"
+    note for MessageValidator "sem implementação no app atual"
+    note for SnapshotCodec "migrate ainda não é chamado na leitura"
+
+    cssClass "OperationAdmissionPolicy,SessionStateReducer,SnapshotPolicy,MessageTypeHandler,SessionBroadcaster,MessageValidator,SnapshotCodec" hotspot
+    cssClass "AdmitAllPolicy,HostOnlySnapshotPolicy,InMemorySessionBroadcaster" frozen

@@ -1,0 +1,126 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+
+    class DocumentRecord {
+        <<interface>>
+        +string id
+        +OpId addStamp
+        +OpId removeStamp
+        +boolean deleted
+    }
+    class BaseOperation {
+        <<interface>>
+        +OpId id
+        +string author
+        +OpId[] deps
+        +string kind
+    }
+    class OpId {
+        <<interface>>
+        +number lamport
+        +string siteId
+    }
+    class LamportClock {
+        +string id
+        +tick() OpId
+        +observe(stamp) void
+    }
+    class OpLog {
+        +append(op) boolean
+        +since(vv) BaseOperation[]
+        +versionVector() VersionVector
+    }
+    class LWWRegister {
+        +value T
+        +OpId stamp
+        +set(value, stamp) boolean
+    }
+    class DocumentState {
+        +apply(op) Change[]
+        +toSnapshot() DocumentSnapshot
+        +restore(snapshot) void
+    }
+    class OperationKindRegistry {
+        +register(definition) OperationKindRegistry
+    }
+    class LwwStrategy {
+        <<const>>
+        +read(record, field)
+        +write(record, field, value, stamp) boolean
+    }
+    class TombstoneSetStrategy {
+        <<const>>
+        +isPresent(record) boolean
+        +add(record, stamp) void
+        +remove(record, stamp) void
+    }
+    class ReplicaSession {
+        +commit(op) Operation
+        +receive(op) void
+        +restoreSnapshot(snapshot, vv) void
+        +toSnapshot() DocumentSnapshot
+    }
+    class SyncEngine {
+        +start() void
+        +stop() void
+    }
+    class SyncPolicy {
+        <<interface>>
+        +chunkSize number
+        +maxOpsPerMessage number
+        +maxFrameBytes number
+        +snapshotIntervalMs number
+        +validateOperation(op) boolean
+    }
+    class MessageRegistry {
+        +register(definition) MessageRegistry
+        +get(type) MessageDefinition
+    }
+    class MessageDefinition {
+        <<interface>>
+        +string type
+        +validate(payload) boolean
+        +handle(payload, context) void
+    }
+    class Transport {
+        <<interface>>
+        +send(data) void
+        +onMessage(callback) void
+    }
+    class WebSocketTransport
+    class PresenceChannel {
+        +publish(state) void
+        +peers() PresenceEntry[]
+        +stop() void
+    }
+
+    OpLog o-- BaseOperation
+    BaseOperation --> OpId
+    LamportClock ..> OpId
+    DocumentState o-- OperationKindRegistry
+    DocumentState o-- LWWRegister
+    LwwStrategy ..> DocumentRecord
+    LwwStrategy ..> LWWRegister
+    TombstoneSetStrategy ..> DocumentRecord
+    DocumentState o-- DocumentRecord
+    ReplicaSession *-- OpLog
+    ReplicaSession *-- DocumentState
+    ReplicaSession *-- LamportClock
+    SyncEngine o-- SyncPolicy
+    SyncEngine o-- MessageRegistry
+    SyncEngine ..> ReplicaSession
+    MessageRegistry o-- MessageDefinition
+    WebSocketTransport ..|> Transport
+    PresenceChannel ..> Transport
+    SyncEngine ..> Transport
+
+    note for PresenceChannel "efêmero: não passa pelo OpLog nem pelo DocumentState"
+    note for LwwStrategy "merge LWW de um campo; não é classe"
+    note for TombstoneSetStrategy "presença por addStamp x removeStamp; não é classe"
+
+    cssClass "DocumentRecord,BaseOperation,OpId,LamportClock,OpLog,LWWRegister,DocumentState,OperationKindRegistry,MessageRegistry,MessageDefinition,SyncEngine,Transport,WebSocketTransport,PresenceChannel" frozen
+    cssClass "SyncPolicy" hotspot
+    cssClass "LwwStrategy,TombstoneSetStrategy" hotspot
+    cssClass "ReplicaSession" app

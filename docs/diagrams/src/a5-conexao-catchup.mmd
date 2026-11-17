@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    actor B as Navegador
+    participant AUTH as AuthController
+    participant HS as SessionHandshakeInterceptor
+    participant SS as SessionService
+    participant SOCK as SessionSocketHandler
+    participant HELLO as SyncHelloHandler
+    participant DB as PostgreSQL
+    participant SNAP as SnapshotHandler
+
+    B->>AUTH: POST /auth/login
+    AUTH-->>B: JSESSIONID (cookie HttpOnly)
+    B->>HS: upgrade /ws/sessions/{id} (cookie)
+    HS->>HS: Principal → userId
+    HS->>SS: connectParticipant(sessionId, userId)
+    SS->>SS: SessionJoinPolicy + SessionCapacityPolicy
+    alt não é amigo / sala cheia / encerrada
+        HS-->>B: 403 ou 409 (sem upgrade)
+    else admitido
+        HS-->>SOCK: handshake aceito (attrs sessionId, userId)
+        SOCK->>SOCK: registry.register + broadcastRoster
+        SOCK-->>B: session_roster
+        B->>HELLO: sync_hello{vv}
+        alt vv vazio e há snapshot
+            HELLO->>DB: SessionService.getSnapshot
+            HELLO-->>B: sync_snapshot{baseSeq, versionVector, state, checksum}
+        end
+        HELLO->>DB: syncSinceSeq(cursor, chunkSize)
+        HELLO-->>B: sync_ops (páginas, cortadas por bytes)
+        HELLO->>SOCK: finishCatchUp
+    end
+    Note over B,SNAP: host publica a cada SyncPolicy.snapshotIntervalMs
+    B->>SNAP: scene_snapshot{snapshot}
+    SNAP->>SS: saveSnapshot (HostOnlySnapshotPolicy, checksum)
+    SS->>DB: UPDATE sessions.snapshot, snapshot_seq

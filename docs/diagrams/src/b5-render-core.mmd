@@ -1,0 +1,56 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+
+    class CollabApp {
+        +SceneHost host
+        +SyncEngine syncEngine
+        +start() void
+        +stop() void
+        +dispose() void
+    }
+    class CollabAppConfig {
+        <<interface>>
+        +HTMLElement container
+        +SyncReplica replica
+        +Session session
+    }
+    class SceneHost {
+        +SceneManager sceneManager
+        +RenderEngine renderEngine
+        +CameraManager cameraManager
+        +onFrame(callback) void
+        +start() void
+    }
+    class SceneManager
+    class RenderEngine
+    class CameraManager
+    class SyncEngine
+    class Projector {
+        <<interface>>
+        +apply(changes) void
+        +dispose() void
+    }
+    class SceneProjector {
+        +onMeshRemoved
+    }
+    class DocumentState
+    class ReplicaSession
+
+    CollabApp *-- SceneHost
+    CollabApp *-- SyncEngine
+    CollabApp ..> CollabAppConfig
+    SceneHost *-- SceneManager
+    SceneHost *-- RenderEngine
+    SceneHost *-- CameraManager
+    SceneProjector ..> ReplicaSession
+    SceneProjector ..> DocumentState
+    SceneProjector ..> SceneManager
+
+    note for Projector "contrato do core; SceneProjector é a projeção do app, sem cláusula implements"
+    note for SceneProjector "recebe Change[] via ReplicaSession.onChange"
+
+    cssClass "CollabApp,SceneHost" frozen
+    cssClass "CollabAppConfig,Projector" hotspot
+    cssClass "SceneProjector,SceneManager,RenderEngine,CameraManager,SyncEngine,DocumentState,ReplicaSession" app

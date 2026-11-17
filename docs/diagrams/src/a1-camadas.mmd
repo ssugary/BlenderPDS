@@ -1,0 +1,36 @@
+flowchart TB
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef infra fill:#e5e7eb,stroke:#374151,color:#0f172a
+
+    subgraph APPS["Aplicação — apps/design-editor"]
+        WEB["web<br/>blenderpds"]:::app
+        API["backend<br/>design-editor-backend"]:::app
+    end
+
+    subgraph FW["Framework — framework/"]
+        STARTER["backend-starter<br/>collab3d-spring-boot-starter"]:::frozen
+        CORE["core<br/>@collab3d/core"]:::frozen
+        KIT["react-kit<br/>@collab3d/react-kit"]:::frozen
+        RULE["Regra: framework não importa apps"]:::hotspot
+        G1["scripts/check-boundaries.mjs"]:::hotspot
+        G2["scripts/check-no-domain-kinds.sh"]:::hotspot
+    end
+
+    subgraph INFRA["Infraestrutura"]
+        BOOT["Spring Boot 4.1.1"]:::infra
+        PG["PostgreSQL 16"]:::infra
+        MAIL["Mailpit"]:::infra
+        THREE["three.js"]:::infra
+    end
+
+    WEB --> CORE
+    WEB --> KIT
+    API --> STARTER
+    RULE -.-> G1
+    RULE -.-> G2
+    STARTER --> BOOT
+    STARTER --> PG
+    STARTER --> MAIL
+    CORE --> THREE

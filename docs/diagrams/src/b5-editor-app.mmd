@@ -1,0 +1,72 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+
+    class Tool {
+        +activate(object) void
+        +deactivate() void
+        +createCommand(object, before, after) Command
+    }
+    class ToolManager {
+        +Tool activeTool
+        +registerTool(name, tool) void
+        +setTool(name, selectedObjects) void
+    }
+    class CreateObjectTool
+    class DeleteTool
+    class TransformTool
+    class MeshEditTool
+    class Command {
+        <<abstract>>
+        +execute() void
+        +undo() void
+        +redo() void
+    }
+    class CommandManager {
+        +execute(command) void
+        +undo() void
+        +redo() void
+    }
+    class CreatePrimitiveCommand
+    class TransformCommand
+    class DeleteObjectCommand
+    class ColorEditCommand
+    class MeshEditCommand
+    class FaceExtrudeCommand
+    class ImportModelCommand
+    class SceneFormat {
+        <<interface>>
+        +string name
+        +string[] extensions
+        +parse(contents) ImportedObject[]
+    }
+    class SceneFormatRegistry {
+        +register(format) SceneFormatRegistry
+        +forExtension(extension) SceneFormat
+    }
+    class objFormat
+    class ObjImporter {
+        +readModel() ImportedObject[]
+    }
+    class ObjExporter
+
+    ToolManager o-- Tool
+    Tool <|-- CreateObjectTool
+    Tool <|-- DeleteTool
+    Tool <|-- TransformTool
+    Tool <|-- MeshEditTool
+    CommandManager o-- Command
+    Command <|-- CreatePrimitiveCommand
+    Command <|-- TransformCommand
+    Command <|-- DeleteObjectCommand
+    Command <|-- ColorEditCommand
+    Command <|-- MeshEditCommand
+    Command <|-- FaceExtrudeCommand
+    Command <|-- ImportModelCommand
+    SceneFormatRegistry o-- SceneFormat
+    objFormat ..|> SceneFormat
+    ObjImporter ..> SceneFormatRegistry
+
+    cssClass "SceneFormat,SceneFormatRegistry" hotspot
+    cssClass "Tool,ToolManager,CreateObjectTool,DeleteTool,TransformTool,MeshEditTool,Command,CommandManager,CreatePrimitiveCommand,TransformCommand,DeleteObjectCommand,ColorEditCommand,MeshEditCommand,FaceExtrudeCommand,ImportModelCommand,objFormat,ObjImporter,ObjExporter" app

@@ -38,3 +38,8 @@ e foram removidos do repositório em `9fbbf44`. Ficam aqui como referência hist
 | Versão | Arquivo previsto | Fase |
 |---|---|---|
 | v1.0 | `architecture-v1.0-fase4-aplicacoes.md` | fim da Fase 4 |
+
+## Diagramas
+
+Os diagramas de arquitetura e de classes para apresentação ficam em
+[`docs/diagrams/README.md`](../diagrams/README.md) (Mermaid + SVG/PNG).

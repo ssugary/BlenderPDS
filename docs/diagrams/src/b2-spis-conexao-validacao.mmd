@@ -1,0 +1,64 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+
+    namespace HS1 {
+        class ServerOperationEmitter {
+            <<interface>>
+            +followUps(ctx, appended, state) List
+        }
+    }
+    namespace HS3 {
+        class OperationKindValidator {
+            <<interface>>
+            +kind() String
+            +validate(operation) void
+        }
+        class AddObjectKindValidator
+        class ChangeColorKindValidator
+        class RemoveObjectKindValidator
+        class SetTransformKindValidator
+        class SetMeshKindValidator
+    }
+    namespace HS5 {
+        class SessionJoinPolicy {
+            <<interface>>
+            +decide(ctx, joiner, request) JoinDecision
+        }
+        class SessionCapacityPolicy {
+            <<interface>>
+            +maxParticipants(ctx) int
+        }
+        class SessionVisibilityPolicy {
+            <<interface>>
+            +visibleTo(ctx, viewer) boolean
+        }
+        class HostFriendJoinPolicy
+        class FixedCapacityPolicy
+        class AlwaysVisiblePolicy
+    }
+    namespace RateLimit {
+        class RateLimitPolicy {
+            <<interface>>
+            +allow(connectionId, messageType) boolean
+        }
+        class TokenBucketRateLimitPolicy
+    }
+
+    OperationKindValidator <|.. AddObjectKindValidator
+    OperationKindValidator <|.. ChangeColorKindValidator
+    OperationKindValidator <|.. RemoveObjectKindValidator
+    OperationKindValidator <|.. SetTransformKindValidator
+    OperationKindValidator <|.. SetMeshKindValidator
+    SessionJoinPolicy <|.. HostFriendJoinPolicy
+    SessionCapacityPolicy <|.. FixedCapacityPolicy
+    SessionVisibilityPolicy <|.. AlwaysVisiblePolicy
+    RateLimitPolicy <|.. TokenBucketRateLimitPolicy
+
+    note for ServerOperationEmitter "sem implementação até a Fase 4"
+    note for RateLimitPolicy "isenta sync_ops e sync_hello"
+
+    cssClass "OperationKindValidator,SessionJoinPolicy,SessionCapacityPolicy,SessionVisibilityPolicy,ServerOperationEmitter,RateLimitPolicy" hotspot
+    cssClass "HostFriendJoinPolicy,FixedCapacityPolicy,AlwaysVisiblePolicy,TokenBucketRateLimitPolicy" frozen
+    cssClass "AddObjectKindValidator,ChangeColorKindValidator,RemoveObjectKindValidator,SetTransformKindValidator,SetMeshKindValidator" app

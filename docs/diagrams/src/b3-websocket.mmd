@@ -1,0 +1,97 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+
+    class SessionSocketHandler {
+        +afterConnectionEstablished(socket) void
+        +handleTextMessage(socket, message) void
+        +afterConnectionClosed(socket, status) void
+    }
+    class MessageCatalog {
+        -Map byType
+        +find(type) Optional
+        +types() List
+    }
+    class AbstractMessageTypeHandler {
+        <<abstract>>
+        +handle(ctx, payload) void
+        #validate(ctx, payload) void
+        #authorize(ctx, payload) void
+        #execute(ctx, payload) void
+    }
+    class MessageTypeHandler {
+        <<interface>>
+        +type() String
+        +delivery() Delivery
+    }
+    class SyncHelloHandler
+    class SyncOpsHandler
+    class SnapshotHandler
+    class ChatRelayHandler
+    class PresenceRelayHandler
+    class OperationValidator {
+        +validateBatch(opsNode) List
+        +validate(node) Optional
+    }
+    class OperationAppender {
+        +append(sessionId, actor, ops) AppendResult
+    }
+    class OperationKindRegistry {
+        -Map byKind
+        +find(kind) Optional
+        +kinds() List
+    }
+    class SessionConnectionRegistry {
+        +register(connection) void
+        +remove(connection) void
+        +runLocked(sessionId, action) void
+        +broadcast(sessionId, frame, except) void
+        +closeAll(sessionId, status) void
+    }
+    class SessionConnection {
+        +send(frame) void
+        +sendNow(frame) void
+        +finishCatchUp() void
+        +close(status) void
+    }
+    class FrameBatcher {
+        <<utility>>
+        +split(operations, maxOps, maxBytes, encode) List
+    }
+    class SessionHandshakeInterceptor {
+        +beforeHandshake(request, response, wsHandler, attributes) boolean
+    }
+    class WsFrames {
+        +syncOps(operations) ObjectNode
+        +syncSnapshot(snapshot) ObjectNode
+        +ack(operation) ObjectNode
+        +roster(sessionId, status, participants) ObjectNode
+        +error(code, detail) ObjectNode
+    }
+
+    SessionSocketHandler *-- MessageCatalog
+    SessionSocketHandler --> SessionConnectionRegistry
+    SessionSocketHandler ..> RateLimitPolicy
+    MessageCatalog o-- MessageTypeHandler
+    MessageTypeHandler <|.. AbstractMessageTypeHandler
+    AbstractMessageTypeHandler <|-- SyncHelloHandler
+    AbstractMessageTypeHandler <|-- SyncOpsHandler
+    AbstractMessageTypeHandler <|-- SnapshotHandler
+    AbstractMessageTypeHandler <|-- ChatRelayHandler
+    AbstractMessageTypeHandler <|-- PresenceRelayHandler
+    SyncOpsHandler ..> OperationAppender
+    OperationAppender ..> OperationValidator
+    OperationValidator --> OperationKindRegistry
+    SessionConnectionRegistry o-- SessionConnection
+    SyncOpsHandler ..> FrameBatcher
+    SyncHelloHandler ..> FrameBatcher
+    SyncOpsHandler ..> WsFrames
+    SyncHelloHandler ..> WsFrames
+
+    class RateLimitPolicy {
+        <<interface>>
+    }
+    cssClass "SessionSocketHandler,MessageCatalog,SessionConnectionRegistry,SessionConnection,FrameBatcher,SessionHandshakeInterceptor,WsFrames,OperationAppender,OperationValidator,OperationKindRegistry" frozen
+    cssClass "MessageTypeHandler,AbstractMessageTypeHandler,MessageCatalog" frozen
+    cssClass "RateLimitPolicy" hotspot

@@ -1,0 +1,79 @@
+flowchart TB
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+    classDef infra fill:#e5e7eb,stroke:#374151,color:#0f172a
+
+    subgraph ENTRADA["Entrada"]
+        CTRL["SessionController<br/>UserController<br/>AuthController"]:::frozen
+        SOCK["SessionSocketHandler"]:::frozen
+        HANDSHAKE["SessionHandshakeInterceptor"]:::frozen
+        CATALOG["MessageCatalog"]:::frozen
+    end
+
+    subgraph HANDLERS["Handlers de mensagem (HS2)"]
+        H1["SyncHelloHandler"]:::frozen
+        H2["SyncOpsHandler"]:::frozen
+        H3["SnapshotHandler"]:::frozen
+        H4["ChatRelayHandler"]:::frozen
+        H5["PresenceRelayHandler"]:::frozen
+        RATE["RateLimitPolicy<br/>TokenBucketRateLimitPolicy"]:::hotspot
+    end
+
+    subgraph SERVICOS["Serviços e autoridade"]
+        SSVC["SessionService<br/>SessionServiceImpl"]:::frozen
+        APPENDER["OperationAppender"]:::frozen
+        VALID["OperationValidator<br/>OperationKindRegistry"]:::frozen
+        SEQ["OperationSequencer"]:::frozen
+        STATE["SessionStateStore"]:::frozen
+    end
+
+    subgraph POLICIES["Cadeias de policies (HS1/HS5)"]
+        ADM["OperationAdmissionPolicy<br/>AdmitAllPolicy"]:::hotspot
+        RED["SessionStateReducer"]:::hotspot
+        SNP["SnapshotPolicy<br/>HostOnlySnapshotPolicy"]:::hotspot
+        JOIN["SessionJoinPolicy<br/>HostFriendJoinPolicy"]:::hotspot
+        CAP["SessionCapacityPolicy<br/>FixedCapacityPolicy"]:::hotspot
+        VIS["SessionVisibilityPolicy<br/>AlwaysVisiblePolicy"]:::hotspot
+        KINDS["OperationKindValidator<br/>5 kinds do editor"]:::app
+    end
+
+    subgraph FANOUT["Fan-out"]
+        BCAST["SessionBroadcaster<br/>InMemorySessionBroadcaster"]:::frozen
+        REG["SessionConnectionRegistry<br/>SessionConnection"]:::frozen
+        FRAME["FrameBatcher<br/>WsFrames"]:::frozen
+    end
+
+    subgraph PERSIST["Persistência"]
+        REPO["Repositories Spring Data"]:::frozen
+        DB[("PostgreSQL")]:::infra
+    end
+
+    CTRL --> SSVC
+    HANDSHAKE --> SSVC
+    SOCK --> RATE
+    SOCK --> CATALOG
+    CATALOG --> H1
+    CATALOG --> H2
+    CATALOG --> H3
+    CATALOG --> H4
+    CATALOG --> H5
+    H2 --> APPENDER
+    H3 --> SSVC
+    H1 --> SSVC
+    APPENDER --> VALID
+    VALID --> KINDS
+    APPENDER --> ADM
+    APPENDER --> SEQ
+    APPENDER --> STATE
+    RED --> STATE
+    SEQ --> REPO
+    SSVC --> JOIN
+    SSVC --> CAP
+    SSVC --> VIS
+    SSVC --> SNP
+    SSVC --> REPO
+    H2 --> BCAST
+    BCAST --> REG
+    H2 --> FRAME
+    REPO --> DB

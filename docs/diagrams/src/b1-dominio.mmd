@@ -1,0 +1,76 @@
+classDiagram
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+    classDef infra fill:#e5e7eb,stroke:#374151,color:#0f172a
+
+    class User {
+        +Long id
+        +String nickname
+        +String email
+        +String passwordHash
+        +Role role
+        +boolean emailVerified
+        +Set friendList
+        +Instant createdAt
+    }
+    class FriendRequest {
+        +Long id
+        +Instant createdAt
+    }
+    class Session {
+        +Long id
+        +SessionStatus status
+        +String appType
+        +String code
+        +String sceneSnapshot
+        +Long snapshotSeq
+        +Integer snapshotVersion
+        +Instant endedAt
+    }
+    class SessionParticipant {
+        +Long id
+        +boolean active
+        +Instant joinedAt
+        +Instant lastSeenAt
+    }
+    class SessionOperation {
+        +Long id
+        +Long seq
+        +String siteId
+        +Long lamport
+        +String kind
+        +String payload
+        +Instant createdAt
+    }
+    class EmailConfirmationToken {
+        +Long id
+        +String token
+        +Instant expiresAt
+    }
+    class Role {
+        <<enum>>
+        USER
+        ADMIN
+    }
+    class SessionStatus {
+        <<enum>>
+        WAITING
+        ACTIVE
+        ENDED
+    }
+
+    User "1" --> "0..*" FriendRequest : sender
+    User "1" --> "0..*" FriendRequest : receiver
+    User "1" --> "0..*" Session : host
+    User "1" --> "0..*" SessionParticipant : participa
+    Session "1" --> "0..*" SessionParticipant : participantes
+    Session "1" --> "0..*" SessionOperation : operações
+    User "1" --> "0..*" SessionOperation : author
+    User "1" --> "0..*" EmailConfirmationToken : tokens
+    User "1" <--> "0..*" User : friendList
+    User ..> Role
+    Session ..> SessionStatus
+
+    cssClass "User,FriendRequest,Session,SessionParticipant,SessionOperation,EmailConfirmationToken" frozen
+    cssClass "Role,SessionStatus" hotspot

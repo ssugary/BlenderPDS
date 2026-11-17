@@ -1,0 +1,69 @@
+flowchart TB
+    classDef frozen fill:#dbeafe,stroke:#1e40af,color:#0f172a
+    classDef hotspot fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef app fill:#dcfce7,stroke:#166534,color:#0f172a
+    classDef infra fill:#e5e7eb,stroke:#374151,color:#0f172a
+
+    subgraph APP["apps/design-editor/web"]
+        CREATE["createEditorApp"]:::app
+        KINDS["kinds/*<br/>OperationKindDefinition"]:::app
+        TOOLS["ToolManager + Tools"]:::app
+        CMDS["CommandManager + Command"]:::app
+        PROJ["SceneProjector"]:::app
+        FMT["objFormat + ObjImporter + ObjExporter"]:::app
+    end
+
+    subgraph ROOT["Composition root — @collab3d/core"]
+        COLLAB["CollabApp<br/>CollabAppConfig"]:::frozen
+        HOST["SceneHost"]:::frozen
+    end
+
+    subgraph SYNC["Sincronização"]
+        ENGINE["SyncEngine"]:::frozen
+        REGISTRY["MessageRegistry<br/>MessageDefinition"]:::frozen
+        POLICY["SyncPolicy"]:::hotspot
+    end
+
+    subgraph REPLICA["Réplica"]
+        SESSION["ReplicaSession"]:::app
+        LOG["OpLog"]:::frozen
+        DOC["DocumentState"]:::frozen
+        CLOCK["LamportClock"]:::frozen
+    end
+
+    subgraph COMUNICACAO["Comunicação"]
+        PRESENCA["PresenceChannel"]:::frozen
+        TRANSPORT["Transport<br/>WebSocketTransport"]:::hotspot
+        API["BackendClient"]:::frozen
+    end
+
+    subgraph RENDER["Render"]
+        PROJIF["Projector"]:::hotspot
+        THREE["three.js"]:::infra
+    end
+
+    CREATE --> COLLAB
+    CREATE --> PROJ
+    CREATE --> KINDS
+    CREATE --> TOOLS
+    CREATE --> CMDS
+    COLLAB --> HOST
+    COLLAB --> ENGINE
+    COLLAB -.-> SESSION
+    ENGINE --> REGISTRY
+    ENGINE --> POLICY
+    ENGINE --> TRANSPORT
+    REGISTRY --> POLICY
+    SESSION --> LOG
+    SESSION --> DOC
+    SESSION --> CLOCK
+    PROJ --> PROJIF
+    PROJ --> DOC
+    HOST --> THREE
+    PROJIF --> THREE
+    PRESENCA --> TRANSPORT
+    TOOLS --> CMDS
+    CMDS --> SESSION
+    DOC --> KINDS
+    FMT --> CMDS
+    FMT --> DOC

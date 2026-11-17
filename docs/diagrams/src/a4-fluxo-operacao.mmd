@@ -1,0 +1,53 @@
+sequenceDiagram
+    autonumber
+    actor U as Usuário
+    participant CMD as Command<br/>(TransformCommand)
+    participant REP as ReplicaSession
+    participant ENG as SyncEngine
+    participant TR as WebSocketTransport
+    participant SOCK as SessionSocketHandler
+    participant OPS as SyncOpsHandler
+    participant APP as OperationAppender
+    participant VAL as OperationValidator
+    participant REG as OperationKindRegistry
+    participant SEQ as OperationSequencer
+    participant DB as PostgreSQL
+    participant BC as SessionBroadcaster
+    participant OUTRA as Outra réplica
+    participant PROJ as SceneProjector
+
+    U->>CMD: arrasta o objeto
+    CMD->>REP: commit(op)
+    REP->>REP: OpLog.append + DocumentState.apply
+    REP-->>ENG: onLocalOp(op)
+    ENG->>TR: send({type:"sync_ops", ops:[op]})
+    TR->>SOCK: frame WebSocket
+    Note over SOCK: rate limit por conexão/tipo<br/>sync_ops é isento
+    SOCK->>SOCK: MessageCatalog.find("sync_ops")
+    SOCK->>OPS: handle(ctx, frame) sob runLocked
+    OPS->>APP: append(ops)
+    APP->>VAL: validateBatch(ops)
+    VAL->>REG: find(kind)
+
+    alt envelope/kind inválido
+        APP-->>SOCK: InvalidOperationException("BATCH")
+        SOCK-->>TR: error{INVALID_OP}
+        Note over TR: a operação não entra no log
+    else válido
+        APP->>APP: OperationAdmissionPolicy.admit
+        alt política recusa
+            APP-->>OPS: AppendResult.rejected
+            OPS-->>TR: error{OP_REJECTED}
+        else admitida
+            APP->>SEQ: append(sessionId, userId, inputs)
+            SEQ->>DB: existe (siteId, lamport)?
+            SEQ->>DB: INSERT operations com seq
+            APP->>APP: SessionStateStore.advance
+            OPS->>BC: broadcastExcept(sender, sync_ops)
+            BC->>OUTRA: sync_ops
+            OPS-->>TR: sync_ack{siteId, lamport, seq}
+        end
+    end
+
+    OUTRA->>OUTRA: SyncEngine.receive → ReplicaSession.receive
+    OUTRA->>PROJ: apply(changes)
