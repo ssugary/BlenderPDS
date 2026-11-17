@@ -286,25 +286,41 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional(readOnly = true)
     public List<SessionOperation> syncSince(Long sessionId, Map<String, Integer> versionVector) {
-        List<SessionOperation> all = operationRepository.findBySessionIdOrderBySeqAsc(sessionId);
-        if (versionVector == null || versionVector.isEmpty()) {
-            return all;
-        }
+        Map<String, Integer> vv = versionVector == null ? Map.of() : versionVector;
+        List<SessionOperation> missing = new ArrayList<>();
 
-        // In-memory filter: the log of a study room fits comfortably, and this way we
-        // avoid mirroring the version vector in SQL.
-        return all.stream()
-                .filter(op -> op.getLamport() > versionVector.getOrDefault(op.getSiteId(), 0))
-                .toList();
+        // Page through the log instead of loading it whole: the version vector is matched
+        // per page, in memory (it is not mirrored in SQL), and the cursor advances by seq.
+        long cursor = 0;
+        while (true) {
+            List<SessionOperation> page = operationRepository
+                    .findBySessionIdAndSeqGreaterThanOrderBySeq(sessionId, cursor,
+                            org.springframework.data.domain.PageRequest.of(0, catchUpPage()));
+            if (page.isEmpty()) {
+                return missing;
+            }
+            page.stream()
+                    .filter(op -> op.getLamport() > vv.getOrDefault(op.getSiteId(), 0))
+                    .forEach(missing::add);
+            cursor = page.getLast().getSeq();
+            if (page.size() < catchUpPage()) {
+                return missing;
+            }
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<SessionOperation> syncSinceSeq(Long sessionId, Long seq) {
+    public List<SessionOperation> syncSinceSeq(Long sessionId, Long seq, int limit) {
         long from = seq == null ? 0L : seq;
-        return operationRepository.findBySessionIdOrderBySeqAsc(sessionId).stream()
-                .filter(op -> op.getSeq() > from)
-                .toList();
+        int size = limit > 0 ? limit : catchUpPage();
+        return operationRepository.findBySessionIdAndSeqGreaterThanOrderBySeq(
+                sessionId, from, org.springframework.data.domain.PageRequest.of(0, size));
+    }
+
+    /** Same page size as the WebSocket catch-up, so a page is exactly one frame. */
+    private int catchUpPage() {
+        return Math.max(1, properties.sync().chunkSize());
     }
 
     @Override

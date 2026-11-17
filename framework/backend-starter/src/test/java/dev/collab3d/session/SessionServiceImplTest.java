@@ -336,7 +336,7 @@ class SessionServiceImplTest {
                 .extracting(SessionOperation::getSiteId)
                 .containsExactly("site-b");
 
-        assertThat(sessionService.syncSinceSeq(session.getId(), 1L))
+        assertThat(sessionService.syncSinceSeq(session.getId(), 1L, 100))
                 .extracting(SessionOperation::getSeq)
                 .containsExactly(2L, 3L);
     }

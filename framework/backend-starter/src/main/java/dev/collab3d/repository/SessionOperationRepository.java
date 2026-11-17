@@ -4,6 +4,7 @@ import dev.collab3d.model.SessionOperation;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,13 @@ public interface SessionOperationRepository extends JpaRepository<SessionOperati
     List<SessionOperation> findBySessionIdOrderBySeqAsc(Long sessionId);
 
     Optional<SessionOperation> findTopBySessionIdOrderBySeqDesc(Long sessionId);
+
+    /**
+     * One page of the catch-up scan: the operations after {@code seq}, in server order.
+     * It is what keeps a 10k-operation room from being loaded whole just to send the
+     * last handful of operations (P1.12); {@code uk_session_operation_seq} covers it.
+     */
+    List<SessionOperation> findBySessionIdAndSeqGreaterThanOrderBySeq(Long sessionId, Long seq, Pageable pageable);
 
     /** Deduplication: the same op resent (a reconnect) does not enter twice. */
     boolean existsBySessionIdAndSiteIdAndLamport(Long sessionId, String siteId, Long lamport);

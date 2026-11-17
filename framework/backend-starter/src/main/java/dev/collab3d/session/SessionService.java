@@ -107,8 +107,12 @@ public interface SessionService {
     /** Operations missing for whoever already has version vector {@code versionVector}. */
     List<SessionOperation> syncSince(Long sessionId, Map<String, Integer> versionVector);
 
-    /** Operations after {@code seq} (cursor-based catch-up, cheaper than the vv). */
-    List<SessionOperation> syncSinceSeq(Long sessionId, Long seq);
+    /**
+     * One page of the catch-up: at most {@code limit} operations after {@code seq}, in
+     * server order. The {@code seq} cursor is what the WebSocket catch-up advances page
+     * by page, so the room is never loaded whole.
+     */
+    List<SessionOperation> syncSinceSeq(Long sessionId, Long seq, int limit);
 
     /**
      * Stores the JSON scene snapshot sent by a client (a denormalisation; the operation

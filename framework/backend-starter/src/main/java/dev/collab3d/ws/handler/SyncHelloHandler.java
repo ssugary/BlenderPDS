@@ -67,13 +67,7 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
         Map<String, Integer> versionVector = readVersionVector(root.get("vv"));
         registry.runLocked(ctx.session().sessionId(), () -> {
             try {
-                List<AppendedOperation> missing = toAppended(
-                        sessionService.syncSince(ctx.session().sessionId(), versionVector));
-                int chunkSize = properties.sync().chunkSize();
-                for (int i = 0; i < missing.size(); i += chunkSize) {
-                    connection.sendNow(frames.syncOps(
-                            missing.subList(i, Math.min(missing.size(), i + chunkSize))).toString());
-                }
+                sendCatchUp(connection, ctx.session().sessionId(), versionVector);
             } catch (RuntimeException ex) {
                 log.warn("Catch-up falhou na sessão {}: {}", ctx.session().sessionId(), ex.toString());
                 connection.sendNow(frames.error("SYNC_FAILED").toString());
@@ -85,18 +79,40 @@ public class SyncHelloHandler extends AbstractMessageTypeHandler {
     }
 
     /**
-     * Catch-up only needs {@code seq} and the stored JSON; the author is not part of a
-     * {@code sync_ops} frame, so it is not read here (and the lazy association is never
-     * initialised outside the transaction). P1.12 replaces this read with a pageable
-     * query that returns the operations already in this shape.
+     * Sends what the client is missing, one page at a time (P1.12).
+     *
+     * <p>The scan is paged by {@code seq} with the same size as the client's chunk, so a
+     * room with 10k operations never has its log loaded whole: each page is filtered
+     * against the version vector, sent as one {@code sync_ops}, and discarded before the
+     * next page is read. The author is not part of a {@code sync_ops} frame, so it is not
+     * read here (the lazy association is never initialised outside the transaction).
      */
-    private List<AppendedOperation> toAppended(List<SessionOperation> stored) {
-        List<AppendedOperation> operations = new ArrayList<>(stored.size());
-        for (SessionOperation operation : stored) {
-            operations.add(new AppendedOperation(operation.getSeq(), null,
-                    objectMapper.readTree(operation.getPayload())));
+    private void sendCatchUp(SessionConnection connection, Long sessionId, Map<String, Integer> versionVector) {
+        int pageSize = Math.max(1, properties.sync().chunkSize());
+        long cursor = 0;
+
+        while (true) {
+            List<SessionOperation> page = sessionService.syncSinceSeq(sessionId, cursor, pageSize);
+            if (page.isEmpty()) {
+                return;
+            }
+
+            List<AppendedOperation> missing = new ArrayList<>(page.size());
+            for (SessionOperation stored : page) {
+                if (stored.getLamport() > versionVector.getOrDefault(stored.getSiteId(), 0)) {
+                    missing.add(new AppendedOperation(stored.getSeq(), null,
+                            objectMapper.readTree(stored.getPayload())));
+                }
+            }
+            if (!missing.isEmpty()) {
+                connection.sendNow(frames.syncOps(missing).toString());
+            }
+
+            cursor = page.getLast().getSeq();
+            if (page.size() < pageSize) {
+                return;
+            }
         }
-        return operations;
     }
 
     /** Keeps only the entries that make sense; the whole node is dropped when it is too big. */
