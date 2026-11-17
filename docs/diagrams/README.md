@@ -479,8 +479,14 @@ classDiagram
             +mayWrite(ctx, actor, snapshot) boolean
             +maxBytes() int
         }
-        class AdmitAllPolicy
-        class HostOnlySnapshotPolicy
+        class AdmitAllPolicy {
+        +admit(ctx, actor, operation, state) Optional
+        }
+        class HostOnlySnapshotPolicy {
+        +mayWrite(ctx, actor, snapshot) boolean
+        +maxBytes() int
+        +compactionThresholdOps() OptionalLong
+        }
     }
     namespace HS2 {
         class MessageTypeHandler {
@@ -494,7 +500,12 @@ classDiagram
             +broadcast(sessionId, frame) void
             +broadcastExcept(sessionId, connectionId, frame) void
         }
-        class InMemorySessionBroadcaster
+        class InMemorySessionBroadcaster {
+        +broadcast(sessionId, frame) void
+        +broadcastExcept(sessionId, connectionId, frame) void
+        +sendTo(sessionId, userId, frame) void
+        +closeAll(sessionId, status) void
+        }
     }
     namespace HS3 {
         class MessageValidator {
@@ -546,11 +557,28 @@ classDiagram
             +kind() String
             +validate(operation) void
         }
-        class AddObjectKindValidator
-        class ChangeColorKindValidator
-        class RemoveObjectKindValidator
-        class SetTransformKindValidator
-        class SetMeshKindValidator
+        class AddObjectKindValidator {
+        +kind() String
+        +validate(operation) void
+        -int maxMeshBytes
+        }
+        class ChangeColorKindValidator {
+        +kind() String
+        +validate(operation) void
+        }
+        class RemoveObjectKindValidator {
+        +kind() String
+        +validate(operation) void
+        }
+        class SetTransformKindValidator {
+        +kind() String
+        +validate(operation) void
+        }
+        class SetMeshKindValidator {
+        +kind() String
+        +validate(operation) void
+        +maxBytes() int
+        }
     }
     namespace HS5 {
         class SessionJoinPolicy {
@@ -565,16 +593,28 @@ classDiagram
             <<interface>>
             +visibleTo(ctx, viewer) boolean
         }
-        class HostFriendJoinPolicy
-        class FixedCapacityPolicy
-        class AlwaysVisiblePolicy
+        class HostFriendJoinPolicy {
+        +decide(ctx, joiner, request) JoinDecision
+        }
+        class FixedCapacityPolicy {
+        -int maxParticipants
+        +maxParticipants(ctx) int
+        }
+        class AlwaysVisiblePolicy {
+        +visibleTo(ctx, viewer) boolean
+        }
     }
     namespace RateLimit {
         class RateLimitPolicy {
             <<interface>>
             +allow(connectionId, messageType) boolean
         }
-        class TokenBucketRateLimitPolicy
+        class TokenBucketRateLimitPolicy {
+        -Collab3dProperties properties
+        -Map buckets
+        +allow(connectionId, messageType) boolean
+        +release(connectionId) void
+        }
     }
 
     OperationKindValidator <|.. AddObjectKindValidator
@@ -628,11 +668,31 @@ classDiagram
         +type() String
         +delivery() Delivery
     }
-    class SyncHelloHandler
-    class SyncOpsHandler
-    class SnapshotHandler
-    class ChatRelayHandler
-    class PresenceRelayHandler
+    class SyncHelloHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class SyncOpsHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class SnapshotHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class ChatRelayHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class PresenceRelayHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
     class OperationValidator {
         +validateBatch(opsNode) List
         +validate(node) Optional
@@ -694,6 +754,9 @@ classDiagram
 
     class RateLimitPolicy {
         <<interface>>
+        +allow(connectionId, messageType) boolean
+        +release(connectionId) void
+        +supports(appType) boolean
     }
     cssClass "SessionSocketHandler,MessageCatalog,SessionConnectionRegistry,SessionConnection,FrameBatcher,SessionHandshakeInterceptor,WsFrames,OperationAppender,OperationValidator,OperationKindRegistry" frozen
     cssClass "MessageTypeHandler,AbstractMessageTypeHandler,MessageCatalog" frozen
@@ -797,7 +860,13 @@ classDiagram
         +send(data) void
         +onMessage(callback) void
     }
-    class WebSocketTransport
+    class WebSocketTransport {
+    -string url
+    +send(data) void
+    +onMessage(callback) void
+    +onClose(callback) void
+    +close() void
+    }
     class PresenceChannel {
         +publish(state) void
         +peers() PresenceEntry[]
@@ -865,10 +934,29 @@ classDiagram
         +onFrame(callback) void
         +start() void
     }
-    class SceneManager
-    class RenderEngine
-    class CameraManager
-    class SyncEngine
+    class SceneManager {
+    +Map objectsMap
+    +addObject(object) string
+    +removeObject(uuid, dispose) boolean
+    +getObject(uuid) Object3D
+    +getNativeScene() Scene
+    }
+    class RenderEngine {
+    +WebGLRenderer renderer
+    +render(camera) void
+    +bindEvents(camera) void
+    +dispose() void
+    }
+    class CameraManager {
+    +PerspectiveCamera camera
+    +update(delta) void
+    +dispose() void
+    }
+    class SyncEngine {
+    +start() void
+    +stop() void
+    +messages string[]
+    }
     class Projector {
         <<interface>>
         +apply(changes) void
@@ -877,8 +965,21 @@ classDiagram
     class SceneProjector {
         +onMeshRemoved
     }
-    class DocumentState
-    class ReplicaSession
+    class DocumentState {
+    +apply(op) Change[]
+    +get(objectId) DocumentRecord
+    +all() Iterable
+    +toSnapshot() DocumentSnapshot
+    +restore(snapshot) void
+    }
+    class ReplicaSession {
+    +LamportClock clock
+    +OpLog log
+    +EditorDocumentState state
+    +commit(newOp) Operation
+    +receive(op) void
+    +toSnapshot() DocumentSnapshot
+    }
 
     CollabApp *-- SceneHost
     CollabApp *-- SyncEngine
@@ -919,10 +1020,23 @@ classDiagram
         +registerTool(name, tool) void
         +setTool(name, selectedObjects) void
     }
-    class CreateObjectTool
-    class DeleteTool
-    class TransformTool
-    class MeshEditTool
+    class CreateObjectTool {
+    +createObject(object) void
+    +buildPrimitive(type) Mesh
+    }
+    class DeleteTool {
+    +deleteObject(object) void
+    }
+    class TransformTool {
+    +activate(selectedObject) void
+    +captureState(object) Matrix4
+    }
+    class MeshEditTool {
+    +SelectionStrategy strategy
+    +captureState() Vector3[]
+    +createCommand(object, before, after) MeshEditCommand
+    +deactivate() void
+    }
     class Command {
         <<abstract>>
         +execute() void
@@ -934,13 +1048,42 @@ classDiagram
         +undo() void
         +redo() void
     }
-    class CreatePrimitiveCommand
-    class TransformCommand
-    class DeleteObjectCommand
-    class ColorEditCommand
-    class MeshEditCommand
-    class FaceExtrudeCommand
-    class ImportModelCommand
+    class CreatePrimitiveCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class TransformCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class DeleteObjectCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class ColorEditCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class MeshEditCommand {
+    +Tool tool
+    +Mesh mesh
+    +execute() void
+    +undo() void
+    }
+    class FaceExtrudeCommand {
+    +Mesh mesh
+    +execute() void
+    +undo() void
+    }
+    class ImportModelCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
     class SceneFormat {
         <<interface>>
         +string name
@@ -951,11 +1094,17 @@ classDiagram
         +register(format) SceneFormatRegistry
         +forExtension(extension) SceneFormat
     }
-    class objFormat
+    class objFormat {
+    +string name
+    +string[] extensions
+    +parse(contents) ImportedObject[]
+    }
     class ObjImporter {
         +readModel() ImportedObject[]
     }
-    class ObjExporter
+    class ObjExporter {
+    +exportSceneAsOBJ(sceneManager, filename) void
+    }
 
     ToolManager o-- Tool
     Tool <|-- CreateObjectTool

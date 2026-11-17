@@ -89,7 +89,13 @@ classDiagram
         +send(data) void
         +onMessage(callback) void
     }
-    class WebSocketTransport
+    class WebSocketTransport {
+    -string url
+    +send(data) void
+    +onMessage(callback) void
+    +onClose(callback) void
+    +close() void
+    }
     class PresenceChannel {
         +publish(state) void
         +peers() PresenceEntry[]

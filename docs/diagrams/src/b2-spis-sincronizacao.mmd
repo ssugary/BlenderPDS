@@ -19,8 +19,14 @@ classDiagram
             +mayWrite(ctx, actor, snapshot) boolean
             +maxBytes() int
         }
-        class AdmitAllPolicy
-        class HostOnlySnapshotPolicy
+        class AdmitAllPolicy {
+        +admit(ctx, actor, operation, state) Optional
+        }
+        class HostOnlySnapshotPolicy {
+        +mayWrite(ctx, actor, snapshot) boolean
+        +maxBytes() int
+        +compactionThresholdOps() OptionalLong
+        }
     }
     namespace HS2 {
         class MessageTypeHandler {
@@ -34,7 +40,12 @@ classDiagram
             +broadcast(sessionId, frame) void
             +broadcastExcept(sessionId, connectionId, frame) void
         }
-        class InMemorySessionBroadcaster
+        class InMemorySessionBroadcaster {
+        +broadcast(sessionId, frame) void
+        +broadcastExcept(sessionId, connectionId, frame) void
+        +sendTo(sessionId, userId, frame) void
+        +closeAll(sessionId, status) void
+        }
     }
     namespace HS3 {
         class MessageValidator {

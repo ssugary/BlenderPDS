@@ -25,11 +25,31 @@ classDiagram
         +type() String
         +delivery() Delivery
     }
-    class SyncHelloHandler
-    class SyncOpsHandler
-    class SnapshotHandler
-    class ChatRelayHandler
-    class PresenceRelayHandler
+    class SyncHelloHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class SyncOpsHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class SnapshotHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class ChatRelayHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
+    class PresenceRelayHandler {
+    +type() String
+    +delivery() Delivery
+    #execute(ctx, root) void
+    }
     class OperationValidator {
         +validateBatch(opsNode) List
         +validate(node) Optional
@@ -91,6 +111,9 @@ classDiagram
 
     class RateLimitPolicy {
         <<interface>>
+        +allow(connectionId, messageType) boolean
+        +release(connectionId) void
+        +supports(appType) boolean
     }
     cssClass "SessionSocketHandler,MessageCatalog,SessionConnectionRegistry,SessionConnection,FrameBatcher,SessionHandshakeInterceptor,WsFrames,OperationAppender,OperationValidator,OperationKindRegistry" frozen
     cssClass "MessageTypeHandler,AbstractMessageTypeHandler,MessageCatalog" frozen

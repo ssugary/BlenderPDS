@@ -13,10 +13,23 @@ classDiagram
         +registerTool(name, tool) void
         +setTool(name, selectedObjects) void
     }
-    class CreateObjectTool
-    class DeleteTool
-    class TransformTool
-    class MeshEditTool
+    class CreateObjectTool {
+    +createObject(object) void
+    +buildPrimitive(type) Mesh
+    }
+    class DeleteTool {
+    +deleteObject(object) void
+    }
+    class TransformTool {
+    +activate(selectedObject) void
+    +captureState(object) Matrix4
+    }
+    class MeshEditTool {
+    +SelectionStrategy strategy
+    +captureState() Vector3[]
+    +createCommand(object, before, after) MeshEditCommand
+    +deactivate() void
+    }
     class Command {
         <<abstract>>
         +execute() void
@@ -28,13 +41,42 @@ classDiagram
         +undo() void
         +redo() void
     }
-    class CreatePrimitiveCommand
-    class TransformCommand
-    class DeleteObjectCommand
-    class ColorEditCommand
-    class MeshEditCommand
-    class FaceExtrudeCommand
-    class ImportModelCommand
+    class CreatePrimitiveCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class TransformCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class DeleteObjectCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class ColorEditCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
+    class MeshEditCommand {
+    +Tool tool
+    +Mesh mesh
+    +execute() void
+    +undo() void
+    }
+    class FaceExtrudeCommand {
+    +Mesh mesh
+    +execute() void
+    +undo() void
+    }
+    class ImportModelCommand {
+    +execute() void
+    +undo() void
+    +redo() void
+    }
     class SceneFormat {
         <<interface>>
         +string name
@@ -45,11 +87,17 @@ classDiagram
         +register(format) SceneFormatRegistry
         +forExtension(extension) SceneFormat
     }
-    class objFormat
+    class objFormat {
+    +string name
+    +string[] extensions
+    +parse(contents) ImportedObject[]
+    }
     class ObjImporter {
         +readModel() ImportedObject[]
     }
-    class ObjExporter
+    class ObjExporter {
+    +exportSceneAsOBJ(sceneManager, filename) void
+    }
 
     ToolManager o-- Tool
     Tool <|-- CreateObjectTool

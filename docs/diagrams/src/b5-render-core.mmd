@@ -23,10 +23,29 @@ classDiagram
         +onFrame(callback) void
         +start() void
     }
-    class SceneManager
-    class RenderEngine
-    class CameraManager
-    class SyncEngine
+    class SceneManager {
+    +Map objectsMap
+    +addObject(object) string
+    +removeObject(uuid, dispose) boolean
+    +getObject(uuid) Object3D
+    +getNativeScene() Scene
+    }
+    class RenderEngine {
+    +WebGLRenderer renderer
+    +render(camera) void
+    +bindEvents(camera) void
+    +dispose() void
+    }
+    class CameraManager {
+    +PerspectiveCamera camera
+    +update(delta) void
+    +dispose() void
+    }
+    class SyncEngine {
+    +start() void
+    +stop() void
+    +messages string[]
+    }
     class Projector {
         <<interface>>
         +apply(changes) void
@@ -35,8 +54,21 @@ classDiagram
     class SceneProjector {
         +onMeshRemoved
     }
-    class DocumentState
-    class ReplicaSession
+    class DocumentState {
+    +apply(op) Change[]
+    +get(objectId) DocumentRecord
+    +all() Iterable
+    +toSnapshot() DocumentSnapshot
+    +restore(snapshot) void
+    }
+    class ReplicaSession {
+    +LamportClock clock
+    +OpLog log
+    +EditorDocumentState state
+    +commit(newOp) Operation
+    +receive(op) void
+    +toSnapshot() DocumentSnapshot
+    }
 
     CollabApp *-- SceneHost
     CollabApp *-- SyncEngine

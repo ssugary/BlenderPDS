@@ -15,11 +15,28 @@ classDiagram
             +kind() String
             +validate(operation) void
         }
-        class AddObjectKindValidator
-        class ChangeColorKindValidator
-        class RemoveObjectKindValidator
-        class SetTransformKindValidator
-        class SetMeshKindValidator
+        class AddObjectKindValidator {
+        +kind() String
+        +validate(operation) void
+        -int maxMeshBytes
+        }
+        class ChangeColorKindValidator {
+        +kind() String
+        +validate(operation) void
+        }
+        class RemoveObjectKindValidator {
+        +kind() String
+        +validate(operation) void
+        }
+        class SetTransformKindValidator {
+        +kind() String
+        +validate(operation) void
+        }
+        class SetMeshKindValidator {
+        +kind() String
+        +validate(operation) void
+        +maxBytes() int
+        }
     }
     namespace HS5 {
         class SessionJoinPolicy {
@@ -34,16 +51,28 @@ classDiagram
             <<interface>>
             +visibleTo(ctx, viewer) boolean
         }
-        class HostFriendJoinPolicy
-        class FixedCapacityPolicy
-        class AlwaysVisiblePolicy
+        class HostFriendJoinPolicy {
+        +decide(ctx, joiner, request) JoinDecision
+        }
+        class FixedCapacityPolicy {
+        -int maxParticipants
+        +maxParticipants(ctx) int
+        }
+        class AlwaysVisiblePolicy {
+        +visibleTo(ctx, viewer) boolean
+        }
     }
     namespace RateLimit {
         class RateLimitPolicy {
             <<interface>>
             +allow(connectionId, messageType) boolean
         }
-        class TokenBucketRateLimitPolicy
+        class TokenBucketRateLimitPolicy {
+        -Collab3dProperties properties
+        -Map buckets
+        +allow(connectionId, messageType) boolean
+        +release(connectionId) void
+        }
     }
 
     OperationKindValidator <|.. AddObjectKindValidator
