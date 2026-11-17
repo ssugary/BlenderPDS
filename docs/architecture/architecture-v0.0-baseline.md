@@ -1,3 +1,20 @@
+---
+version: "0.0"
+phase: "baseline"
+commit_sha: "90b48ff6c1f694bc42a3a8a89428bb52af2c7780"
+date: "2026-11-17"
+previous_version: null
+scope: "Snapshot completo do repositorio ANTES da refatoracao para o framework collab3d: backend Spring Boot 4.1.1 em backend/blenderpds, SPA React/three.js em frontend/, docs/ e package.json da raiz. Conteudo herdado de docs/architecture-manifest.md (varredura do commit 1c03688) sem alteracao."
+---
+
+> **Origem:** este arquivo e o antigo `docs/architecture-manifest.md`, movido com `git mv`
+> em 2026-11-17 (tarefa P0.0 da Fase 0) **sem alteracao de conteudo**. O bloco `meta`
+> abaixo e o original da varredura e aponta `commit_sha: 1c03688` — o commit varrido.
+> Este snapshot descreve o estado anterior a refatoracao; o cabecalho YAML acima registra
+> o HEAD no momento em que o snapshot foi versionado.
+> Documentos legados do mesmo estado: `docs/architecture/legacy/backend-architecture-v0.0.md`
+> e `docs/architecture/legacy/frontend-architecture-v0.0.md`.
+
 ```yaml
 meta:
   commit_sha: 1c036886f969269212eff123298042a2ac542536

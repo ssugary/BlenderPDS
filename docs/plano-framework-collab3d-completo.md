@@ -1,7 +1,7 @@
 # PLANO DE REFATORAÇÃO: BlenderPDS → Framework `collab3d` para Aplicações 3D Colaborativas
 
 > Documento destinado a um **Agente de Implementação (LLM)**. Cada tarefa tem arquivos-alvo, contrato esperado e critério de aceite verificável. Execute as fases em ordem; não pule os gates de regressão.
-> Base: `architecture-manifest.md` (commit `1c03688`, branch `main`) e `Sprint 3 de PDS.pdf`.
+> Base: `docs/architecture/architecture-v0.0-baseline.md` (snapshot do commit `1c03688`, branch `main`) e `Sprint 3 de PDS.pdf`.
 
 ## 0. Notas prévias
 
