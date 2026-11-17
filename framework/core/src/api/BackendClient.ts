@@ -120,7 +120,7 @@ export interface ApiUser
 {
     id: number;
     nickname: string;
-    email: string;
+    email?: string;
     role: string;
     emailVerified: boolean;
     createdAt: string;
@@ -242,9 +242,10 @@ export async function removeFriend(userId: number, friendId: number): Promise<vo
 
 // ---------------- collaborative sessions ----------------
 
-export async function createSession(hostId: number): Promise<ApiSession>
+/** The host is the signed-in user; nothing about identity travels in the body. */
+export async function createSession(): Promise<ApiSession>
 {
-    return request<ApiSession>('/sessions', { method: 'POST', body: JSON.stringify({ hostId }) });
+    return request<ApiSession>('/sessions', { method: 'POST', body: JSON.stringify({}) });
 }
 
 export async function getSession(sessionId: number): Promise<ApiSession>
@@ -257,11 +258,11 @@ export async function getSession(sessionId: number): Promise<ApiSession>
  * hosting screen resumes this one instead of creating a second (which the backend
  * rejects with 409).
  */
-export async function getOpenSession(userId: number): Promise<ApiSession | null>
+export async function getOpenSession(): Promise<ApiSession | null>
 {
     try
     {
-        return await request<ApiSession>(`/sessions/open/${userId}`);
+        return await request<ApiSession>('/sessions/open/me');
     }
     catch (error)
     {
@@ -276,19 +277,19 @@ export async function getSessionByCode(code: string): Promise<ApiSession>
     return request<ApiSession>(`/sessions/code/${encodeURIComponent(code.trim())}`);
 }
 
-export async function joinSession(sessionId: number, userId: number): Promise<ApiSession>
+export async function joinSession(sessionId: number): Promise<ApiSession>
 {
-    return request<ApiSession>(`/sessions/${sessionId}/join`, { method: 'POST', body: JSON.stringify({ userId }) });
+    return request<ApiSession>(`/sessions/${sessionId}/join`, { method: 'POST', body: JSON.stringify({}) });
 }
 
-export async function leaveSession(sessionId: number, userId: number): Promise<void>
+export async function leaveSession(sessionId: number): Promise<void>
 {
-    return request<void>(`/sessions/${sessionId}/leave`, { method: 'POST', body: JSON.stringify({ userId }) });
+    return request<void>(`/sessions/${sessionId}/leave`, { method: 'POST', body: JSON.stringify({}) });
 }
 
-export async function endSession(sessionId: number, userId: number): Promise<void>
+export async function endSession(sessionId: number): Promise<void>
 {
-    return request<void>(`/sessions/${sessionId}/end`, { method: 'POST', body: JSON.stringify({ userId }) });
+    return request<void>(`/sessions/${sessionId}/end`, { method: 'POST', body: JSON.stringify({}) });
 }
 
 export async function listParticipants(sessionId: number): Promise<ApiParticipant[]>
@@ -297,9 +298,9 @@ export async function listParticipants(sessionId: number): Promise<ApiParticipan
 }
 
 /** Active sessions hosted by this user's friends (the "Hosting" badge in the friends list). */
-export async function listFriendsSessions(userId: number): Promise<ApiSession[]>
+export async function listFriendsSessions(): Promise<ApiSession[]>
 {
-    return request<ApiSession[]>(`/sessions/friends/${userId}`);
+    return request<ApiSession[]>('/sessions/friends');
 }
 
 /** Last scene snapshot stored for the session (404 while nobody pushed one). */

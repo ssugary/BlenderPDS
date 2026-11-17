@@ -1,10 +1,13 @@
 package dev.collab3d.ws;
 
+import dev.collab3d.security.AppUserDetails;
 import dev.collab3d.session.SessionService;
 import jakarta.persistence.EntityNotFoundException;
 import java.net.URI;
+import java.security.Principal;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -18,14 +21,16 @@ import org.springframework.web.util.UriComponentsBuilder;
  * The WebSocket gate: it runs BEFORE the upgrade, so a connection from somebody who
  * is not a friend of the host never even opens.
  *
+ * <p>The user comes from the authenticated session (the JSESSIONID cookie the browser
+ * sends on the upgrade), never from the query. The old {@code ?userId=} is still
+ * accepted for one version: it is ignored when it matches the principal and the
+ * handshake is refused with 403 when it does not.
+ *
  * <p>The validation (and the presence marking) is a single transaction, with the
  * session row locked: without it two simultaneous handshakes could both see the room
  * as having a free seat and go past the participant limit.
- *
- * <p>The user comes in the query ({@code ?userId=}) and the session in the path, the
- * same convention as the REST routes — once there is a real login in the domain,
- * swapping in the authenticated principal is one line here.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SessionHandshakeInterceptor implements HandshakeInterceptor {
@@ -41,10 +46,21 @@ public class SessionHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
         Long sessionId = parseSessionId(request.getURI());
-        Long userId = parseUserId(request.getURI());
+        Long userId = authenticatedUserId(request.getPrincipal());
 
-        if (sessionId == null || userId == null) {
+        if (sessionId == null) {
             response.setStatusCode(HttpStatus.BAD_REQUEST);
+            return false;
+        }
+        if (userId == null) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        Long declared = parseUserId(request.getURI());
+        if (declared != null && !declared.equals(userId)) {
+            log.warn("Handshake do usuário {} recusado: query userId={}", userId, declared);
+            response.setStatusCode(HttpStatus.FORBIDDEN);
             return false;
         }
 
@@ -72,6 +88,28 @@ public class SessionHandshakeInterceptor implements HandshakeInterceptor {
                                WebSocketHandler wsHandler, Exception exception) {
         // Nothing to do after the upgrade: presence goes in through connectParticipant
         // and leaving through SessionSocketHandler.afterConnectionClosed.
+    }
+
+    /**
+     * Only the session's own principal authenticates the socket. The container hands
+     * the handshake the {@code Authentication} (which is also a {@code Principal}), so
+     * both shapes are understood; the context is the fallback for containers that hand
+     * over no principal at all.
+     */
+    private Long authenticatedUserId(Principal principal) {
+        if (principal instanceof AppUserDetails details) {
+            return details.id();
+        }
+        if (principal instanceof org.springframework.security.core.Authentication authentication
+                && authentication.getPrincipal() instanceof AppUserDetails details) {
+            return details.id();
+        }
+
+        var context = org.springframework.security.core.context.SecurityContextHolder.getContext();
+        return context.getAuthentication() != null
+                && context.getAuthentication().getPrincipal() instanceof AppUserDetails details
+                ? details.id()
+                : null;
     }
 
     private Long parseSessionId(URI uri) {

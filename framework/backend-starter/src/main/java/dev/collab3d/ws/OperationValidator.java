@@ -77,11 +77,13 @@ public class OperationValidator {
             return Optional.empty();
         }
 
-        // The author must be the very replica that signed the operation.
-        JsonNode author = node.get("author");
-        if (author == null || !author.isTextual() || !author.asString().equals(siteId)) {
+        // The author is NOT trusted: whatever the client wrote is replaced by the
+        // replica that signed the operation. Attribution to a *user* is the row's
+        // author_id, written by the appender from the authenticated connection.
+        if (!(node instanceof tools.jackson.databind.node.ObjectNode objectNode)) {
             return Optional.empty();
         }
+        objectNode.put("author", siteId);
 
         // An empty deps is the client's current contract (an MVP without explicit causal delivery).
         JsonNode deps = node.get("deps");

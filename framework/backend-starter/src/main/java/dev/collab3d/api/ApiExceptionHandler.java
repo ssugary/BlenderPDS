@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -48,6 +49,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiErrorDto> conflict(IllegalStateException ex) {
         return error(HttpStatus.CONFLICT, "The request conflicts with the current state.");
+    }
+
+    /** No authenticated session: the SPA signs in again instead of retrying. */
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<ApiErrorDto> unauthenticated(AuthenticationCredentialsNotFoundException ex) {
+        return error(HttpStatus.UNAUTHORIZED, "Sign in to continue.");
     }
 
     /** Domain access rule from the services (not a friend of the host, not the host...). */

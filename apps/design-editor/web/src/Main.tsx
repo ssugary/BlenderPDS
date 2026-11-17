@@ -101,7 +101,7 @@ function App()
             });
         }
 
-        if (session?.sessionId !== undefined && session.userId !== undefined)
+        if (session?.sessionId !== undefined)
         {
             await sleep(SNAPSHOT_SETTLE_MS);
 
@@ -109,9 +109,9 @@ function App()
             {
                 // Ending is the host's call; a guest only leaves (the backend answers 403).
                 if (session.role === 'host')
-                    await endSession(session.sessionId, session.userId);
+                    await endSession(session.sessionId);
                 else
-                    await leaveSession(session.sessionId, session.userId);
+                    await leaveSession(session.sessionId);
             }
             catch
             {

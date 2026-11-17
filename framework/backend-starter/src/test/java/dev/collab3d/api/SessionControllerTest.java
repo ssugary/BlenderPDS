@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.collab3d.model.Session;
 import dev.collab3d.mail.EmailService;
+import dev.support.LegacyIdentityConfiguration;
 import dev.collab3d.session.SessionService;
 import dev.collab3d.user.UserService;
 import com.jayway.jsonpath.JsonPath;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(LegacyIdentityConfiguration.class)
 @Transactional
 @WithMockUser
 class SessionControllerTest {

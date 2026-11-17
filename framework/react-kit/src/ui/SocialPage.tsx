@@ -49,7 +49,7 @@ export function FriendsPage()
 
         try
         {
-            const open = await listFriendsSessions(social.user.id);
+            const open = await listFriendsSessions();
             const target = open.find((session) => session.hostId === friend.id);
             if (!target)
             {
@@ -57,8 +57,8 @@ export function FriendsPage()
                 return;
             }
 
-            await joinSession(target.id, social.user.id);
-            const transport = new WebSocketTransport(WebSocketTransport.urlFor(target.id, social.user.id));
+            await joinSession(target.id);
+            const transport = new WebSocketTransport(WebSocketTransport.urlFor(target.id));
             onStart({ role: 'guest', transport, sessionId: target.id, userId: social.user.id });
         }
         catch (problem)

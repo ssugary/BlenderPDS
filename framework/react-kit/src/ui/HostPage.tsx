@@ -16,15 +16,15 @@ const POLL_MS = 3_000;
  * room that was created and then abandoned is never ended by itself, so creating on
  * every visit would leave the host locked out of hosting after the first time.
  */
-async function openOrResumeSession(hostId: number): Promise<ApiSession>
+async function openOrResumeSession(): Promise<ApiSession>
 {
-    const open = await getOpenSession(hostId);
+    const open = await getOpenSession();
     if (open)
         return open;
 
     try
     {
-        return await createSession(hostId);
+        return await createSession();
     }
     catch (problem)
     {
@@ -32,7 +32,7 @@ async function openOrResumeSession(hostId: number): Promise<ApiSession>
         // created is the one to use.
         if (problem instanceof ApiError && problem.status === 409)
         {
-            const raced = await getOpenSession(hostId);
+            const raced = await getOpenSession();
             if (raced)
                 return raced;
         }
@@ -72,7 +72,7 @@ export function HostPage()
         let cancelled = false;
 
         if (loadingRef.current?.userId !== user.id)
-            loadingRef.current = { userId: user.id, session: openOrResumeSession(user.id) };
+            loadingRef.current = { userId: user.id, session: openOrResumeSession() };
 
         loadingRef.current.session
             .then((resumed) =>
@@ -131,8 +131,8 @@ export function HostPage()
         {
             // Confirms friendship/room state before opening the socket, so a failure
             // shows up here as a message instead of as a socket that retries forever.
-            await joinSession(session.id, user.id);
-            const transport = new WebSocketTransport(WebSocketTransport.urlFor(session.id, user.id));
+            await joinSession(session.id);
+            const transport = new WebSocketTransport(WebSocketTransport.urlFor(session.id));
             onStart({ role: 'host', transport, sessionId: session.id, userId: user.id });
         }
         catch (problem)

@@ -27,11 +27,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(u.getEmail())
-                .password(u.getPasswordHash())
-                .roles(u.getRole().name())                 // produces ROLE_USER / ROLE_ADMIN
-                .disabled(!u.isEmailVerified())            // blocks the login until the e-mail is confirmed
-                .build();
+        // The principal carries the domain id: every route and every operation can use
+        // the identity the session proved, with no id coming from the payload.
+        return AppUserDetails.from(u);
     }
 }

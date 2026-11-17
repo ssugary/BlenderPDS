@@ -2,13 +2,16 @@ package dev.collab3d.api;
 
 import dev.collab3d.dto.FriendRequestCreateDto;
 import dev.collab3d.dto.FriendRequestDto;
+import dev.collab3d.dto.PublicUserDto;
 import dev.collab3d.dto.UserDto;
+import dev.collab3d.security.ActorResolver;
 import dev.collab3d.user.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,8 +23,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * User REST API. Every access goes through Spring Security's default protection
- * (authentication required), since no role rules are configured yet.
+ * User REST API. Every access requires authentication, and the routes whose {id} is a
+ * user only accept that same user ({@code @PreAuthorize}); ids never come from the body.
+ *
+ * <p>Another user is answered with {@link PublicUserDto} (id and nickname), never with
+ * the e-mail address: reading a profile or the friend list must not expose contacts.
  */
 @RestController
 @RequestMapping("/users")
@@ -29,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final ActorResolver actorResolver;
 
     @PostMapping
     public ResponseEntity<UserDto> register(@Valid @RequestBody UserDto body) {
@@ -56,14 +63,17 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> get(@PathVariable Long id) {
+    public ResponseEntity<?> get(@PathVariable Long id) {
         return userService.getById(id)
-                .map(UserDto::from)
+                .map(user -> actorResolver.currentId() == user.getId()
+                        ? UserDto.from(user)
+                        : PublicUserDto.from(user))
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<UserDto> update(@PathVariable Long id, @Valid @RequestBody UserDto body) {
         var existing = userService.getById(id).orElse(null);
         if (existing == null) {
@@ -81,6 +91,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (userService.getById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -104,6 +115,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/confirm-email")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<UserDto> confirmEmail(@PathVariable Long id) {
         if (userService.getById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -123,6 +135,7 @@ public class UserController {
      * 409 = already friends, duplicate request or a pending inverse request.
      */
     @PostMapping("/{id}/friend-requests")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<FriendRequestDto> sendFriendRequest(
             @PathVariable Long id, @Valid @RequestBody FriendRequestCreateDto body) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -131,6 +144,7 @@ public class UserController {
 
     /** Pending requests RECEIVED by {id} (to accept or reject). */
     @GetMapping("/{id}/friend-requests")
+    @PreAuthorize("@authz.isSelf(#id)")
     public List<FriendRequestDto> pendingFriendRequests(@PathVariable Long id) {
         return userService.getPendingFriendRequests(id).stream()
                 .map(FriendRequestDto::from)
@@ -139,6 +153,7 @@ public class UserController {
 
     /** Pending requests SENT by {id} (to follow up on or cancel). */
     @GetMapping("/{id}/friend-requests/sent")
+    @PreAuthorize("@authz.isSelf(#id)")
     public List<FriendRequestDto> sentFriendRequests(@PathVariable Long id) {
         return userService.getSentFriendRequests(id).stream()
                 .map(FriendRequestDto::from)
@@ -150,14 +165,16 @@ public class UserController {
      * Returns the UserDto of the new friend.
      */
     @PostMapping("/{id}/friend-requests/{requestId}/accept")
-    public ResponseEntity<UserDto> acceptFriendRequest(
+    @PreAuthorize("@authz.isSelf(#id)")
+    public ResponseEntity<PublicUserDto> acceptFriendRequest(
             @PathVariable Long id, @PathVariable Long requestId) {
         var request = userService.acceptFriendRequest(requestId, id);
-        return ResponseEntity.ok(UserDto.from(request.getSender()));
+        return ResponseEntity.ok(PublicUserDto.from(request.getSender()));
     }
 
     /** Rejects request {requestId} on behalf of {id} (only the receiver may). */
     @PostMapping("/{id}/friend-requests/{requestId}/reject")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<Void> rejectFriendRequest(
             @PathVariable Long id, @PathVariable Long requestId) {
         userService.rejectFriendRequest(requestId, id);
@@ -166,6 +183,7 @@ public class UserController {
 
     /** Cancels the sent request {requestId} on behalf of {id} (only the sender may). */
     @DeleteMapping("/{id}/friend-requests/{requestId}")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<Void> cancelFriendRequest(
             @PathVariable Long id, @PathVariable Long requestId) {
         userService.cancelFriendRequest(requestId, id);
@@ -174,12 +192,14 @@ public class UserController {
 
     /** Confirmed friend list of {id}. */
     @GetMapping("/{id}/friends")
-    public List<UserDto> friends(@PathVariable Long id) {
-        return userService.getFriendList(id).stream().map(UserDto::from).toList();
+    @PreAuthorize("@authz.isSelf(#id)")
+    public List<PublicUserDto> friends(@PathVariable Long id) {
+        return userService.getFriendList(id).stream().map(PublicUserDto::from).toList();
     }
 
     /** Removes the friendship from both sides. */
     @DeleteMapping("/{id}/friends/{friendId}")
+    @PreAuthorize("@authz.isSelf(#id)")
     public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         userService.removeFriend(id, friendId);
         return ResponseEntity.noContent().build();

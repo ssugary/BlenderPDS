@@ -49,10 +49,12 @@ export class WebSocketTransport implements Transport
     }
 
     /** Session socket for the backend, on the same origin (the Vite proxy forwards /ws in dev). */
-    public static urlFor(sessionId: number, userId: number): string
+    public static urlFor(sessionId: number): string
     {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        return `${protocol}//${window.location.host}/ws/sessions/${sessionId}?userId=${userId}`;
+        // No identity in the URL: the session cookie sent with the upgrade is what
+        // authenticates it, and the server takes the user from there.
+        return `${protocol}//${window.location.host}/ws/sessions/${sessionId}`;
     }
 
     public send(data: any): void

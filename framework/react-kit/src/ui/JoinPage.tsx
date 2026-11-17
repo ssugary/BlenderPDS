@@ -51,8 +51,8 @@ export function JoinPage()
 
         try
         {
-            await joinSession(session.id, user.id);
-            const transport = new WebSocketTransport(WebSocketTransport.urlFor(session.id, user.id));
+            await joinSession(session.id);
+            const transport = new WebSocketTransport(WebSocketTransport.urlFor(session.id));
             onStart({ role: 'guest', transport, sessionId: session.id, userId: user.id });
         }
         catch (problem)

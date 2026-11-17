@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.collab3d.dto.ApiErrorDto;
 import dev.collab3d.model.Session;
 import dev.collab3d.mail.EmailService;
+import dev.support.LegacyIdentityConfiguration;
 import dev.collab3d.session.SessionService;
 import dev.collab3d.user.UserService;
 import java.sql.SQLException;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(LegacyIdentityConfiguration.class)
 @Transactional
 @WithMockUser
 class ExceptionHandlingTest {

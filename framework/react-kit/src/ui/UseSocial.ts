@@ -149,7 +149,7 @@ export function useSocial(): Social
             const [friendUsers, pending, sessions] = await Promise.all([
                 listFriends(user.id),
                 listFriendRequests(user.id),
-                listFriendsSessions(user.id)
+                listFriendsSessions()
             ]);
 
             const hosting = new Set(sessions.map((session) => session.hostId));
@@ -188,7 +188,7 @@ export function useSocial(): Social
         try
         {
             const account = await apiLogin(email.trim(), password);
-            const next: User = { id: account.id, name: account.nickname, email: account.email };
+            const next: User = { id: account.id, name: account.nickname, email: account.email ?? '' };
             saveUser(next);
             setUser(next);
             return null;
