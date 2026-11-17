@@ -28,7 +28,7 @@ class EditorKindContractsTest {
     private static final Path CONTRACTS = Path.of(System.getProperty("user.dir"), "../../../contracts/design-editor");
 
     private final Map<String, OperationKindValidator> validators = Map.of(
-            AddObjectKindValidator.KIND, new AddObjectKindValidator(),
+            AddObjectKindValidator.KIND, new AddObjectKindValidator(262_144),
             RemoveObjectKindValidator.KIND, new RemoveObjectKindValidator(),
             SetTransformKindValidator.KIND, new SetTransformKindValidator(),
             ChangeColorKindValidator.KIND, new ChangeColorKindValidator(),

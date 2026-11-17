@@ -40,7 +40,7 @@ export function isOperation(value: unknown): value is Operation
     switch (op.kind)
     {
         case 'add_object':
-            return isShortString(op.objectId) && isShortString(op.geometry) && isMatrix(op.transform) && isColor(op.color);
+            return isShortString(op.objectId) && isGeometry(op.geometry) && isMatrix(op.transform) && isColor(op.color);
         case 'remove_object':
             return isShortString(op.objectId);
         case 'set_transform':

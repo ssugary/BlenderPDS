@@ -3,6 +3,7 @@ package com.grupo03.blenderpds.kinds;
 import dev.collab3d.spi.InvalidOperationException;
 import dev.collab3d.spi.OperationFields;
 import dev.collab3d.spi.OperationKindValidator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 
@@ -18,6 +19,13 @@ public class AddObjectKindValidator implements OperationKindValidator {
 
     public static final String KIND = "add_object";
 
+    private final int maxMeshBytes;
+
+    /** The geometry may be a primitive name or a serialized buffer, bounded like set_mesh. */
+    public AddObjectKindValidator(@Value("${design.max-mesh-bytes:262144}") int maxMeshBytes) {
+        this.maxMeshBytes = maxMeshBytes;
+    }
+
     @Override
     public String kind() {
         return KIND;
@@ -26,7 +34,7 @@ public class AddObjectKindValidator implements OperationKindValidator {
     @Override
     public void validate(JsonNode operation) {
         if (OperationFields.shortString(operation.get("objectId")) == null
-                || OperationFields.shortString(operation.get("geometry")) == null
+                || !OperationFields.boundedString(operation.get("geometry"), maxMeshBytes)
                 || !OperationFields.isMatrix(operation.get("transform"))
                 || !OperationFields.isColor(operation.get("color"))) {
             throw new InvalidOperationException(KIND);

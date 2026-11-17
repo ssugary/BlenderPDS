@@ -16,6 +16,7 @@ import { ReplicaSession } from '../../collab/ReplicaSession';
 import { SceneProjector } from '../../collab/SceneProjector';
 import { colorOf } from '../../collab/objectState';
 import { ObjImporter } from '../../format/ObjImporter';
+import { ImportModelCommand } from '../../command/implementation/ImportModelCommand';
 import { ObjExporter } from '../../format/ObjExporter';
 import { BusSubscriptions } from '../BusSubscriptions';
 import { GLOBAL_BUS } from '@collab3d/core';
@@ -69,14 +70,14 @@ export class ActionRouter
     }
 
     /**
-     * Primitives are shared content, so they are born as a command. Imported models are still a
-     * local-only object loaded straight into the scene (they have no object id, no sync, no undo).
+     * Primitives and imported models are both shared content: they are born as a command,
+     * so they enter the log, reach the other replicas and can be undone.
      */
     private addObject(type:string):void
     {
         if (type === 'model')
         {
-            ObjImporter.parseObject(type, this.deps.sceneManager);
+            void this.importModel();
             return;
         }
 
@@ -85,6 +86,17 @@ export class ActionRouter
             this.deps.createObjectTool,
             type
         ));
+    }
+
+    /** Parses the file, then commits one add_object per mesh (geometry included). */
+    private async importModel():Promise<void>
+    {
+        const imported = await ObjImporter.readModel();
+        if (imported.length === 0)
+            return;
+
+        this.deps.commandManager.execute(new ImportModelCommand(this.deps.replica, imported));
+        this.deps.selection.syncPresence();
     }
 
     /** Deletes the selected object: shared objects through a command, imported models locally. */

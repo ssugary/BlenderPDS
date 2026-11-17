@@ -1,53 +1,34 @@
-import * as THREE from 'three';
-import { BufferGeometryLoader } from 'three';
+import { ImportedObject } from '@collab3d/core';
 
 import { FileLoader } from '../core/utils/FileLoader';
-import { SceneManager } from '@collab3d/core';
 import { sceneFormats } from './index';
 
 /**
- * Loads an OBJ file chosen by the user, through the format the registry registered for `.obj`,
- * and adds each mesh to the local scene. Only the 'model' type is handled today.
+ * Reads the .obj the user picked and returns the parsed meshes, each with its
+ * serialized geometry. It no longer touches the scene: the caller commits the import
+ * as operations, so it is shared and undoable like any other edit.
  */
 export class ObjImporter
 {
-    /** Parses the type of the object and inserts it into the scene. */
-    static parseObject(type: string, sceneManager: SceneManager): void
+    /** Resolves to the parsed meshes; an empty list when nothing was chosen or parsing failed. */
+    static async readModel(): Promise<ImportedObject[]>
     {
-        if (type !== 'model')
-            return;
-
         const format = sceneFormats.forExtension('obj');
         if (!format)
         {
             console.error('No scene format registered for .obj');
-            return;
+            return [];
         }
 
-        FileLoader.getfile().then((contents) =>
+        try
         {
-            if (!contents)
-                return;
-
-            const geometryLoader = new BufferGeometryLoader();
-
-            for (const imported of format.parse(contents))
-            {
-                const geometry = geometryLoader.parse(JSON.parse(imported.geometry));
-                if (!geometry.index)
-                    geometry.computeVertexNormals();
-
-                const mesh = new THREE.Mesh(
-                    geometry,
-                    new THREE.MeshStandardMaterial({ color: 0x88ccff })
-                );
-
-                mesh.applyMatrix4(new THREE.Matrix4().fromArray(imported.matrix));
-                sceneManager.addObject(mesh);
-            }
-        }).catch((err) =>
+            const contents = await FileLoader.getfile();
+            return contents ? format.parse(contents) : [];
+        }
+        catch (error)
         {
-            console.error('Error loading model: ', err);
-        });
+            console.error('Error loading model: ', error);
+            return [];
+        }
     }
 }

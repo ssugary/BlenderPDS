@@ -1,7 +1,7 @@
 import { OperationKindDefinition } from '@collab3d/core';
 import { AddObject } from '../collab/Operation';
 import { Change } from './types';
-import { isColor, isOperationBase, isString, isTransform } from './validation';
+import { isColor, isGeometry, isOperationBase, isString, isTransform } from './validation';
 
 /**
  * Creates an object. Re-adding an existing id is how undo revives a deleted object: the newest
@@ -18,7 +18,7 @@ export const addObjectKind: OperationKindDefinition<AddObject, Change> = {
         return isOperationBase(op)
             && op.kind === 'add_object'
             && isString(op.objectId)
-            && isString(op.geometry)
+            && isGeometry(op.geometry)
             && isTransform(op.transform)
             && isColor(op.color);
     },

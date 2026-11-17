@@ -19,7 +19,7 @@ class EditorKindValidatorsTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final String MATRIX = "[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]";
 
-    private final AddObjectKindValidator addObject = new AddObjectKindValidator();
+    private final AddObjectKindValidator addObject = new AddObjectKindValidator(512);
     private final RemoveObjectKindValidator removeObject = new RemoveObjectKindValidator();
     private final SetTransformKindValidator setTransform = new SetTransformKindValidator();
     private final ChangeColorKindValidator changeColor = new ChangeColorKindValidator();

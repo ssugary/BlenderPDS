@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BufferGeometryLoader } from 'three';
 import { Tool } from "../Tool";
 import { SceneManager } from '@collab3d/core';
 
@@ -24,6 +25,10 @@ export class CreateObjectTool extends Tool
 
     public buildPrimitive(type:string):THREE.Mesh | null
     {
+        // A serialized BufferGeometry (the .obj import and set_mesh) starts with '{'.
+        if (type.trimStart().startsWith('{'))
+            return this.buildSerialized(type);
+
         if (type === 'cube'){
             const geometry = new THREE.BoxGeometry(1, 1, 1);
             const material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
@@ -65,5 +70,24 @@ export class CreateObjectTool extends Tool
         }
 
         return null;
+    }
+
+    /** Rebuilds a mesh from the JSON BufferGeometry the operations carry. */
+    private buildSerialized(serialized:string):THREE.Mesh | null
+    {
+        try
+        {
+            const geometry = new BufferGeometryLoader().parse(JSON.parse(serialized));
+            if (!geometry.index)
+                geometry.computeVertexNormals();
+
+            const material = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.3 });
+            return new THREE.Mesh(geometry, material);
+        }
+        catch (error)
+        {
+            console.error('Invalid serialized geometry: ', error);
+            return null;
+        }
     }
 }

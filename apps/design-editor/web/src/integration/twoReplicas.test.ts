@@ -5,6 +5,7 @@ import { isOperation } from '../collab/validate';
 import { PresenceService } from '../collab/PresenceService';
 import { buildSceneSnapshot } from '../collab/SceneSnapshot';
 import { editorKinds } from '../kinds';
+import { objFormat } from '../format/objFormat';
 
 /**
  * Two replicas, the real SyncEngine, the real PresenceService and a transport that only moves
@@ -171,6 +172,32 @@ describe('duas réplicas do editor', () => {
         // The winning buffer is one of the two, never a merge of them.
         const winner = left.state.get('obj-1')?.fields.get('geometry')?.value;
         expect([leftMesh, rightMesh]).toContain(winner);
+    });
+
+    it('a importação .obj virou operação e converge entre duas réplicas', () => {
+        // One triangle, in the format the file importer reads.
+        const parsed = objFormat.parse('v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n');
+        expect(parsed).toHaveLength(1);
+        const imported = parsed[0];
+
+        const left = new ReplicaSession('site-a');
+        const right = new ReplicaSession('site-b');
+        const [l, r] = pair();
+        connect(left, right, l, r);
+
+        left.commit({
+            kind: 'add_object',
+            objectId: 'imported-1',
+            geometry: imported.geometry,
+            transform: imported.matrix,
+            color: 0x88ccff
+        });
+        settle(l, r);
+
+        expect(snapshotOf(left)).toBe(snapshotOf(right));
+        const record = right.state.get('imported-1');
+        expect(record).toBeDefined();
+        expect(record?.meta.get('geometry')).toBe(imported.geometry);
     });
 
     it('kinds que o core não conhece não são aceitos pelo registro do editor', () => {

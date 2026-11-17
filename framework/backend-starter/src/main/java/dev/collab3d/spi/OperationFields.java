@@ -1,5 +1,6 @@
 package dev.collab3d.spi;
 
+import java.nio.charset.StandardCharsets;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -31,6 +32,15 @@ public final class OperationFields {
         }
         String value = node.asString();
         return value.isEmpty() || value.length() > MAX_ID_LENGTH ? null : value;
+    }
+
+    /**
+     * A non-empty string within a byte budget (UTF-8), for fields that carry a serialized
+     * payload instead of a short id — an imported mesh, for instance.
+     */
+    public static boolean boundedString(JsonNode node, int maxBytes) {
+        return node != null && node.isTextual() && !node.asString().isEmpty()
+                && node.asString().getBytes(StandardCharsets.UTF_8).length <= maxBytes;
     }
 
     /** Whether the node is a 4x4 matrix of finite numbers. */

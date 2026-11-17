@@ -3,7 +3,6 @@ package com.grupo03.blenderpds.kinds;
 import dev.collab3d.spi.InvalidOperationException;
 import dev.collab3d.spi.OperationFields;
 import dev.collab3d.spi.OperationKindValidator;
-import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -37,20 +36,12 @@ public class SetMeshKindValidator implements OperationKindValidator {
     @Override
     public void validate(JsonNode operation) {
         if (OperationFields.shortString(operation.get("objectId")) == null
-                || !isBoundedGeometry(operation.get("geometry"))) {
+                || !OperationFields.boundedString(operation.get("geometry"), maxBytes)) {
             throw new InvalidOperationException(KIND);
         }
     }
 
     public int maxBytes() {
         return maxBytes;
-    }
-
-    private boolean isBoundedGeometry(JsonNode node) {
-        if (node == null || !node.isString()) {
-            return false;
-        }
-        String value = node.asString();
-        return !value.isEmpty() && value.getBytes(StandardCharsets.UTF_8).length <= maxBytes;
     }
 }
