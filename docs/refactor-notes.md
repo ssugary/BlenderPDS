@@ -312,6 +312,12 @@ contrato" continua aberta.
 - A suíte de backend depende de Docker ativo (Postgres do `compose.yaml`, usado também pelos
   testes: `spring.docker.compose.skip.in-tests=false`) e a base do compose é **persistente** —
   relevante para a estratégia de baseline do Flyway em P0.5.
+- `DocumentState` (P0.4): (a) um `add_object` que **revive** um objeto apagado atualiza
+  `transform`/`addStamp` mas **não** grava `color` (`frontend/src/collab/DocumentState.ts:70-93`),
+  então o objeto volta com a cor anterior; (b) `LWWRegister.set` compara **carimbos**, não valores,
+  logo um write que vence reporta mudança mesmo com valor idêntico. Ambos ficaram congelados em
+  `frontend/src/collab/DocumentState.test.ts` e precisam ser decididos em P2.3 (o `MergeStrategy`
+  pode normalizar isso; mudar a semântica invalida os testes de caracterização).
 - `SessionSocketHandler` só entrega o `session_roster` inicial **depois** do primeiro `sync_hello`
   do cliente: a conexão nasce em `catchingUp` e `SessionConnection.send` enfileira tudo até
   `finishCatchUp()`. Não é bug (é a proteção contra perder ops durante o catch-up), mas é
